@@ -42,7 +42,7 @@ npx = 16          # # of pixels width/height of images
 nx = npx*npx*nc   # # of dimensions in X
 niter = 100        # # of iter at starting learning rate
 niter_decay = 0   # # of iter to linearly decay learning rate to zero
-lr = 0.00001       # initial learning rate for adam
+lr = 0.01        # initial learning rate for adam
 ntrain = 50000   # # of examples to train on
 
 ###################
@@ -121,8 +121,8 @@ dw3 = difn((ndf*4, ndf*2, 5, 5), 'dw3')
 dg3 = gain_ifn((ndf*4), 'dg3')
 db3 = bias_ifn((ndf*4), 'db3')
 #   LAYER 4 (LINEAR)
-dwy = difn((ndf*4*(2*2), nz), 'dwy')
-dby = bias_ifn(nz, 'dby')
+dwy = difn((ndf*4*(2*2), nz*10), 'dwy')
+dby = bias_ifn(nz*10, 'dby')
 # SET AS LIST
 gen_params = [gw, gg, gb, gw2, gg2, gb2, gw3, gg3, gb3, gwx]
 discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy, dby]
