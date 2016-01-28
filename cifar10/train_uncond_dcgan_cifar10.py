@@ -186,6 +186,15 @@ d_updates = d_updater(discrim_params, d_cost)
 g_updates = g_updater(gen_params, g_cost)
 updates = d_updates + g_updates
 
+######################################
+# RANDOM SELECT INPUT DATA & DISPLAY #
+######################################
+vis_idxs = py_rng.sample(np.arange(len(vaX)), nvis)
+vaX_vis = inverse_transform(vaX[vis_idxs])
+print vaX_vis.shape, vaX_vis.transpose([0,2,3,1]).shape
+color_grid_vis(vaX_vis.transpose([0,2,3,1]), (14, 14), 'samples/%s_etl_test.png'%desc)
+
+
 ####################
 # COMPILE FUNCTION #
 ####################
@@ -196,12 +205,7 @@ _train_d = theano.function([X, Z], cost, updates=d_updates)
 _gen = theano.function([Z], gX)
 print '%.2f seconds to compile theano functions'%(time()-t)
 
-######################################
-# RANDOM SELECT INPUT DATA & DISPLAY #
-######################################
-vis_idxs = py_rng.sample(np.arange(len(vaX)), nvis)
-vaX_vis = inverse_transform(vaX[vis_idxs])
-color_grid_vis(vaX_vis.transpose([0,2,3,1]), (14, 14), 'samples/%s_etl_test.png'%desc)
+
 #####################################
 # SAMPLE RANDOM DATA FOR GENERATION #
 #####################################
