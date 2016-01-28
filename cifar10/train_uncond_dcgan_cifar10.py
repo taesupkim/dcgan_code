@@ -94,9 +94,9 @@ nz  = 100 # NUM OF HIDDENS
 ngf = ndf = 64  # NUM OF MINIMAL FILTERS
 # FOR GENERATOR
 #   LAYER 1 (LINEAR)
-gw  = gifn((nz, ngf*4*(4*4)), 'gw')
-gg = gain_ifn((ngf*4*(4*4)), 'gg')
-gb = bias_ifn((ngf*4*(4*4)), 'gb')
+gw  = gifn((nz, ngf*4*(2*2)), 'gw')
+gg = gain_ifn((ngf*4*(2*2)), 'gg')
+gb = bias_ifn((ngf*4*(2*2)), 'gb')
 #   LAYER 2 (DECONV)
 gw2 = gifn((ngf*4, ngf*2, 5, 5), 'gw2')
 gg2 = gain_ifn((ngf*2), 'gg2')
@@ -120,7 +120,7 @@ dw3 = difn((ndf*4, ndf*2, 5, 5), 'dw3')
 dg3 = gain_ifn((ndf*4), 'dg3')
 db3 = bias_ifn((ndf*4), 'db3')
 #   LAYER 4 (LINEAR)
-dwy = difn((ndf*4*(4*4), 1), 'dwy')
+dwy = difn((ndf*4*(2*2), 1), 'dwy')
 # SET AS LIST
 gen_params = [gw, gg, gb, gw2, gg2, gb2, gw3, gg3, gb3, gwx]
 discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy]
@@ -130,7 +130,7 @@ discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy]
 ###################
 def gen(Z, w, g, b, w2, g2, b2, w3, g3, b3,wx):
     h = relu(batchnorm(T.dot(Z, w), g=g, b=b))
-    h = h.reshape((h.shape[0], ngf*4, 4, 4))
+    h = h.reshape((h.shape[0], ngf*4, 2, 2))
     h2 = relu(batchnorm(deconv(h, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2))
     h3 = relu(batchnorm(deconv(h2, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3))
     x = tanh(deconv(h3, wx, subsample=(2, 2), border_mode=(2, 2)))
