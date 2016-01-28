@@ -78,7 +78,7 @@ bias_ifn = inits.Constant(c=0.)
 #################
 # LOAD DATA SET #
 #################
-tr_data, te_data, tr_stream, val_stream, te_stream = cifar10(ntrain=ntrain)
+tr_data, te_data, tr_stream, val_stream, te_stream = cifar10(ntrain=ntrain, window_size=(npx, npx))
 
 ###################
 # GET DATA STATIC #

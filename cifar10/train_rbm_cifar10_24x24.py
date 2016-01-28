@@ -37,7 +37,7 @@ nvis = 196        # # of samples to visualize during training
 b1 = 0.5          # momentum term of adam
 nc = 3            # # of channels in image
 nbatch = 128      # # of examples in batch
-npx = 16          # # of pixels width/height of images
+npx = 24          # # of pixels width/height of images
 
 nx = npx*npx*nc   # # of dimensions in X
 niter = 25        # # of iter at starting learning rate
@@ -48,7 +48,7 @@ ntrain = 50000   # # of examples to train on
 ###################
 # SET OUTPUT PATH #
 ###################
-desc = 'rbm_cifar10_16x16'
+desc = 'rbm_cifar10_24x24'
 model_dir = 'models/%s'%desc
 samples_dir = 'samples/%s'%desc
 if not os.path.exists('logs/'):
@@ -95,9 +95,9 @@ nz  = 100 # NUM OF HIDDENS
 ngf = ndf = 128  # NUM OF MINIMAL FILTERS
 # FOR GENERATOR
 #   LAYER 1 (LINEAR)
-gw  = gifn((nz, ngf*4*(2*2)), 'gw')
-gg = gain_ifn((ngf*4*(2*2)), 'gg')
-gb = bias_ifn((ngf*4*(2*2)), 'gb')
+gw  = gifn((nz, ngf*4*(3*3)), 'gw')
+gg = gain_ifn((ngf*4*(3*3)), 'gg')
+gb = bias_ifn((ngf*4*(3*3)), 'gb')
 #   LAYER 2 (DECONV)
 gw2 = gifn((ngf*4, ngf*2, 5, 5), 'gw2')
 gg2 = gain_ifn((ngf*2), 'gg2')
@@ -121,7 +121,7 @@ dw3 = difn((ndf*4, ndf*2, 5, 5), 'dw3')
 dg3 = gain_ifn((ndf*4), 'dg3')
 db3 = bias_ifn((ndf*4), 'db3')
 #   LAYER 4 (LINEAR)
-dwy = difn((ndf*4*(2*2), nz), 'dwy')
+dwy = difn((ndf*4*(3*3), nz), 'dwy')
 # SET AS LIST
 gen_params = [gw, gg, gb, gw2, gg2, gb2, gw3, gg3, gb3, gwx]
 discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy]
@@ -131,7 +131,7 @@ discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy]
 ###################
 def gen(Z, w, g, b, w2, g2, b2, w3, g3, b3,wx):
     h = relu(batchnorm(T.dot(Z, w), g=g, b=b))
-    h = h.reshape((h.shape[0], ngf*4, 2, 2))
+    h = h.reshape((h.shape[0], ngf*4, 3, 3))
     h2 = relu(batchnorm(deconv(h, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2))
     h3 = relu(batchnorm(deconv(h2, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3))
     x = tanh(deconv(h3, wx, subsample=(2, 2), border_mode=(2, 2)))
@@ -272,7 +272,7 @@ for epoch in range(niter):
         n_updates += 1
         n_examples += len(imb)
         if (b)%100==0:
-            print 'EPOCH #{}'.format(epoch),' : batch #{}'.format(b), 'DCGAN_RBM_CIFAR10_16x16'
+            print 'EPOCH #{}'.format(epoch),' : batch #{}'.format(b), desc
             print '================================================================'
             print '     input energy     : ', cost[2].mean(), cost[2].var()
             print '----------------------------------------------------------------'
