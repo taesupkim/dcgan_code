@@ -26,10 +26,10 @@ from load import cifar10
 
 def transform(X):
     X = [center_crop(x, npx) for x in X]
-    return floatX(X).transpose(0, 3, 1, 2)/127.5 - 1.
+    return floatX(X)/127.5 - 1.
 
 def inverse_transform(X):
-    X = (X.reshape(-1, nc, npx, npx).transpose(0, 2, 3, 1)+1.)/2.
+    X = (X.reshape(-1, nc, npx, npx)+1.)/2.
     return X
 
 k = 1             # # of discrim updates for each gen update
