@@ -118,3 +118,11 @@ class HardTanh(object):
 
     def __call__(self, X):
         return T.clip(X, -1., 1.)
+
+class Softplus(object):
+
+    def __init__(self):
+        pass
+
+    def __call__(self, X):
+        return T.nnet.softplus(X)
