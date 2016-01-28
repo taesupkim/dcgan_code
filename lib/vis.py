@@ -14,7 +14,6 @@ def grayscale_grid_vis(X, (nh, nw), save_path=None):
 
 def color_grid_vis(X, (nh, nw), save_path=None):
     h, w = X[0].shape[:2]
-    print h, w
     img = np.zeros((h*nh, w*nw, 3))
     for n, x in enumerate(X):
         print n ,x.shape
