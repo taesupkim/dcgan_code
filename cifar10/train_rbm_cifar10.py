@@ -42,7 +42,7 @@ npx = 16          # # of pixels width/height of images
 nx = npx*npx*nc   # # of dimensions in X
 niter = 25        # # of iter at starting learning rate
 niter_decay = 0   # # of iter to linearly decay learning rate to zero
-lr = 0.0002       # initial learning rate for adam
+lr = 0.00001       # initial learning rate for adam
 ntrain = 50000   # # of examples to train on
 
 ###################
@@ -161,8 +161,8 @@ gX = gen(Z, *gen_params)
 ###########################
 # GET DISCRIMINATOR SCORE #
 ###########################
-e_real = discrim(X, *discrim_params).sum(axis=1)
-e_gen = discrim(gX, *discrim_params).sum(axis=1)
+e_real = discrim(X, *discrim_params).sum(axis=1, keepdims=True)
+e_gen = discrim(gX, *discrim_params).sum(axis=1, keepdims=True)
 
 ######################################
 # SET DISCRIMINATOR & GENERATOR COST #
