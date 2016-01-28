@@ -91,7 +91,7 @@ vaX = transform(vaX)
 #####################
 # INITIALIZE PARAMS #
 #####################
-nz  = 100 # NUM OF HIDDENS
+nz  = 500 # NUM OF HIDDENS
 ngf = ndf = 128  # NUM OF MINIMAL FILTERS
 # FOR GENERATOR
 #   LAYER 1 (LINEAR)
