@@ -266,9 +266,9 @@ for epoch in range(niter):
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
         if n_updates % (k+1) == 0:
-            cost = _train_g(imb, zmb)
+            cost = _train_g(imb, nmb, zmb)
         else:
-            cost = _train_d(imb, zmb)
+            cost = _train_d(imb, nmb, zmb)
         n_updates += 1
         n_examples += len(imb)
         if (b)%100==0:
