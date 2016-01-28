@@ -190,6 +190,8 @@ updates = d_updates + g_updates
 # RANDOM SELECT INPUT DATA & DISPLAY #
 ######################################
 vis_idxs = py_rng.sample(np.arange(len(vaX)), nvis)
+print len(vis_idxs)
+print nvis
 vaX_vis = inverse_transform(vaX[vis_idxs])
 print vaX_vis.shape, vaX_vis.transpose([0,2,3,1]).shape
 raw_input("check size")
