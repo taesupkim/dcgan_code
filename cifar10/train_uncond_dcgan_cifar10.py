@@ -1,6 +1,3 @@
-import sys
-sys.path.append('..')
-
 import os
 import json
 from time import time
@@ -272,16 +269,16 @@ for epoch in range(niter):
     g_cost = float(cost[0])
     d_cost = float(cost[1])
 
-    # GENERATE SAMPLE
-    gX = gen_samples(100000)
-    gX = gX.reshape(len(gX), -1)
-    va_nnd_1k = nnd_score(gX[:1000], vaX, metric='euclidean')
-    va_nnd_10k = nnd_score(gX[:10000], vaX, metric='euclidean')
-    va_nnd_100k = nnd_score(gX[:100000], vaX, metric='euclidean')
-    log = [n_epochs, n_updates, n_examples, time()-t, va_nnd_1k, va_nnd_10k, va_nnd_100k, g_cost, d_cost]
-    print '%.0f %.2f %.2f %.2f %.4f %.4f'%(epoch, va_nnd_1k, va_nnd_10k, va_nnd_100k, g_cost, d_cost)
-    f_log.write(json.dumps(dict(zip(log_fields, log)))+'\n')
-    f_log.flush()
+    # # GENERATE SAMPLE
+    # gX = gen_samples(100000)
+    # gX = gX.reshape(len(gX), -1)
+    # va_nnd_1k = nnd_score(gX[:1000], vaX, metric='euclidean')
+    # va_nnd_10k = nnd_score(gX[:10000], vaX, metric='euclidean')
+    # va_nnd_100k = nnd_score(gX[:100000], vaX, metric='euclidean')
+    # log = [n_epochs, n_updates, n_examples, time()-t, va_nnd_1k, va_nnd_10k, va_nnd_100k, g_cost, d_cost]
+    # print '%.0f %.2f %.2f %.2f %.4f %.4f'%(epoch, va_nnd_1k, va_nnd_10k, va_nnd_100k, g_cost, d_cost)
+    # f_log.write(json.dumps(dict(zip(log_fields, log)))+'\n')
+    # f_log.flush()
 
     # KEEP SAMPLE FROM SAME NOISE INPUT
     samples = np.asarray(_gen(sample_zmb))
@@ -289,6 +286,6 @@ for epoch in range(niter):
     n_epochs += 1
     if n_epochs > niter:
         lrt.set_value(floatX(lrt.get_value() - lr/niter_decay))
-    if n_epochs in [1, 2, 3, 4, 5, 10, 15, 20, 25]:
-        joblib.dump([p.get_value() for p in gen_params], 'models/%s/%d_gen_params.jl'%(desc, n_epochs))
-        joblib.dump([p.get_value() for p in discrim_params], 'models/%s/%d_discrim_params.jl'%(desc, n_epochs))
+    # if n_epochs in [1, 2, 3, 4, 5, 10, 15, 20, 25]:
+    #     joblib.dump([p.get_value() for p in gen_params], 'models/%s/%d_gen_params.jl'%(desc, n_epochs))
+    #     joblib.dump([p.get_value() for p in discrim_params], 'models/%s/%d_discrim_params.jl'%(desc, n_epochs))
