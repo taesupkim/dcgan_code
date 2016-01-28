@@ -151,7 +151,9 @@ def discrim(X, w, w2, g2, b2, w3, g3, b3, wy):
 # SET INPUT DATA #
 ##################
 X = T.tensor4()
+N = T.tensor4()
 Z = T.matrix()
+
 
 ###################
 # GENERATE SAMPLE #
@@ -161,14 +163,15 @@ gX = gen(Z, *gen_params)
 ###########################
 # GET DISCRIMINATOR SCORE #
 ###########################
-e_real = discrim(X, *discrim_params).sum(axis=1, keepdims=True)
-e_gen = discrim(gX, *discrim_params).sum(axis=1, keepdims=True)
+e_real  = discrim(X, *discrim_params).sum(axis=1, keepdims=True)
+e_gen   = discrim(gX, *discrim_params).sum(axis=1, keepdims=True)
+e_gen_n = discrim(gX+N, *discrim_params).sum(axis=1, keepdims=True)
 
 ######################################
 # SET DISCRIMINATOR & GENERATOR COST #
 ######################################
-e_cost = e_real.mean()-e_gen.mean()
-g_cost = e_gen.mean()
+e_cost = e_real.mean()-e_gen_n.mean()
+g_cost = e_gen_n.mean()
 
 cost = [e_cost, g_cost, e_real, e_gen]
 
@@ -195,8 +198,8 @@ color_grid_vis(vaX_vis.transpose([0,2,3,1]), (14, 14), 'samples/%s_etl_test.png'
 ####################
 print 'COMPILING'
 t = time()
-_train_g = theano.function([X, Z], cost, updates=g_updates)
-_train_d = theano.function([X, Z], cost, updates=d_updates)
+_train_g = theano.function([X, N, Z], cost, updates=g_updates)
+_train_d = theano.function([X, N, Z], cost, updates=d_updates)
 _gen = theano.function([Z], gX)
 print '%.2f seconds to compile theano functions'%(time()-t)
 
@@ -257,6 +260,8 @@ for epoch in range(niter):
     for b, train_batch_data in enumerate(train_batch_iters):
         # GET NORMALIZED INPUT DATA
         imb = transform(train_batch_data[0])
+        # GET NOISE DATA
+        nmb = floatX(np_rng.normal(loc=0., scale=0.01, size=imb.shape))
         # GET INPUT RANDOM DATA FOR SAMPLING
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
