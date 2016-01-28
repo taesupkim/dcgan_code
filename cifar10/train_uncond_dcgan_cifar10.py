@@ -201,8 +201,7 @@ print '%.2f seconds to compile theano functions'%(time()-t)
 ######################################
 vis_idxs = py_rng.sample(np.arange(len(vaX)), nvis)
 vaX_vis = inverse_transform(vaX[vis_idxs])
-color_grid_vis(vaX_vis, (14, 14), 'samples/%s_etl_test.png'%desc)
-
+color_grid_vis(vaX_vis.transpose([0,2,3,1]), (14, 14), 'samples/%s_etl_test.png'%desc)
 #####################################
 # SAMPLE RANDOM DATA FOR GENERATION #
 #####################################
@@ -284,7 +283,7 @@ for epoch in range(niter):
 
     # KEEP SAMPLE FROM SAME NOISE INPUT
     samples = np.asarray(_gen(sample_zmb))
-    color_grid_vis(inverse_transform(samples), (14, 14), 'samples/%s/%d.png'%(desc, n_epochs))
+    color_grid_vis(inverse_transform(samples).transpose([0,2,3,1]), (14, 14), 'samples/%s/%d.png'%(desc, n_epochs))
     n_epochs += 1
     if n_epochs > niter:
         lrt.set_value(floatX(lrt.get_value() - lr/niter_decay))
