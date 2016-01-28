@@ -256,9 +256,12 @@ t = time()
 # FOR EACH EPOCH
 for epoch in range(niter):
     # FOR EACH BATCH
-    for imb, in tqdm(tr_stream.get_epoch_iterator(), total=ntrain/nbatch):
+    train_batch_iters = tr_stream.get_epoch_iterator()
+    for b, train_batch_data in enumerate(train_batch_iters):
         # GET NORMALIZED INPUT DATA
-        imb = transform(imb)
+        imb = transform(train_batch_data)
+        print imb.shape
+        raw_input('check size')
         # GET INPUT RANDOM DATA FOR SAMPLING
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
