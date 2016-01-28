@@ -42,7 +42,7 @@ npx = 16          # # of pixels width/height of images
 nx = npx*npx*nc   # # of dimensions in X
 niter = 100        # # of iter at starting learning rate
 niter_decay = 0   # # of iter to linearly decay learning rate to zero
-lr = 0.0001        # initial learning rate for adam
+lr = 0.00001        # initial learning rate for adam
 ntrain = 50000   # # of examples to train on
 
 ###################
@@ -266,7 +266,7 @@ for epoch in range(niter):
         # GET NORMALIZED INPUT DATA
         imb = transform(train_batch_data[0])
         # GET NOISE DATA
-        nmb = floatX(np_rng.normal(loc=0., scale=0.01, size=imb.shape))
+        nmb = floatX(np_rng.normal(loc=0., scale=1., size=imb.shape))
         # GET INPUT RANDOM DATA FOR SAMPLING
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
@@ -286,6 +286,8 @@ for epoch in range(niter):
             print '     generator cost   : ', cost[1].mean()
             print '----------------------------------------------------------------'
             print '     probability cost : ', cost[0].mean()
+            print '================================================================'
+            print '     annealin g       : ', cost[4]
             print '================================================================'
 
     # # GENERATE SAMPLE
