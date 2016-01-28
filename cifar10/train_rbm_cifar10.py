@@ -48,7 +48,7 @@ ntrain = 50000   # # of examples to train on
 ###################
 # SET OUTPUT PATH #
 ###################
-desc = 'dcgan_cifar10_16x16'
+desc = 'rbm_cifar10_16x16'
 model_dir = 'models/%s'%desc
 samples_dir = 'samples/%s'%desc
 if not os.path.exists('logs/'):
