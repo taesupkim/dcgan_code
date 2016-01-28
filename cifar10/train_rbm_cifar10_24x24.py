@@ -122,9 +122,10 @@ dg3 = gain_ifn((ndf*4), 'dg3')
 db3 = bias_ifn((ndf*4), 'db3')
 #   LAYER 4 (LINEAR)
 dwy = difn((ndf*4*(3*3), nz), 'dwy')
+dby = bias_ifn(nz, 'dby')
 # SET AS LIST
 gen_params = [gw, gg, gb, gw2, gg2, gb2, gw3, gg3, gb3, gwx]
-discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy]
+discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy, dby]
 
 ###################
 # BUILD GENERATOR #
@@ -140,12 +141,12 @@ def gen(Z, w, g, b, w2, g2, b2, w3, g3, b3,wx):
 #######################
 # BUILD DISCRIMINATOR #
 #######################
-def discrim(X, w, w2, g2, b2, w3, g3, b3, wy):
+def discrim(X, w, w2, g2, b2, w3, g3, b3, wy, by):
     h = lrelu(dnn_conv(X, w, subsample=(2, 2), border_mode=(2, 2)))
     h2 = lrelu(batchnorm(dnn_conv(h, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2))
     h3 = lrelu(batchnorm(dnn_conv(h2, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3))
     h3 = T.flatten(h3, 2)
-    y = -softplus(T.dot(h3, wy))
+    y = -softplus(T.dot(h3, wy)+by)
     return y
 ##################
 # SET INPUT DATA #

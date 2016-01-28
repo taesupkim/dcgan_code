@@ -40,7 +40,7 @@ nbatch = 128      # # of examples in batch
 npx = 16          # # of pixels width/height of images
 
 nx = npx*npx*nc   # # of dimensions in X
-niter = 25        # # of iter at starting learning rate
+niter = 100        # # of iter at starting learning rate
 niter_decay = 0   # # of iter to linearly decay learning rate to zero
 lr = 0.0002       # initial learning rate for adam
 ntrain = 50000   # # of examples to train on
@@ -256,6 +256,7 @@ t = time()
 # FOR EACH EPOCH
 for epoch in range(niter):
     # FOR EACH BATCH
+    print "CURRENT EPOCH .{}".format(epoch+1)
     for imb, in tqdm(tr_stream.get_epoch_iterator(), total=ntrain/nbatch):
         # GET NORMALIZED INPUT DATA
         imb = transform(imb)
