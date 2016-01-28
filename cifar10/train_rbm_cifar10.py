@@ -65,7 +65,7 @@ relu = activations.Rectify()
 sigmoid = activations.Sigmoid()
 lrelu = activations.LeakyRectify()
 tanh = activations.Tanh()
-softplus = activations.Softplu()
+softplus = activations.Softplus()
 bce = T.nnet.binary_crossentropy
 
 ###################
