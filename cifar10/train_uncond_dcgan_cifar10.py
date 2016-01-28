@@ -91,7 +91,7 @@ vaX = transform(vaX)
 # INITIALIZE PARAMS #
 #####################
 nz  = 100 # NUM OF HIDDENS
-ngf = ndf = 64  # NUM OF MINIMAL FILTERS
+ngf = ndf = 128  # NUM OF MINIMAL FILTERS
 # FOR GENERATOR
 #   LAYER 1 (LINEAR)
 gw  = gifn((nz, ngf*4*(2*2)), 'gw')
@@ -259,8 +259,6 @@ for epoch in range(niter):
     for imb, in tqdm(tr_stream.get_epoch_iterator(), total=ntrain/nbatch):
         # GET NORMALIZED INPUT DATA
         imb = transform(imb)
-        print imb.shape
-        raw_input()
         # GET INPUT RANDOM DATA FOR SAMPLING
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
