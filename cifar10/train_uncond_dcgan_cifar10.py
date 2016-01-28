@@ -192,6 +192,7 @@ updates = d_updates + g_updates
 vis_idxs = py_rng.sample(np.arange(len(vaX)), nvis)
 vaX_vis = inverse_transform(vaX[vis_idxs])
 print vaX_vis.shape, vaX_vis.transpose([0,2,3,1]).shape
+raw_input("check size")
 color_grid_vis(vaX_vis.transpose([0,2,3,1]), (14, 14), 'samples/%s_etl_test.png'%desc)
 
 
