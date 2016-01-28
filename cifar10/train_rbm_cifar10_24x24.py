@@ -40,9 +40,9 @@ nbatch = 128      # # of examples in batch
 npx = 24          # # of pixels width/height of images
 
 nx = npx*npx*nc   # # of dimensions in X
-niter = 25        # # of iter at starting learning rate
+niter = 100        # # of iter at starting learning rate
 niter_decay = 0   # # of iter to linearly decay learning rate to zero
-lr = 0.00001       # initial learning rate for adam
+lr = 0.001       # initial learning rate for adam
 ntrain = 50000   # # of examples to train on
 
 ###################
