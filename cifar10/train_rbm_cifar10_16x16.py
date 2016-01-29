@@ -119,8 +119,8 @@ dw3 = difn((ndf*4, ndf*2, 5, 5), 'dw3')
 dg3 = gain_ifn((ndf*4), 'dg3')
 db3 = bias_ifn((ndf*4), 'db3')
 #   LAYER 4 (LINEAR)
-dwy = difn((ndf*4*(2*2), nz), 'dwy')
-dby = bias_ifn(nz, 'dby')
+dwy = difn((ndf*4*(2*2), 1), 'dwy')
+dby = bias_ifn(1, 'dby')
 # SET AS LIST
 gen_params = [gw, gg, gb, gw2, gg2, gb2, gw3, gg3, gb3, gwx]
 discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy, dby]
