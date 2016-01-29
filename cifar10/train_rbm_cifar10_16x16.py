@@ -6,7 +6,6 @@ from time import time
 import numpy as np
 from tqdm import tqdm
 from matplotlib import pyplot as plt
-from sklearn.externals import joblib
 
 import theano
 import theano.tensor as T
@@ -31,7 +30,6 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-k = 5             # # of discrim updates for each gen update
 l2 = 1e-5         # l2 weight decay
 nvis = 196        # # of samples to visualize during training
 b1 = 0.5          # momentum term of adam
@@ -176,8 +174,8 @@ e_gen_n  = discrim(gX+N, *discrim_params).sum(axis=1, keepdims=True)
 ######################################
 # SET DISCRIMINATOR & GENERATOR COST #
 ######################################
-e_cost = e_real_n.mean()-e_gen.mean()
-g_cost = e_gen.mean()
+e_cost = e_real_n.mean()-e_gen_n.mean()
+g_cost = e_gen_n.mean()
 
 cost = [e_cost, g_cost, e_real, e_gen, annealing]
 
@@ -281,7 +279,7 @@ for epoch in range(niter):
         n_updates += 1
         n_examples += len(imb)
         if (b)%1==0:
-            print 'EPOCH #{}'.format(epoch),' : batch #{}'.format(b), 'DCGAN_RBM_CIFAR10_16x16', ' ', flag
+            print 'EPOCH #{}'.format(epoch),' : batch #{}'.format(b), desc, ' ', flag
             print '================================================================'
             print '     input energy     : ', cost[2].mean(), cost[2].var()
             print '----------------------------------------------------------------'
@@ -291,7 +289,7 @@ for epoch in range(niter):
             print '----------------------------------------------------------------'
             print '     probability cost : ', cost[0].mean()
             print '================================================================'
-            print '     annealin g       : ', cost[4]
+            print '     annealing        : ', cost[4]
             print '================================================================'
 
     # # GENERATE SAMPLE
