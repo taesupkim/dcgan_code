@@ -271,14 +271,17 @@ for epoch in range(niter):
         # GET INPUT RANDOM DATA FOR SAMPLING
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
+        flag = None
         if n_updates % (k+1) == 0:
             cost = _train_g(imb, nmb, zmb, epoch+1)
+            flag = 'generator_update'
         else:
             cost = _train_d(imb, nmb, zmb, epoch+1)
+            flag = 'energy_update'
         n_updates += 1
         n_examples += len(imb)
         if (b)%1==0:
-            print 'EPOCH #{}'.format(epoch),' : batch #{}'.format(b), 'DCGAN_RBM_CIFAR10_16x16'
+            print 'EPOCH #{}'.format(epoch),' : batch #{}'.format(b), 'DCGAN_RBM_CIFAR10_16x16', ' ', flag
             print '================================================================'
             print '     input energy     : ', cost[2].mean(), cost[2].var()
             print '----------------------------------------------------------------'
