@@ -188,7 +188,7 @@ lrt = sharedX(lr)
 d_updater = updates.Adam(lr=lrt, b1=b1, regularizer=updates.Regularizer(l2=l2))
 g_updater = updates.Adam(lr=lrt, b1=b1, regularizer=updates.Regularizer(l2=l2))
 d_updates = d_updater(discrim_params, e_cost)
-g_updates = g_updater(gen_params, g_cost)
+g_updates = g_updater(gen_params, annealing*g_cost)
 updates = d_updates + g_updates
 
 ######################################
@@ -272,7 +272,7 @@ for epoch in range(niter):
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
         flag = None
-        if n_updates % 10 > 2:
+        if n_updates % 2 == 1:
             cost = _train_g(imb, nmb, zmb, epoch+1)
             flag = 'generator_update'
         else:
