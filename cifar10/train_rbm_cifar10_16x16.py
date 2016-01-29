@@ -272,7 +272,7 @@ for epoch in range(niter):
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
         flag = None
-        if n_updates % (k+1) == 0:
+        if n_updates % 10 > 5:
             cost = _train_g(imb, nmb, zmb, epoch+1)
             flag = 'generator_update'
         else:
