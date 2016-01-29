@@ -182,8 +182,8 @@ cost = [e_cost, g_cost, e_real, e_gen, annealing]
 ###############
 # SET UPDATER #
 ###############
-d_updater = updates.RMSprop(lr=sharedX(0.001), rho=0.9, regularizer=updates.Regularizer(l2=l2))
-g_updater = updates.RMSprop(lr=sharedX(0.001), rho=0.9, regularizer=updates.Regularizer(l2=l2))
+d_updater = updates.RMSprop(lr=sharedX(0.0001), rho=0.9, regularizer=updates.Regularizer(l2=l2))
+g_updater = updates.RMSprop(lr=sharedX(0.0001), rho=0.9, regularizer=updates.Regularizer(l2=l2))
 
 d_updates = d_updater(discrim_params, e_cost)
 g_updates = g_updater(gen_params, annealing*g_cost)
