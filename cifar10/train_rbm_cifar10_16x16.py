@@ -177,7 +177,7 @@ e_gen_n  = discrim(gX+N, *discrim_params).sum(axis=1, keepdims=True)
 # SET DISCRIMINATOR & GENERATOR COST #
 ######################################
 e_cost = e_real_n.mean()-e_gen_n.mean()
-g_cost = e_gen_n.mean()
+g_cost = e_gen.mean()
 
 cost = [e_cost, g_cost, e_real, e_gen, annealing]
 
