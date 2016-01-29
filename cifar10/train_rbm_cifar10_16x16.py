@@ -182,8 +182,8 @@ cost = [e_cost, g_cost, e_real, e_gen, annealing]
 ###############
 # SET UPDATER #
 ###############
-d_updater = updates.SGD(lr=sharedX(0.0001), regularizer=updates.Regularizer(l2=0.0001))
-g_updater = updates.SGD(lr=sharedX(0.0001), regularizer=updates.Regularizer(l2=0.0001))
+d_updater = updates.Adagrad(lr=sharedX(0.0001), regularizer=updates.Regularizer(l2=0.0001))
+g_updater = updates.Adagrad(lr=sharedX(0.0001), regularizer=updates.Regularizer(l2=0.0001))
 d_updates = d_updater(discrim_params, e_cost)
 g_updates = g_updater(gen_params, annealing*g_cost)
 updates = d_updates + g_updates
@@ -264,7 +264,7 @@ for epoch in range(niter):
         # GET NORMALIZED INPUT DATA
         imb = transform(train_batch_data[0])
         # GET NOISE DATA
-        nmb = floatX(np_rng.normal(loc=0., scale=0.01, size=imb.shape))
+        nmb = floatX(np_rng.normal(loc=0., scale=0.001, size=imb.shape))
         # GET INPUT RANDOM DATA FOR SAMPLING
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
