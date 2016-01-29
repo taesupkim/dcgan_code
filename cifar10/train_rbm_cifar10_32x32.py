@@ -6,7 +6,6 @@ from time import time
 import numpy as np
 from tqdm import tqdm
 from matplotlib import pyplot as plt
-from sklearn.externals import joblib
 
 import theano
 import theano.tensor as T
