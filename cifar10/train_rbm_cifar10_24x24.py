@@ -90,7 +90,7 @@ vaX = transform(vaX)
 #####################
 # INITIALIZE PARAMS #
 #####################
-nz  = 500 # NUM OF HIDDENS
+nz  = 100 # NUM OF HIDDENS
 ngf = ndf = 128  # NUM OF MINIMAL FILTERS
 # FOR GENERATOR
 #   LAYER 1 (LINEAR)
@@ -163,14 +163,15 @@ gX = gen(Z, *gen_params)
 ###########################
 # GET DISCRIMINATOR SCORE #
 ###########################
-e_real  = discrim(X, *discrim_params).sum(axis=1, keepdims=True)
-e_gen   = discrim(gX, *discrim_params).sum(axis=1, keepdims=True)
-e_gen_n = discrim(gX+N, *discrim_params).sum(axis=1, keepdims=True)
+e_real   = discrim(X, *discrim_params).sum(axis=1, keepdims=True)
+e_real_n = discrim(X+N, *discrim_params).sum(axis=1, keepdims=True)
+e_gen    = discrim(gX, *discrim_params).sum(axis=1, keepdims=True)
+e_gen_n  = discrim(gX+N, *discrim_params).sum(axis=1, keepdims=True)
 
 ######################################
 # SET DISCRIMINATOR & GENERATOR COST #
 ######################################
-e_cost = e_real.mean()-e_gen_n.mean()
+e_cost = e_real_n.mean()-e_gen_n.mean()
 g_cost = e_gen_n.mean()
 
 cost = [e_cost, g_cost, e_real, e_gen]

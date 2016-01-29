@@ -121,8 +121,8 @@ dw3 = difn((ndf*4, ndf*2, 5, 5), 'dw3')
 dg3 = gain_ifn((ndf*4), 'dg3')
 db3 = bias_ifn((ndf*4), 'db3')
 #   LAYER 4 (LINEAR)
-dwy = difn((ndf*4*(2*2), nz*10), 'dwy')
-dby = bias_ifn(nz*10, 'dby')
+dwy = difn((ndf*4*(2*2), nz), 'dwy')
+dby = bias_ifn(nz, 'dby')
 # SET AS LIST
 gen_params = [gw, gg, gb, gw2, gg2, gb2, gw3, gg3, gb3, gwx]
 discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy, dby]
@@ -267,7 +267,7 @@ for epoch in range(niter):
         # GET NORMALIZED INPUT DATA
         imb = transform(train_batch_data[0])
         # GET NOISE DATA
-        nmb = floatX(np_rng.normal(loc=0., scale=1., size=imb.shape))
+        nmb = floatX(np_rng.normal(loc=0., scale=0.01, size=imb.shape))
         # GET INPUT RANDOM DATA FOR SAMPLING
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
