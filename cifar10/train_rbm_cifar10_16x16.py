@@ -154,8 +154,8 @@ N = T.tensor4()
 Z = T.matrix()
 Temp = T.scalar()
 
-annealing = 0.01*(1./(0.80**Temp))
-annealing = T.clip(annealing, 1.0, 1.0)
+annealing = 0.01*(1./(0.97**Temp))
+annealing = T.clip(annealing, 0.0, 1.0)
 
 
 ###################
