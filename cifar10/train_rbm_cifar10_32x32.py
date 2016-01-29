@@ -138,7 +138,7 @@ discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dw4, dg4, db4, dwy, dby]
 ###################
 def gen(Z, w, g, b, w2, g2, b2, w3, g3, b3, w4, g4, b4,wx):
     h = relu(batchnorm(T.dot(Z, w), g=g, b=b))
-    h = h.reshape((h.shape[0], ngf*4, 3, 3))
+    h = h.reshape((h.shape[0], ngf*4, 2, 2))
     h2 = relu(batchnorm(deconv(h, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2))
     h3 = relu(batchnorm(deconv(h2, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3))
     h4 = relu(batchnorm(deconv(h3, w4, subsample=(2, 2), border_mode=(2, 2)), g=g4, b=b4))
