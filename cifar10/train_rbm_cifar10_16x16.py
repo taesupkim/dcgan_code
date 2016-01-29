@@ -277,7 +277,7 @@ for epoch in range(niter):
             cost = _train_d(imb, nmb, zmb, epoch+1)
         n_updates += 1
         n_examples += len(imb)
-        if (b)%100==0:
+        if (b)%1==0:
             print 'EPOCH #{}'.format(epoch),' : batch #{}'.format(b), 'DCGAN_RBM_CIFAR10_16x16'
             print '================================================================'
             print '     input energy     : ', cost[2].mean(), cost[2].var()
