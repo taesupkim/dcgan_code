@@ -140,9 +140,9 @@ def gen(Z, w, g, b, w2, g2, b2, w3, g3, b3,wx):
 # BUILD DISCRIMINATOR #
 #######################
 def discrim(X, w, w2, g2, b2, w3, g3, b3, wy, by):
-    h = lrelu(dnn_conv(X, w, subsample=(2, 2), border_mode=(2, 2)))
-    h2 = lrelu(batchnorm(dnn_conv(h, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2))
-    h3 = lrelu(batchnorm(dnn_conv(h2, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3))
+    h = relu(dnn_conv(X, w, subsample=(2, 2), border_mode=(2, 2)))
+    h2 = relu(batchnorm(dnn_conv(h, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2))
+    h3 = relu(batchnorm(dnn_conv(h2, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3))
     h3 = T.flatten(h3, 2)
     y = -softplus(T.dot(h3, wy)+by)
     return y
