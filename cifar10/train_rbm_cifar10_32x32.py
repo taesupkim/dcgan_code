@@ -30,7 +30,6 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-k = 1             # # of discrim updates for each gen update
 l2 = 1e-5         # l2 weight decay
 nvis = 196        # # of samples to visualize during training
 b1 = 0.5          # momentum term of adam
@@ -163,7 +162,10 @@ def discrim(X, w, w2, g2, b2, w3, g3, b3, w4, g4, b4, wy, by):
 X = T.tensor4()
 N = T.tensor4()
 Z = T.matrix()
+Temp = T.scalar()
 
+annealing = 0.01*(1./(0.97**Temp))
+annealing = T.clip(annealing, 0.0, 1.0)
 ###################
 # GENERATE SAMPLE #
 ###################
@@ -183,7 +185,7 @@ e_gen_n  = discrim(gX+N, *discrim_params).sum(axis=1, keepdims=True)
 e_cost = e_real_n.mean()-e_gen_n.mean()
 g_cost = e_gen_n.mean()
 
-cost = [e_cost, g_cost, e_real, e_gen]
+cost = [e_cost, g_cost, e_real, e_gen, annealing]
 
 ###############
 # SET UPDATER #
@@ -192,7 +194,7 @@ lrt = sharedX(lr)
 d_updater = updates.Adam(lr=lrt, b1=b1, regularizer=updates.Regularizer(l2=l2))
 g_updater = updates.Adam(lr=lrt, b1=b1, regularizer=updates.Regularizer(l2=l2))
 d_updates = d_updater(discrim_params, e_cost)
-g_updates = g_updater(gen_params, g_cost)
+g_updates = g_updater(gen_params, annealing*g_cost)
 updates = d_updates + g_updates
 
 ######################################
@@ -208,8 +210,8 @@ color_grid_vis(vaX_vis.transpose([0,2,3,1]), (14, 14), 'samples/%s_etl_test.png'
 ####################
 print 'COMPILING'
 t = time()
-_train_g = theano.function([X, N, Z], cost, updates=g_updates)
-_train_d = theano.function([X, N, Z], cost, updates=d_updates)
+_train_g = theano.function([X, N, Z, Temp], cost, updates=g_updates)
+_train_d = theano.function([X, N, Z, Temp], cost, updates=d_updates)
 _gen = theano.function([Z], gX)
 print '%.2f seconds to compile theano functions'%(time()-t)
 
@@ -275,14 +277,17 @@ for epoch in range(niter):
         # GET INPUT RANDOM DATA FOR SAMPLING
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
-        if n_updates % (k+1) == 0:
-            cost = _train_g(imb, nmb, zmb)
+        flag = None
+        if n_updates % 2 == 1:
+            cost = _train_g(imb, nmb, zmb, epoch+1)
+            flag = 'generator_update'
         else:
-            cost = _train_d(imb, nmb, zmb)
+            cost = _train_d(imb, nmb, zmb, epoch+1)
+            flag = 'energy_update'
         n_updates += 1
         n_examples += len(imb)
         if (b)%100==0:
-            print 'EPOCH #{}'.format(epoch),' : batch #{}'.format(b), desc
+            print 'EPOCH #{}'.format(epoch),' : batch #{}'.format(b), desc, ' ', flag
             print '================================================================'
             print '     input energy     : ', cost[2].mean(), cost[2].var()
             print '----------------------------------------------------------------'
