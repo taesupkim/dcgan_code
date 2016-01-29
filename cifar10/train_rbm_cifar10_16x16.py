@@ -187,7 +187,7 @@ cost = [e_cost, g_cost, e_real, e_gen, annealing]
 lrt = sharedX(lr)
 d_updater = updates.Adam(lr=lrt, b1=b1, regularizer=updates.Regularizer(l2=l2))
 g_updater = updates.Adam(lr=lrt, b1=b1, regularizer=updates.Regularizer(l2=l2))
-d_updates = d_updater(discrim_params, annealing*e_cost)
+d_updates = d_updater(discrim_params, e_cost)
 g_updates = g_updater(gen_params, g_cost)
 updates = d_updates + g_updates
 
