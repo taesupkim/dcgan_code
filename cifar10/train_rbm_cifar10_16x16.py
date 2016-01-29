@@ -31,7 +31,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-k = 1             # # of discrim updates for each gen update
+k = 5             # # of discrim updates for each gen update
 l2 = 1e-5         # l2 weight decay
 nvis = 196        # # of samples to visualize during training
 b1 = 0.5          # momentum term of adam
