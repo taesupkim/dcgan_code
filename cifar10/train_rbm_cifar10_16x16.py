@@ -174,7 +174,7 @@ cost = [e_cost, g_cost, e_real, e_gen]
 # SET UPDATER #
 ###############
 d_updater = updates.Adagrad(lr=sharedX(0.0001), regularizer=updates.Regularizer(l2=0.0001))
-g_updater = updates.Adagrad(lr=sharedX(0.0001), regularizer=updates.Regularizer(l2=0.0001))
+g_updater = updates.Adagrad(lr=sharedX(0.001), regularizer=updates.Regularizer(l2=0.0001))
 d_updates = d_updater(discrim_params, e_cost)
 g_updates = g_updater(gen_params, g_cost)
 updates = d_updates + g_updates
