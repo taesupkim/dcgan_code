@@ -40,8 +40,6 @@ npx = 16          # # of pixels width/height of images
 nx = npx*npx*nc   # # of dimensions in X
 niter = 100        # # of iter at starting learning rate
 niter_decay = 0   # # of iter to linearly decay learning rate to zero
-lr = 0.00001        # initial learning rate for adam
-ntrain = 50000   # # of examples to train on
 
 ###################
 # SET OUTPUT PATH #
@@ -77,7 +75,7 @@ bias_ifn = inits.Constant(c=0.)
 #################
 # LOAD DATA SET #
 #################
-tr_data, te_data, tr_stream, val_stream, te_stream = cifar10(ntrain=ntrain, window_size=(npx, npx))
+tr_data, te_data, tr_stream, val_stream, te_stream = cifar10(window_size=(npx, npx))
 
 ###################
 # GET DATA STATIC #
@@ -129,34 +127,29 @@ discrim_params = [dw, dw2, dg2, db2, dw3, dg3, db3, dwy, dby]
 # BUILD GENERATOR #
 ###################
 def gen(Z, w, g, b, w2, g2, b2, w3, g3, b3,wx):
-    h = relu(batchnorm(T.dot(Z, w), g=g, b=b))
-    h = h.reshape((h.shape[0], ngf*4, 2, 2))
-    h2 = relu(batchnorm(deconv(h, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2))
-    h3 = relu(batchnorm(deconv(h2, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3))
-    x = tanh(deconv(h3, wx, subsample=(2, 2), border_mode=(2, 2)))
+    h0 = relu(batchnorm(T.dot(Z, w), g=g, b=b))
+    h0 = h0.reshape((h0.shape[0], ngf*4, 2, 2))
+    h1 = relu(batchnorm(deconv(h0, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2))
+    h2 = relu(batchnorm(deconv(h1, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3))
+    x = tanh(deconv(h2, wx, subsample=(2, 2), border_mode=(2, 2)))
     return x
 
 #######################
 # BUILD DISCRIMINATOR #
 #######################
 def discrim(X, w, w2, g2, b2, w3, g3, b3, wy, by):
-    h = relu(dnn_conv(X, w, subsample=(2, 2), border_mode=(2, 2)))
-    h2 = relu(batchnorm(dnn_conv(h, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2))
-    h3 = relu(batchnorm(dnn_conv(h2, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3))
-    h3 = T.flatten(h3, 2)
-    y = -softplus(T.dot(h3, wy)+by)
+    h0 = dropout(relu(dnn_conv(X, w, subsample=(2, 2), border_mode=(2, 2))), p=0.5)
+    h1 = dropout(relu(batchnorm(dnn_conv(h0, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2)), p=0.5)
+    h2 = dropout(relu(batchnorm(dnn_conv(h1, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3)), p=0.5)
+    h2 = T.flatten(h2, 2)
+    y = -softplus(T.dot(h2, wy)+by)
     return y
+
 ##################
 # SET INPUT DATA #
 ##################
 X = T.tensor4()
-N = T.tensor4()
 Z = T.matrix()
-Temp = T.scalar()
-
-annealing = 0.01*(1./(0.97**Temp))
-annealing = T.clip(annealing, 1.0, 1.0)
-
 
 ###################
 # GENERATE SAMPLE #
@@ -167,17 +160,15 @@ gX = gen(Z, *gen_params)
 # GET DISCRIMINATOR SCORE #
 ###########################
 e_real   = discrim(X, *discrim_params).sum(axis=1, keepdims=True)
-e_real_n = discrim(X+N, *discrim_params).sum(axis=1, keepdims=True)
 e_gen    = discrim(gX, *discrim_params).sum(axis=1, keepdims=True)
-e_gen_n  = discrim(gX+N, *discrim_params).sum(axis=1, keepdims=True)
 
 ######################################
 # SET DISCRIMINATOR & GENERATOR COST #
 ######################################
-e_cost = e_real_n.mean()-e_gen_n.mean()
-g_cost = e_gen_n.mean()
+e_cost = e_real.mean()-e_gen.mean()
+g_cost = e_gen.mean()
 
-cost = [e_cost, g_cost, e_real, e_gen, annealing]
+cost = [e_cost, g_cost, e_real, e_gen]
 
 ###############
 # SET UPDATER #
@@ -185,7 +176,7 @@ cost = [e_cost, g_cost, e_real, e_gen, annealing]
 d_updater = updates.Adagrad(lr=sharedX(0.0001), regularizer=updates.Regularizer(l2=0.0001))
 g_updater = updates.Adagrad(lr=sharedX(0.0001), regularizer=updates.Regularizer(l2=0.0001))
 d_updates = d_updater(discrim_params, e_cost)
-g_updates = g_updater(gen_params, annealing*g_cost)
+g_updates = g_updater(gen_params, g_cost)
 updates = d_updates + g_updates
 
 ######################################
@@ -201,8 +192,8 @@ color_grid_vis(vaX_vis.transpose([0,2,3,1]), (14, 14), 'samples/%s_etl_test.png'
 ####################
 print 'COMPILING'
 t = time()
-_train_g = theano.function([X, N, Z, Temp], cost, updates=g_updates)
-_train_d = theano.function([X, N, Z, Temp], cost, updates=d_updates)
+_train_g = theano.function([X, Z], cost, updates=g_updates)
+_train_d = theano.function([X, Z], cost, updates=d_updates)
 _gen = theano.function([Z], gX)
 print '%.2f seconds to compile theano functions'%(time()-t)
 
@@ -263,17 +254,15 @@ for epoch in range(niter):
     for b, train_batch_data in enumerate(train_batch_iters):
         # GET NORMALIZED INPUT DATA
         imb = transform(train_batch_data[0])
-        # GET NOISE DATA
-        nmb = floatX(np_rng.normal(loc=0., scale=0.001, size=imb.shape))
         # GET INPUT RANDOM DATA FOR SAMPLING
         zmb = floatX(np_rng.uniform(-1., 1., size=(len(imb), nz)))
         # UPDATE MODEL
         flag = None
         if n_updates % 2 == 1:
-            cost = _train_g(imb, nmb, zmb, epoch+1)
+            cost = _train_g(imb, zmb)
             flag = 'generator_update'
         else:
-            cost = _train_d(imb, nmb, zmb, epoch+1)
+            cost = _train_d(imb, zmb)
             flag = 'energy_update'
         n_updates += 1
         n_examples += len(imb)
