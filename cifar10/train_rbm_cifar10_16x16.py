@@ -306,8 +306,8 @@ for epoch in range(niter):
     samples = np.asarray(_gen(sample_zmb))
     color_grid_vis(inverse_transform(samples).transpose([0,2,3,1]), (14, 14), 'samples/%s/%d.png'%(desc, n_epochs))
     n_epochs += 1
-    if n_epochs > niter:
-        lrt.set_value(floatX(lrt.get_value() - lr/niter_decay))
+    # if n_epochs > niter:
+    #     lrt.set_value(floatX(lrt.get_value() - lr/niter_decay))
     # if n_epochs in [1, 2, 3, 4, 5, 10, 15, 20, 25]:
     #     joblib.dump([p.get_value() for p in gen_params], 'models/%s/%d_gen_params.jl'%(desc, n_epochs))
     #     joblib.dump([p.get_value() for p in discrim_params], 'models/%s/%d_discrim_params.jl'%(desc, n_epochs))
