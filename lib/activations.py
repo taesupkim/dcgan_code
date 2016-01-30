@@ -126,3 +126,11 @@ class Softplus(object):
 
     def __call__(self, X):
         return T.nnet.softplus(X)
+
+class Square(object):
+
+    def __init__(self):
+        pass
+
+    def __call__(self, X):
+        return T.power(X, 2)
