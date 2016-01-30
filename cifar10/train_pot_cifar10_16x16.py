@@ -160,8 +160,8 @@ gX = gen(Z, *gen_params)
 ###########################
 # GET DISCRIMINATOR SCORE #
 ###########################
-e_real   = discrim(X, *discrim_params).sum(axis=1, keepdims=True)
-e_gen    = discrim(gX, *discrim_params).sum(axis=1, keepdims=True)
+e_real   = discrim(X, *discrim_params)
+e_gen    = discrim(gX, *discrim_params)
 
 ######################################
 # SET DISCRIMINATOR & GENERATOR COST #
