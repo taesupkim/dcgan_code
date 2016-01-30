@@ -140,7 +140,7 @@ def discrim(X, w, w2, g2, b2, w3, g3, b3, wy, by):
     h1 = dropout(relu(batchnorm(dnn_conv(h0, w2, subsample=(2, 2), border_mode=(2, 2)), g=g2, b=b2)), p=0.5)
     h2 = dropout(relu(batchnorm(dnn_conv(h1, w3, subsample=(2, 2), border_mode=(2, 2)), g=g3, b=b3)), p=0.5)
     h2 = T.flatten(h2, 2)
-    y = -softplus(T.dot(h2, wy)+by)
+    y = -relu(T.dot(h2, wy)+by)
     return y
 
 ##################
