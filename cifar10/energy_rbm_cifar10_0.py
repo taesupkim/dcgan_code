@@ -5,9 +5,9 @@ import theano
 import theano.tensor as T
 from theano.sandbox.cuda.dnn import dnn_conv
 
-from lib.activations import *
-from lib.updates import *
-from lib.inits import *
+from lib.activations import Rectify, Tanh, Softplus
+from lib.updates import Adagrad, Regularizer
+from lib.inits import Normal, Constant
 from lib.vis import color_grid_vis
 from lib.rng import py_rng, np_rng
 from lib.ops import batchnorm, conv_cond_concat, deconv, dropout, l2normalize
