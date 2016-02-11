@@ -33,11 +33,11 @@ def euclidean(x, y, e=1e-8):
     dist = T.sqrt(dist)
     return dist
 
-def dropout(X, p=0.):
+def dropout(X, p=0., is_training=True):
     """
     dropout using activation scaling to avoid test time weight rescaling
     """
-    if p > 0:
+    if p > 0 and is_training:
         retain_prob = 1 - p
         X *= t_rng.binomial(X.shape, p=retain_prob, dtype=theano.config.floatX)
         X /= retain_prob
