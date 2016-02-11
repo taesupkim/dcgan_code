@@ -5,9 +5,9 @@ import theano
 import theano.tensor as T
 from theano.sandbox.cuda.dnn import dnn_conv
 
-from lib import activations
-from lib import updates
-from lib import inits
+from lib.activations import *
+from lib.updates import *
+from lib.inits import *
 from lib.vis import color_grid_vis
 from lib.rng import py_rng, np_rng
 from lib.ops import batchnorm, conv_cond_concat, deconv, dropout, l2normalize
@@ -40,17 +40,17 @@ constant     = 1.0
 ##############################
 # SET ACTIVATIONS AND OTHERS #
 ##############################
-relu = activations.Rectify()
-tanh = activations.Tanh()
-softplus = activations.Softplus()
+relu = Rectify()
+tanh = Tanh()
+softplus = Softplus()
 
 ###################
 # SET INITIALIZER #
 ###################
-gifn = inits.Normal(scale=0.01)
-difn = inits.Normal(scale=0.01)
-gain_ifn = inits.Normal(loc=1., scale=0.02)
-bias_ifn = inits.Constant(c=0.)
+gifn = Normal(scale=0.01)
+difn = Normal(scale=0.01)
+gain_ifn = Normal(loc=1., scale=0.02)
+bias_ifn = Constant(c=0.)
 
 #################
 # LOAD DATA SET #
