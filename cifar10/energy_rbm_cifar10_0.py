@@ -338,7 +338,7 @@ def train_model(learning_rate=1e-2,
         print '     noise scale      : ', init_noise*(noise_decay**e)
         print '================================================================'
 
-        save_as = model_test_name + '_SAMPLES{}.png'.format(e+1)
+        save_as = samples_dir + '/SAMPLES{}.png'.format(e+1)
         samples = sampler_function(fixed_hidden_data)[0]
         samples = np.asarray(samples)
         color_grid_vis(inverse_transform(samples).transpose([0,2,3,1]), (16, 16), save_as)
