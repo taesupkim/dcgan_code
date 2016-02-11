@@ -24,6 +24,8 @@ def inverse_transform(X):
 def plot_learning_curve(cost_values, cost_names, save_as):
     import matplotlib.pyplot as plt
     for cost in cost_values:
+        print cost
+
         plt.plot(xrange(len(cost)), cost)
 
     plt.legend(cost_names, loc='upper right')
@@ -301,8 +303,8 @@ def train_model(learning_rate=1e-2,
         valid_batch_iters = valid_stream.get_epoch_iterator()
         for b, valid_batch_data in enumerate(valid_batch_iters):
             # set function inputs
-            input_data   = transform(valid_batch_data[0])
-            hidden_data  = floatX(np_rng.uniform(low=-constant, high=constant, size=(input_data.shape[0], num_hiddens)))
+            input_data  = transform(valid_batch_data[0])
+            hidden_data = floatX(np_rng.uniform(low=-constant, high=constant, size=(input_data.shape[0], num_hiddens)))
             # evaluate model
             outputs = eval_sample_function(input_data, hidden_data)
             epoch_valid_input_energy  += outputs[0].mean()
