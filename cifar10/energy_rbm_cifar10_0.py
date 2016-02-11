@@ -150,7 +150,7 @@ def energy_model(input_data,
                  is_training=True):
     h0 = dropout(relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))), p=0.5, is_training=is_training)
     h1 = dropout(relu(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
-    h2 = tanh(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
+    h2 = relu(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
     h2 = T.flatten(h2, 2)
     y  = softplus(T.dot(h2, linear_w3)+linear_b3)
     y  = T.sum(-y, axis=1)
