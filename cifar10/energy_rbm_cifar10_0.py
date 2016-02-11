@@ -181,7 +181,7 @@ def set_update_function(energy_params, generator_params, energy_updater, generat
     importance_rate = T.nnet.softmax(T.transpose(-sample_energy))
     importance_rate = theano.gradient.disconnected_grad(importance_rate)
 
-    energy_cost    = input_energy.mean()-T.dot(importance_rate, sample_energy).reshape(-1)
+    energy_cost    = input_energy.mean()-T.dot(importance_rate, sample_energy).sum()
     energy_updates = generator_updater(energy_params, energy_cost)
 
     function_inputs  = [input_data, hidden_data, noise_data]
