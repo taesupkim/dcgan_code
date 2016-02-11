@@ -1,7 +1,6 @@
 import os
 import numpy as np
-from matplotlib import pyplot as plt
-
+from time import time
 import theano
 import theano.tensor as T
 from theano.sandbox.cuda.dnn import dnn_conv
@@ -23,6 +22,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 def plot_learning_curve(cost_values, cost_names, save_as):
+    import matplotlib.pyplot as plt
     for cost in cost_values:
         plt.plot(xrange(len(cost)), cost)
 
@@ -249,9 +249,12 @@ def train_model(learning_rate=1e-2,
     generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen))
 
     # compile function
+    print 'COMPILING'
+    t=time()
     update_function      = set_update_function(energy_params, generator_params, energy_updater, generator_updater)
     eval_sample_function = set_evaluation_and_sampling_function(energy_params, generator_params)
     sampler_function     = set_sampling_function(generator_params)
+    print '%.2f seconds to compile theano functions'%(time()-t)
 
     # set fixed hidden data (for sampling
     fixed_hidden_data = floatX(np_rng.uniform(-constant, constant, size=(num_display, num_hiddens)))
