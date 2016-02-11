@@ -57,7 +57,7 @@ softplus = Softplus()
 ###################
 gifn = Normal(scale=0.01)
 difn = Normal(scale=0.01)
-gain_ifn = Normal(loc=1., scale=0.02)
+gain_ifn = Normal(loc=1., scale=0.001)
 bias_ifn = Constant(c=0.)
 
 #################
@@ -148,11 +148,9 @@ def energy_model(input_data,
                  linear_w3,
                  linear_b3,
                  is_training=True):
-    h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)))
-    # h1 = dropout(relu(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
-    # h2 = dropout(relu(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2)), p=0.5, is_training=is_training)
-    h1 = relu(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
-    h2 = relu(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
+    h0 = dropout(relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))), p=0.5, is_training=is_training)
+    h1 = dropout(relu(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
+    h2 = tanh(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
     h2 = T.flatten(h2, 2)
     y  = softplus(T.dot(h2, linear_w3)+linear_b3)
     y  = T.sum(-y, axis=1)
@@ -339,18 +337,6 @@ def train_model(learning_rate=1e-2,
         print '----------------------------------------------------------------'
         print '     noise scale      : ',init_noise*(noise_decay**e)
         print '================================================================'
-
-        # # plot learning curve
-        # save_as = model_test_name + '_ENERGY_CURVE.png'
-        # plot_learning_curve(cost_values=[train_input_energy,
-        #                                  train_sample_energy,
-        #                                  valid_input_energy,
-        #                                  valid_sample_energy],
-        #                     cost_names=['Input Energy (train)',
-        #                                 'Sample Energy (train)',
-        #                                 'Input Energy (valid)',
-        #                                 'Sample Energy (valid)'],
-        #                     save_as=save_as)
 
         save_as = model_test_name + '_SAMPLES{}.png'.format(e+1)
         samples = sampler_function(fixed_hidden_data)[0]
