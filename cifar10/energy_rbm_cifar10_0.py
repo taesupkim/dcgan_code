@@ -276,7 +276,7 @@ def train_model(learning_rate=1e-2,
         for b, train_batch_data in enumerate(train_batch_iters):
             # set update function inputs
             input_data   = transform(train_batch_data[0])
-            hidden_data  = floatX(np_rng.uniform(low=-constant, high=constant, size=(batch_size, num_hiddens)))
+            hidden_data  = floatX(np_rng.uniform(low=-constant, high=constant, size=(input_data.shape[0], num_hiddens)))
             sample_noise = floatX(np_rng.normal(size=input_data.shape)*init_noise*(noise_decay**e))
             # update function
             [input_energy, sample_energy] = update_function(input_data, hidden_data, sample_noise)
@@ -299,7 +299,7 @@ def train_model(learning_rate=1e-2,
         for b, valid_batch_data in enumerate(valid_batch_iters):
             # set function inputs
             input_data   = transform(valid_batch_data[0])
-            hidden_data  = floatX(np_rng.uniform(low=-constant, high=constant, size=(batch_size, num_hiddens)))
+            hidden_data  = floatX(np_rng.uniform(low=-constant, high=constant, size=(input_data.shape[0], num_hiddens)))
             # evaluate model
             outputs = eval_sample_function(input_data, hidden_data)
             epoch_valid_input_energy  += outputs[0].mean()
