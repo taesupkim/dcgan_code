@@ -133,8 +133,8 @@ conv_w2   = difn((num_eng_filters2, num_eng_filters1, filter_size, filter_size),
 bn_w2     = gain_ifn(num_eng_filters2, 'bn_w2')
 bn_b2     = bias_ifn(num_eng_filters2, 'bn_b2')
 #   LAYER 3 (LINEAR)
-linear_w3 = difn((num_eng_filters2*(min_image_size*min_image_size), num_hiddens), 'linear_w3')
-linear_b3 = bias_ifn(num_hiddens, 'linear_b3')
+linear_w3 = difn((num_eng_filters2*(min_image_size*min_image_size), num_hiddens*num_hiddens), 'linear_w3')
+linear_b3 = bias_ifn(num_hiddens*num_hiddens, 'linear_b3')
 # SET AS LIST
 energy_params = [conv_w0, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, linear_w3, linear_b3]
 def energy_model(input_data,
