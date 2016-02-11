@@ -69,7 +69,7 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 # INITIALIZE PARAMS #
 #####################
 filter_size  = 5
-num_hiddens  = 1000 # NUM OF HIDDENS
+num_hiddens  = 100
 num_layers   = 4
 min_num_gen_filters = min_num_eng_filters = 32
 
@@ -345,7 +345,7 @@ def train_model(learning_rate=1e-2,
 
 
 if __name__=="__main__":
-    lr_list          = [1e-5]
+    lr_list          = [1e-3]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
     init_noise_list  = [0.01]
