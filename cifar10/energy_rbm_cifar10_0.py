@@ -352,6 +352,7 @@ def train_model(learning_rate=1e-2,
 
         save_as = model_test_name + '_SAMPLES{}.png'.format(e+1)
         samples = sampler_function(fixed_hidden_data)[0]
+        print samples.shape
         color_grid_vis(inverse_transform(samples).transpose([0,2,3,1]), (np.sqrt(num_display), np.sqrt(num_display)), save_as)
 
 
