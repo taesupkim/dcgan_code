@@ -32,7 +32,7 @@ def plot_learning_curve(cost_values, cost_names, save_as):
     plt.savefig(save_as)
     plt.close()
 
-model_name  = 'ENERGY_RBM_CIFAR10'
+model_name  = 'ENERGY_RBM_CIFAR10_0'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -42,7 +42,7 @@ num_channels = 3
 input_shape  = 32
 input_size   = input_shape*input_shape*num_channels
 num_display  = 16*16
-batch_size   = 128
+batch_size   = 64
 constant     = 1.0
 
 ##############################
