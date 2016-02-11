@@ -42,7 +42,7 @@ num_channels = 3
 input_shape  = 16
 input_size   = input_shape*input_shape*num_channels
 num_display  = 16*16
-batch_size   = 128
+batch_size   = 64
 constant     = 1.0
 
 ##############################
