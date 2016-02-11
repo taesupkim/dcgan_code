@@ -80,8 +80,8 @@ num_gen_filters1 = min_num_gen_filters*2
 num_gen_filters2 = min_num_gen_filters
 # LAYER 0 (LINEAR)
 linear_w0 = gifn((num_hiddens, num_gen_filters0*init_image_size*init_image_size), 'linear_w0')
-bn_w0     = gain_ifn((num_gen_filters0*init_image_size), 'bn_w0')
-bn_b0     = bias_ifn((num_gen_filters0*init_image_size), 'bn_b0')
+bn_w0     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'bn_w0')
+bn_b0     = bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'bn_b0')
 # LAYER 1 (DECONV)
 conv_w1   = gifn((num_gen_filters0, num_gen_filters1, filter_size, filter_size), 'conv_w1')
 bn_w1     = gain_ifn(num_gen_filters1, 'bn_w1')
