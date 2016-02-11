@@ -345,10 +345,10 @@ def train_model(learning_rate=1e-2,
 
 
 if __name__=="__main__":
-    lr_list          = [1e-2]
+    lr_list          = [1e-1]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
-    init_noise_list  = [0.01]
+    init_noise_list  = [0.1]
     noise_decay_list = [0.98]
 
     for lr in lr_list:
