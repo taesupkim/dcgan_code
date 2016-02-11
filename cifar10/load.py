@@ -8,8 +8,6 @@ from fuel.schemes import ShuffledScheme, SequentialScheme
 from fuel.streams import DataStream
 from fuel.transformers.image import RandomFixedSizeCrop
 
-from lib.config import data_dir
-
 def cifar10(ntrain=None, nval=None, ntest=None, window_size=(32, 32), batch_size=128):
 
     tr_data = CIFAR10(which_sets=('train',), sources=('features',))
