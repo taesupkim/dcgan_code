@@ -69,7 +69,7 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 # INITIALIZE PARAMS #
 #####################
 filter_size  = 5
-num_hiddens  = 10
+num_hiddens  = 100
 num_layers   = 4
 min_num_gen_filters = min_num_eng_filters = 32
 
@@ -133,8 +133,8 @@ conv_w2   = difn((num_eng_filters2, num_eng_filters1, filter_size, filter_size),
 bn_w2     = gain_ifn(num_eng_filters2, 'bn_w2')
 bn_b2     = bias_ifn(num_eng_filters2, 'bn_b2')
 #   LAYER 3 (LINEAR)
-linear_w3 = difn((num_eng_filters2*(min_image_size*min_image_size), num_hiddens*100), 'linear_w3')
-linear_b3 = bias_ifn(num_hiddens*100, 'linear_b3')
+linear_w3 = difn((num_eng_filters2*(min_image_size*min_image_size), num_hiddens), 'linear_w3')
+linear_b3 = bias_ifn(num_hiddens, 'linear_b3')
 # SET AS LIST
 energy_params = [conv_w0, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, linear_w3, linear_b3]
 def energy_model(input_data,
@@ -182,7 +182,7 @@ def set_update_function(energy_params, generator_params, energy_updater, generat
     importance_rate = theano.gradient.disconnected_grad(importance_rate)
 
     energy_cost    = input_energy.mean()-T.dot(importance_rate, sample_energy).sum()
-    energy_updates = generator_updater(energy_params, energy_cost)
+    energy_updates = energy_updater(energy_params, energy_cost)
 
     function_inputs  = [input_data, hidden_data, noise_data]
     function_outputs = [input_energy, sample_energy]
@@ -247,8 +247,8 @@ def train_model(learning_rate=1e-2,
                       + '_NOISE{0:.2f}'.format(float(init_noise)) \
                       + '_DECAY{0:.2f}'.format(float(noise_decay)) \
     # set updates
-    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng))
-    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen))
+    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=1.0)
+    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=1.0)
 
     # compile function
     print 'COMPILING'
