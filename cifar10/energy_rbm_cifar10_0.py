@@ -69,9 +69,9 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 # INITIALIZE PARAMS #
 #####################
 filter_size  = 5
-num_hiddens  = 100 # NUM OF HIDDENS
+num_hiddens  = 1000 # NUM OF HIDDENS
 num_layers   = 4
-min_num_gen_filters = min_num_eng_filters = 128
+min_num_gen_filters = min_num_eng_filters = 32
 
 ###################
 # BUILD GENERATOR #
@@ -148,8 +148,8 @@ def energy_model(input_data,
                  linear_w3,
                  linear_b3,
                  is_training=True):
-    h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)))
-    h1 = relu(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
+    h0 = dropout(relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))), p=0.5, is_training=is_training)
+    h1 = dropout(relu(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
     h2 = relu(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
     h2 = T.flatten(h2, 2)
     y  = softplus(T.dot(h2, linear_w3)+linear_b3)
@@ -181,7 +181,7 @@ def set_update_function(energy_params, generator_params, energy_updater, generat
     importance_rate = T.nnet.softmax(T.transpose(-sample_energy))
     importance_rate = theano.gradient.disconnected_grad(importance_rate)
 
-    energy_cost    = input_energy.mean()-T.dot(importance_rate, sample_energy).sum()
+    energy_cost    = input_energy.mean()-T.dot(importance_rate, sample_energy).reshape(-1)
     energy_updates = generator_updater(energy_params, energy_cost)
 
     function_inputs  = [input_data, hidden_data, noise_data]
