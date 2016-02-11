@@ -18,7 +18,6 @@ def color_grid_vis(X, (nh, nw), save_path=None):
     for n, x in enumerate(X):
         j = n/nw
         i = n%nw
-        print x.shape
         img[j*h:j*h+h, i*w:i*w+w, :] = x
     if save_path is not None:
         imsave(save_path, img)
