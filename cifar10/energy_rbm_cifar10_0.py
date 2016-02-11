@@ -338,17 +338,17 @@ def train_model(learning_rate=1e-2,
         print '     noise scale      : ',init_noise*(noise_decay**e)
         print '================================================================'
 
-        # plot learning curve
-        save_as = model_test_name + '_ENERGY_CURVE.png'
-        plot_learning_curve(cost_values=[train_input_energy,
-                                         train_sample_energy,
-                                         valid_input_energy,
-                                         valid_sample_energy],
-                            cost_names=['Input Energy (train)',
-                                        'Sample Energy (train)',
-                                        'Input Energy (valid)',
-                                        'Sample Energy (valid)'],
-                            save_as=save_as)
+        # # plot learning curve
+        # save_as = model_test_name + '_ENERGY_CURVE.png'
+        # plot_learning_curve(cost_values=[train_input_energy,
+        #                                  train_sample_energy,
+        #                                  valid_input_energy,
+        #                                  valid_sample_energy],
+        #                     cost_names=['Input Energy (train)',
+        #                                 'Sample Energy (train)',
+        #                                 'Input Energy (valid)',
+        #                                 'Sample Energy (valid)'],
+        #                     save_as=save_as)
 
         save_as = model_test_name + '_SAMPLES{}.png'.format(e+1)
         samples = sampler_function(fixed_hidden_data)[0]
@@ -356,7 +356,7 @@ def train_model(learning_rate=1e-2,
 
 
 if __name__=="__main__":
-    lr_list          = [1e-3]
+    lr_list          = [1e-4]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
     init_noise_list  = [0.01]
