@@ -239,8 +239,8 @@ def train_model(learning_rate=1e-2,
                       + '_NOISE{0:.2f}'.format(float(init_noise)) \
                       + '_DECAY{0:.2f}'.format(float(noise_decay)) \
     # set updates
-    energy_updater    = updates.RMSprop(lr=sharedX(learning_rate), rho=0.5, regularizer=updates.Regularizer(l2=lambda_eng))
-    generator_updater = updates.RMSprop(lr=sharedX(learning_rate), rho=0.5, regularizer=updates.Regularizer(l2=lambda_gen))
+    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng))
+    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen))
 
     # compile function
     update_function      = set_update_function(energy_params, generator_params, energy_updater, generator_updater)
