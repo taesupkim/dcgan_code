@@ -69,7 +69,7 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 # INITIALIZE PARAMS #
 #####################
 filter_size  = 5
-num_hiddens  = 100
+num_hiddens  = 1000
 num_layers   = 4
 min_num_gen_filters = min_num_eng_filters = 128
 
@@ -77,9 +77,9 @@ min_num_gen_filters = min_num_eng_filters = 128
 # BUILD GENERATOR #
 ###################
 init_image_size  = 4
-num_gen_filters0 = min_num_gen_filters
-num_gen_filters1 = min_num_gen_filters
-num_gen_filters2 = min_num_gen_filters
+num_gen_filters0 = min_num_gen_filters*4
+num_gen_filters1 = min_num_gen_filters*2
+num_gen_filters2 = min_num_gen_filters*1
 # LAYER 0 (LINEAR)
 linear_w0 = gifn((num_hiddens, num_gen_filters0*init_image_size*init_image_size), 'linear_w0')
 bn_w0     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'bn_w0')
@@ -119,9 +119,9 @@ def generator_model(hidden_data,
 # BUILD ENERGY MODEL #
 ######################
 min_image_size   = init_image_size
-num_eng_filters0 = min_num_eng_filters
-num_eng_filters1 = min_num_eng_filters
-num_eng_filters2 = min_num_eng_filters
+num_eng_filters0 = min_num_eng_filters*1
+num_eng_filters1 = min_num_eng_filters*2
+num_eng_filters2 = min_num_eng_filters*4
 # LAYER 0 (DECONV)
 conv_w0   = difn((num_eng_filters0, num_channels, filter_size, filter_size), 'conv_w0')
 #   LAYER 1 (DECONV)
@@ -253,8 +253,8 @@ def train_model(learning_rate=1e-2,
                       + '_NOISE{0:.2f}'.format(float(init_noise)) \
                       + '_DECAY{0:.2f}'.format(float(noise_decay)) \
     # set updates
-    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=50.0)
-    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=50.0)
+    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=0.0)
+    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=0.0)
 
     # compile function
     print 'COMPILING'
@@ -292,8 +292,8 @@ def train_model(learning_rate=1e-2,
             # update function
             [input_energy, sample_energy, energy_grad_norm, generator_grad_norm] = update_function(input_data, hidden_data, sample_noise)
 
-            # print 'energy    gradient norm : ', energy_grad_norm
-            # print 'generator gradient norm : ', generator_grad_norm
+            print 'energy    gradient norm : ', energy_grad_norm
+            print 'generator gradient norm : ', generator_grad_norm
 
             # get output values
             epoch_train_input_energy  += input_energy.mean()
