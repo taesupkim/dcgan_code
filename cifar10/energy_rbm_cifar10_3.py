@@ -32,17 +32,17 @@ def plot_learning_curve(cost_values, cost_names, save_as):
     plt.savefig(save_as)
     plt.close()
 
-model_name  = 'ENERGY_RBM_CIFAR10_3'
+model_name  = 'ENERGY_RBM_CIFAR10_ALL_128'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
 
 
 num_channels = 3
-input_shape  = 16
+input_shape  = 32
 input_size   = input_shape*input_shape*num_channels
 num_display  = 16*16
-batch_size   = 64
+batch_size   = 128
 constant     = 1.0
 
 ##############################
@@ -71,14 +71,14 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 filter_size  = 5
 num_hiddens  = 100
 num_layers   = 4
-min_num_gen_filters = min_num_eng_filters = 64
+min_num_gen_filters = min_num_eng_filters = 128
 
 ###################
 # BUILD GENERATOR #
 ###################
-init_image_size  = 2
-num_gen_filters0 = min_num_gen_filters*4
-num_gen_filters1 = min_num_gen_filters*2
+init_image_size  = 4
+num_gen_filters0 = min_num_gen_filters
+num_gen_filters1 = min_num_gen_filters
 num_gen_filters2 = min_num_gen_filters
 # LAYER 0 (LINEAR)
 linear_w0 = gifn((num_hiddens, num_gen_filters0*init_image_size*init_image_size), 'linear_w0')
@@ -120,8 +120,8 @@ def generator_model(hidden_data,
 ######################
 min_image_size   = init_image_size
 num_eng_filters0 = min_num_eng_filters
-num_eng_filters1 = min_num_eng_filters*2
-num_eng_filters2 = min_num_eng_filters*4
+num_eng_filters1 = min_num_eng_filters
+num_eng_filters2 = min_num_eng_filters
 # LAYER 0 (DECONV)
 conv_w0   = difn((num_eng_filters0, num_channels, filter_size, filter_size), 'conv_w0')
 #   LAYER 1 (DECONV)
@@ -150,7 +150,7 @@ def energy_model(input_data,
                  is_training=True):
     h0 = dropout(tanh(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))), p=0.5, is_training=is_training)
     h1 = dropout(tanh(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
-    h2 = tanh(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
+    h2 = dropout(tanh(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2)), p=0.5, is_training=is_training)
     h2 = T.flatten(h2, 2)
     y  = softplus(T.dot(h2, linear_w3)+linear_b3)
     y  = T.sum(-y, axis=1)
