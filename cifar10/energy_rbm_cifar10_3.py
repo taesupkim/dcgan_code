@@ -184,8 +184,14 @@ def set_update_function(energy_params, generator_params, energy_updater, generat
     energy_cost    = input_energy.mean()-T.dot(importance_rate, sample_energy).sum()
     energy_updates = energy_updater(energy_params, energy_cost)
 
+    # get gradient norms
+    generator_grads     = T.grad(generator_cost, generator_params)
+    generator_grad_norm = T.sqrt(sum([T.sum(g**2) for g in generator_grads]))
+    energy_grads        = T.grad(energy_cost, energy_params)
+    energy_grad_norm    = T.sqrt(sum([T.sum(g**2) for g in energy_grads]))
+
     function_inputs  = [input_data, hidden_data, noise_data]
-    function_outputs = [input_energy, sample_energy]
+    function_outputs = [input_energy, sample_energy, energy_grad_norm, generator_grad_norm]
 
     function = theano.function(inputs=function_inputs,
                                outputs=function_outputs,
@@ -247,8 +253,8 @@ def train_model(learning_rate=1e-2,
                       + '_NOISE{0:.2f}'.format(float(init_noise)) \
                       + '_DECAY{0:.2f}'.format(float(noise_decay)) \
     # set updates
-    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=10.0)
-    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=10.0)
+    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=0.0)
+    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=0.0)
 
     # compile function
     print 'COMPILING'
@@ -284,7 +290,10 @@ def train_model(learning_rate=1e-2,
             hidden_data  = floatX(np_rng.uniform(low=-constant, high=constant, size=(input_data.shape[0], num_hiddens)))
             sample_noise = floatX(np_rng.normal(size=input_data.shape)*init_noise*(noise_decay**e))
             # update function
-            [input_energy, sample_energy] = update_function(input_data, hidden_data, sample_noise)
+            [input_energy, sample_energy, energy_grad_norm, generator_grad_norm] = update_function(input_data, hidden_data, sample_noise)
+
+            print 'energy    gradient norm : ', energy_grad_norm
+            print 'generator gradient norm : ', generator_grad_norm
 
             # get output values
             epoch_train_input_energy  += input_energy.mean()
