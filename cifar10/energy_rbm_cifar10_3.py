@@ -71,15 +71,15 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 filter_size  = 5
 num_hiddens  = 100
 num_layers   = 4
-min_num_gen_filters = min_num_eng_filters = 128
+min_num_gen_filters = min_num_eng_filters = 64
 
 ###################
 # BUILD GENERATOR #
 ###################
 init_image_size  = 4
-num_gen_filters0 = min_num_gen_filters
-num_gen_filters1 = min_num_gen_filters
-num_gen_filters2 = min_num_gen_filters
+num_gen_filters0 = min_num_gen_filters*4
+num_gen_filters1 = min_num_gen_filters*2
+num_gen_filters2 = min_num_gen_filters*1
 # LAYER 0 (LINEAR)
 linear_w0 = gifn((num_hiddens, num_gen_filters0*init_image_size*init_image_size), 'linear_w0')
 bn_w0     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'bn_w0')
@@ -108,10 +108,10 @@ def generator_model(hidden_data,
                     bn_b2,
                     conv_w3,
                     is_training=True):
-    h0     = tanh(batchnorm(X=T.dot(hidden_data, linear_w0), g=bn_w0, b=bn_b0))
+    h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=bn_w0, b=bn_b0))
     h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
-    h1     = tanh(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
-    h2     = tanh(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
+    h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
+    h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
     output = tanh(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)))
     return output
 
@@ -119,9 +119,9 @@ def generator_model(hidden_data,
 # BUILD ENERGY MODEL #
 ######################
 min_image_size   = init_image_size
-num_eng_filters0 = min_num_eng_filters
-num_eng_filters1 = min_num_eng_filters
-num_eng_filters2 = min_num_eng_filters
+num_eng_filters0 = min_num_eng_filters*1
+num_eng_filters1 = min_num_eng_filters*2
+num_eng_filters2 = min_num_eng_filters*4
 # LAYER 0 (DECONV)
 conv_w0   = difn((num_eng_filters0, num_channels, filter_size, filter_size), 'conv_w0')
 #   LAYER 1 (DECONV)
@@ -148,9 +148,9 @@ def energy_model(input_data,
                  linear_w3,
                  linear_b3,
                  is_training=True):
-    h0 = dropout(tanh(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))), p=0.5, is_training=is_training)
-    h1 = dropout(tanh(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
-    h2 = dropout(tanh(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2)), p=0.5, is_training=is_training)
+    h0 = dropout(relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))), p=0.5, is_training=is_training)
+    h1 = dropout(relu(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
+    h2 = dropout(relu(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2)), p=0.5, is_training=is_training)
     h2 = T.flatten(h2, 2)
     y  = softplus(T.dot(h2, linear_w3)+linear_b3)
     y  = T.sum(-y, axis=1)
