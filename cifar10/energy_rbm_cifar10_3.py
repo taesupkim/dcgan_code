@@ -108,10 +108,10 @@ def generator_model(hidden_data,
                     bn_b2,
                     conv_w3,
                     is_training=True):
-    h0     = tanh(batchnorm(X=T.dot(hidden_data, linear_w0), g=bn_w0, b=bn_b0))
+    h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=bn_w0, b=bn_b0))
     h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
-    h1     = tanh(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
-    h2     = tanh(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
+    h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
+    h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
     output = tanh(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)))
     return output
 
@@ -254,7 +254,7 @@ def train_model(learning_rate=1e-2,
                       + '_DECAY{0:.2f}'.format(float(noise_decay)) \
     # set updates
     energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=0.0)
-    generator_updater = Adagrad(lr=sharedX(learning_rate*10), regularizer=Regularizer(l2=lambda_gen), clipnorm=0.0)
+    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=0.0)
 
     # compile function
     print 'COMPILING'
