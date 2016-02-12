@@ -253,8 +253,8 @@ def train_model(learning_rate=1e-2,
                       + '_NOISE{0:.2f}'.format(float(init_noise)) \
                       + '_DECAY{0:.2f}'.format(float(noise_decay)) \
     # set updates
-    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=0.0)
-    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=0.0)
+    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=100.0)
+    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=10.0)
 
     # compile function
     print 'COMPILING'
@@ -292,8 +292,8 @@ def train_model(learning_rate=1e-2,
             # update function
             [input_energy, sample_energy, energy_grad_norm, generator_grad_norm] = update_function(input_data, hidden_data, sample_noise)
 
-            print 'energy    gradient norm : ', energy_grad_norm
-            print 'generator gradient norm : ', generator_grad_norm
+            # print 'energy    gradient norm : ', energy_grad_norm
+            # print 'generator gradient norm : ', generator_grad_norm
 
             # get output values
             epoch_train_input_energy  += input_energy.mean()
