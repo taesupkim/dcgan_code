@@ -292,13 +292,11 @@ def train_model(learning_rate=1e-2,
             # update function
             [input_energy, sample_energy, energy_grad_norm, generator_grad_norm] = update_function(input_data, hidden_data, sample_noise)
 
-            print 'energy    gradient norm : ', energy_grad_norm, 'generator gradient norm : ', generator_grad_norm
-
             # get output values
             epoch_train_input_energy  += input_energy.mean()
             epoch_train_sample_energy += sample_energy.mean()
             epoch_train_count         += 1.
-
+        print 'energy gradient norm : ', energy_grad_norm, 'generator gradient norm : ', generator_grad_norm
         epoch_train_input_energy  /= epoch_train_count
         epoch_train_sample_energy /= epoch_train_count
         train_input_energy.append(epoch_train_input_energy)
