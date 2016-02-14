@@ -69,7 +69,7 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 # INITIALIZE PARAMS #
 #####################
 filter_size  = 5
-num_hiddens  = 100
+num_hiddens  = 10
 num_layers   = 4
 min_num_gen_filters = min_num_eng_filters = 32
 
