@@ -69,7 +69,7 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 # INITIALIZE PARAMS #
 #####################
 filter_size  = 5
-num_hiddens  = 1000
+num_hiddens  = 100
 num_layers   = 4
 min_num_gen_filters = min_num_eng_filters = 128
 
@@ -124,6 +124,8 @@ num_eng_filters1 = min_num_eng_filters*2
 num_eng_filters2 = min_num_eng_filters*4
 # LAYER 0 (DECONV)
 conv_w0   = difn((num_eng_filters0, num_channels, filter_size, filter_size), 'conv_w0')
+bn_w0     = gain_ifn(num_eng_filters0, 'bn_w0')
+bn_b0     = bias_ifn(num_eng_filters0, 'bn_b0')
 #   LAYER 1 (DECONV)
 conv_w1   = difn((num_eng_filters1, num_eng_filters0, filter_size, filter_size), 'conv_w1')
 bn_w1     = gain_ifn(num_eng_filters1, 'bn_w1')
@@ -136,9 +138,11 @@ bn_b2     = bias_ifn(num_eng_filters2, 'bn_b2')
 linear_w3 = difn((num_eng_filters2*(min_image_size*min_image_size), num_hiddens), 'linear_w3')
 linear_b3 = bias_ifn(num_hiddens, 'linear_b3')
 # SET AS LIST
-energy_params = [conv_w0, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, linear_w3, linear_b3]
+energy_params = [conv_w0, bn_w0, bn_b0, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, linear_w3, linear_b3]
 def energy_model(input_data,
                  conv_w0,
+                 bn_w0,
+                 bn_b0,
                  conv_w1,
                  bn_w1,
                  bn_b1,
@@ -148,9 +152,9 @@ def energy_model(input_data,
                  linear_w3,
                  linear_b3,
                  is_training=True):
-    h0 = dropout(tanh(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))), p=0.5, is_training=is_training)
-    h1 = dropout(tanh(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
-    h2 = dropout(tanh(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2)), p=0.5, is_training=is_training)
+    h0 = dropout(tanh(batchnorm(dnn_conv(input_data, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w0, b=bn_b0)), p=0.5, is_training=is_training)
+    h1 = dropout(tanh(batchnorm(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
+    h2 = dropout(tanh(batchnorm(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2)), p=0.5, is_training=is_training)
     h2 = T.flatten(h2, 2)
     y  = softplus(T.dot(h2, linear_w3)+linear_b3)
     y  = T.sum(-y, axis=1)
@@ -253,8 +257,8 @@ def train_model(learning_rate=1e-2,
                       + '_NOISE{0:.2f}'.format(float(init_noise)) \
                       + '_DECAY{0:.2f}'.format(float(noise_decay)) \
     # set updates
-    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=5000.0)
-    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=500.0)
+    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=0.0)
+    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=0.0)
 
     # compile function
     print 'COMPILING'
