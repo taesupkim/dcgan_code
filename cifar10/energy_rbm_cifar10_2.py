@@ -32,7 +32,7 @@ def plot_learning_curve(cost_values, cost_names, save_as):
     plt.savefig(save_as)
     plt.close()
 
-model_name  = 'ENERGY_RBM_CIFAR10_64_10'
+model_name  = 'ENERGY_RBM_CIFAR10_ALL_256'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -71,14 +71,14 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 filter_size  = 5
 num_hiddens  = 10
 num_layers   = 4
-min_num_gen_filters = min_num_eng_filters = 64
+min_num_gen_filters = min_num_eng_filters = 256
 
 ###################
 # BUILD GENERATOR #
 ###################
 init_image_size  = 4
-num_gen_filters0 = min_num_gen_filters*4
-num_gen_filters1 = min_num_gen_filters*2
+num_gen_filters0 = min_num_gen_filters
+num_gen_filters1 = min_num_gen_filters
 num_gen_filters2 = min_num_gen_filters
 # LAYER 0 (LINEAR)
 linear_w0 = gifn((num_hiddens, num_gen_filters0*init_image_size*init_image_size), 'linear_w0')
@@ -120,10 +120,12 @@ def generator_model(hidden_data,
 ######################
 min_image_size   = init_image_size
 num_eng_filters0 = min_num_eng_filters
-num_eng_filters1 = min_num_eng_filters*2
-num_eng_filters2 = min_num_eng_filters*4
+num_eng_filters1 = min_num_eng_filters
+num_eng_filters2 = min_num_eng_filters
 # LAYER 0 (DECONV)
 conv_w0   = difn((num_eng_filters0, num_channels, filter_size, filter_size), 'conv_w0')
+bn_w0     = gain_ifn(num_eng_filters0, 'bn_w0')
+bn_b0     = bias_ifn(num_eng_filters0, 'bn_b0')
 #   LAYER 1 (DECONV)
 conv_w1   = difn((num_eng_filters1, num_eng_filters0, filter_size, filter_size), 'conv_w1')
 bn_w1     = gain_ifn(num_eng_filters1, 'bn_w1')
@@ -136,9 +138,11 @@ bn_b2     = bias_ifn(num_eng_filters2, 'bn_b2')
 linear_w3 = difn((num_eng_filters2*(min_image_size*min_image_size), num_hiddens), 'linear_w3')
 linear_b3 = bias_ifn(num_hiddens, 'linear_b3')
 # SET AS LIST
-energy_params = [conv_w0, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, linear_w3, linear_b3]
+energy_params = [conv_w0, bn_w0, bn_b0, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, linear_w3, linear_b3]
 def energy_model(input_data,
                  conv_w0,
+                 bn_w0,
+                 bn_b0,
                  conv_w1,
                  bn_w1,
                  bn_b1,
@@ -148,9 +152,9 @@ def energy_model(input_data,
                  linear_w3,
                  linear_b3,
                  is_training=True):
-    h0 = dropout(tanh(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))), p=0.5, is_training=is_training)
-    h1 = dropout(tanh(batchnorm(dnn_conv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
-    h2 = dropout(tanh(batchnorm(dnn_conv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2)), p=0.5, is_training=is_training)
+    h0 = dropout(tanh(batchnorm(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)), g=bn_w0, b=bn_b0)), p=0.5, is_training=is_training)
+    h1 = dropout(tanh(batchnorm(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
+    h2 = dropout(tanh(batchnorm(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2)), p=0.5, is_training=is_training)
     h2 = T.flatten(h2, 2)
     y  = softplus(T.dot(h2, linear_w3)+linear_b3)
     y  = T.sum(-y, axis=1)
@@ -184,8 +188,14 @@ def set_update_function(energy_params, generator_params, energy_updater, generat
     energy_cost    = input_energy.mean()-T.dot(importance_rate, sample_energy).sum()
     energy_updates = energy_updater(energy_params, energy_cost)
 
+    # get gradient norms
+    generator_grads     = T.grad(generator_cost, generator_params)
+    generator_grad_norm = T.sqrt(sum([T.sum(g**2) for g in generator_grads]))
+    energy_grads        = T.grad(energy_cost, energy_params)
+    energy_grad_norm    = T.sqrt(sum([T.sum(g**2) for g in energy_grads]))
+
     function_inputs  = [input_data, hidden_data, noise_data]
-    function_outputs = [input_energy, sample_energy]
+    function_outputs = [input_energy, sample_energy, energy_grad_norm, generator_grad_norm]
 
     function = theano.function(inputs=function_inputs,
                                outputs=function_outputs,
@@ -247,8 +257,8 @@ def train_model(learning_rate=1e-2,
                       + '_NOISE{0:.2f}'.format(float(init_noise)) \
                       + '_DECAY{0:.2f}'.format(float(noise_decay)) \
     # set updates
-    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=10.0)
-    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=10.0)
+    energy_updater    = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_eng), clipnorm=0.0)
+    generator_updater = Adagrad(lr=sharedX(learning_rate), regularizer=Regularizer(l2=lambda_gen), clipnorm=0.0)
 
     # compile function
     print 'COMPILING'
@@ -284,13 +294,13 @@ def train_model(learning_rate=1e-2,
             hidden_data  = floatX(np_rng.uniform(low=-constant, high=constant, size=(input_data.shape[0], num_hiddens)))
             sample_noise = floatX(np_rng.normal(size=input_data.shape)*init_noise*(noise_decay**e))
             # update function
-            [input_energy, sample_energy] = update_function(input_data, hidden_data, sample_noise)
+            [input_energy, sample_energy, energy_grad_norm, generator_grad_norm] = update_function(input_data, hidden_data, sample_noise)
 
             # get output values
             epoch_train_input_energy  += input_energy.mean()
             epoch_train_sample_energy += sample_energy.mean()
             epoch_train_count         += 1.
-
+        print 'energy gradient norm : ', energy_grad_norm, 'generator gradient norm : ', generator_grad_norm
         epoch_train_input_energy  /= epoch_train_count
         epoch_train_sample_energy /= epoch_train_count
         train_input_energy.append(epoch_train_input_energy)

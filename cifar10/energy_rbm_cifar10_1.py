@@ -71,7 +71,7 @@ train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_
 filter_size  = 5
 num_hiddens  = 10
 num_layers   = 4
-min_num_gen_filters = min_num_eng_filters = 32
+min_num_gen_filters = min_num_eng_filters = 64
 
 ###################
 # BUILD GENERATOR #
