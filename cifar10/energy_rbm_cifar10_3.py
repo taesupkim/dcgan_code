@@ -152,7 +152,7 @@ def energy_model(input_data,
                  linear_w3,
                  linear_b3,
                  is_training=True):
-    h0 = dropout(tanh(batchnorm(dnn_conv(input_data, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w0, b=bn_b0)), p=0.5, is_training=is_training)
+    h0 = dropout(tanh(batchnorm(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)), g=bn_w0, b=bn_b0)), p=0.5, is_training=is_training)
     h1 = dropout(tanh(batchnorm(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1)), p=0.5, is_training=is_training)
     h2 = dropout(tanh(batchnorm(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2)), p=0.5, is_training=is_training)
     h2 = T.flatten(h2, 2)
