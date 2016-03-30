@@ -475,7 +475,7 @@ if __name__=="__main__":
     #################
     # LOAD DATA SET #
     #################
-    train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_size=(input_shape, input_shape), batch_size=batch_size)
+    train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_size=(input_shape, input_shape), batch_size=model_config_dict['batch_size'])
 
     hidden_size_list = [100, 1000]
     num_filters_list = [32, 16]
