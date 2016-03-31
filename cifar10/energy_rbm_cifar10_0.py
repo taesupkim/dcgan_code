@@ -277,24 +277,7 @@ def set_evaluation_and_sampling_function(feature_function,
 ###########
 # SAMPLER #
 ###########
-def set_sampling_train_function(generator_function):
-
-    hidden_data = T.matrix(name='hidden_data',
-                           dtype=theano.config.floatX)
-
-    sample_data = generator_function(hidden_data, is_train=True)
-
-    function_inputs = [hidden_data,]
-    function_outputs = [sample_data,]
-
-    function = theano.function(inputs=function_inputs,
-                               outputs=function_outputs,
-                               on_unused_input='ignore')
-    return function
-###########
-# SAMPLER #
-###########
-def set_sampling_test_function(generator_function):
+def set_sampling_function(generator_function):
 
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
@@ -347,8 +330,7 @@ def train_model(train_stream,
     print '%.2f SEC '%(time()-t)
     print 'COMPILING SAMPLING FUNCTION'
     t=time()
-    sampling_train_function = set_sampling_train_function(generator_function=generator_function)
-    sampling_test_function  = set_sampling_test_function(generator_function=generator_function)
+    sampling_function = set_sampling_function(generator_function=generator_function)
     print '%.2f SEC '%(time()-t)
 
     # set fixed hidden data for sampling
@@ -451,15 +433,11 @@ def train_model(train_stream,
         #                     save_as=save_as)
 
         # sample data
-        save_as = samples_dir + '/' + model_test_name + '_TRAIN_SAMPLES{}.png'.format(e+1)
-        train_sample_data = sampling_train_function(fixed_hidden_data)[0]
-        train_sample_data = np.asarray(train_sample_data)
-        color_grid_vis(inverse_transform(train_sample_data).transpose([0,2,3,1]), (16, 16), save_as)
+        save_as = samples_dir + '/' + model_test_name + '_SAMPLES{}.png'.format(e+1)
+        sample_data = sampling_function(fixed_hidden_data)[0]
+        sample_data = np.asarray(sample_data)
+        color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
 
-        save_as = samples_dir + '/' + model_test_name + '_TEST_SAMPLES{}.png'.format(e+1)
-        test_sample_data  = sampling_test_function(fixed_hidden_data)[0]
-        test_sample_data  = np.asarray(test_sample_data)
-        color_grid_vis(inverse_transform(test_sample_data).transpose([0,2,3,1]), (16, 16), save_as)
 
 if __name__=="__main__":
 
