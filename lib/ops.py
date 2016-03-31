@@ -9,8 +9,6 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from rng import t_rng
 
-t_rng = RandomStreams()
-
 def l2normalize(x, axis=1, e=1e-8, keepdims=True):
     return x/l2norm(x, axis=axis, e=e, keepdims=keepdims)
 

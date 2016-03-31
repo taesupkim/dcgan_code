@@ -382,6 +382,9 @@ def train_model(train_stream,
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
+
+            print hidden_data.mean()
+            raw_input()
             noise_data   = np_rng.normal(size=input_data.shape)
             noise_data   = floatX(noise_data*model_config_dict['init_noise']*(model_config_dict['noise_decay']**e))
 
