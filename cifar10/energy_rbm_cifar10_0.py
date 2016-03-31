@@ -136,7 +136,7 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
         feature_std_inv = T.inv(T.exp(feature_std)+1e-10)
         e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
-        e += T.sum(0.5*T.sqr(feature_std_inv)*T.sqr(feature_data-feature_mean), axis=1, keepdims=True)
+        e += 0.5*T.sum(T.sqr(feature_std_inv)*T.sqr(feature_data-feature_mean), axis=1)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -386,6 +386,7 @@ def train_model(train_stream,
             noise_data   = floatX(np_rng.normal(size=input_data.shape))
             noise_data   = noise_data*model_config_dict['init_noise']*(model_config_dict['noise_decay']**e)
 
+            print  noise_data.shape
             # update generator
             generator_update_inputs = [hidden_data,
                                        noise_data,
