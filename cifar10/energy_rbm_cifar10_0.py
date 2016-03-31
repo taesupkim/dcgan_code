@@ -136,7 +136,7 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
         feature_std_inv = T.inv(T.exp(feature_std)+1e-10)
         e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
-        e += 0.5*T.sqr(feature_std_inv)*T.sum(T.sqr(feature_data-feature_mean), axis=1, keepdims=True)
+        e += T.sum(0.5*T.sqr(feature_std_inv)*T.sqr(feature_data-feature_mean), axis=1, keepdims=True)
         return e
 
     return [feature_function, energy_function, energy_params]
