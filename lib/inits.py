@@ -20,7 +20,10 @@ class Normal(object):
         self.loc = loc
 
     def __call__(self, shape, name=None):
-        return sharedX(np_rng.normal(loc=self.loc, scale=self.scale, size=shape), name=name)
+        value = np_rng.normal(loc=self.loc, scale=self.scale, size=shape)
+        print value[0][:10]
+        raw_input()
+        return sharedX(value, name=name)
 
 class Orthogonal(object):
     """ benanne lasagne ortho init (faster than qr approach)"""

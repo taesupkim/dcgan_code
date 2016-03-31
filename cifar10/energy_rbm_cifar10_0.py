@@ -68,8 +68,6 @@ def set_generator_model(num_hiddens, min_num_gen_filters):
     num_gen_filters2 = min_num_gen_filters*1
     # LAYER 0 (LINEAR)
     linear_w0 = gifn((num_hiddens, num_gen_filters0*init_image_size*init_image_size), 'gen_linear_w0')
-    print linear_w0[0][:10]
-    raw_input()
     bn_w0     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_w0')
     bn_b0     = bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_b0')
     # LAYER 1 (DECONV)
