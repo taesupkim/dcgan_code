@@ -133,10 +133,10 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
     energy_params = [conv_w0, conv_b0, conv_w1, conv_b1, conv_w2, conv_b2, feature_mean, feature_std, linear_w0, linear_b0]
 
     def energy_function(feature_data, is_train=True):
-        feature_std_inv = T.inv(T.exp(feature_std+feature_mean)+1e-10)
+        feature_std_inv = T.inv(T.exp(feature_std)+1e-10)
         e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
-        e += 0.5*T.sqr(feature_std_inv)*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+        e += 0.5*T.sqr(feature_std_inv)*T.sum(T.sqr(feature_data-feature_mean), axis=1, keepdims=True)
         return e
 
     return [feature_function, energy_function, energy_params]
