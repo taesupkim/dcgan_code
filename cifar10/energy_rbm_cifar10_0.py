@@ -394,7 +394,11 @@ def train_model(train_stream,
             epoch_train_input_energy  += input_energy_val.mean()
             epoch_train_sample_energy += sample_energy_val.mean()
             epoch_train_count         += 1.
-        print input_energy_val.mean(), sample_energy_val.mean()
+
+            if num_data==80:
+                print input_energy_val.mean(), sample_energy_val.mean()
+
+
         epoch_train_input_energy  /= epoch_train_count
         epoch_train_sample_energy /= epoch_train_count
 
