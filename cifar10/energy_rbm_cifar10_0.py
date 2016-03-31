@@ -447,17 +447,17 @@ def train_model(train_stream,
         print '     sample energy    : ', epoch_valid_sample_energy
         print '================================================================'
 
-        # plot curve data
-        save_as = model_test_name + '_ENERGY_CURVE.png'
-        plot_learning_curve(cost_values=[train_input_energy,
-                                         train_sample_energy,
-                                         valid_input_energy,
-                                         valid_sample_energy],
-                            cost_names=['Input Energy (train)',
-                                        'Sample Energy (train)',
-                                        'Input Energy (valid)',
-                                        'Sample Energy (valid)'],
-                            save_as=save_as)
+        # # plot curve data
+        # save_as = model_test_name + '_ENERGY_CURVE.png'
+        # plot_learning_curve(cost_values=[train_input_energy,
+        #                                  train_sample_energy,
+        #                                  valid_input_energy,
+        #                                  valid_sample_energy],
+        #                     cost_names=['Input Energy (train)',
+        #                                 'Sample Energy (train)',
+        #                                 'Input Energy (valid)',
+        #                                 'Sample Energy (valid)'],
+        #                     save_as=save_as)
 
         # sample data
         save_as = samples_dir + '/' + model_test_name + '_TRAIN_SAMPLES{}.png'.format(e+1)
