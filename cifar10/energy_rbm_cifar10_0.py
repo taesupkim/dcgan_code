@@ -512,7 +512,7 @@ if __name__=="__main__":
                                                       + '_d{}'.format(int(1 if noise_decay is 1.0 else 0)) \
 
                                     train_model(train_stream=train_stream,
-                                                valid_stream=valid_stream,
+                                                valid_stream=test_stream,
                                                 energy_optimizer=energy_optimizer,
                                                 generator_optimizer=generator_optimizer,
                                                 model_config_dict=model_config_dict,
