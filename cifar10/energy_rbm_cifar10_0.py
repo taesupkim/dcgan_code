@@ -12,7 +12,7 @@ from lib.vis import color_grid_vis
 from lib.rng import py_rng, np_rng
 from lib.ops import batchnorm, conv_cond_concat, deconv, dropout, l2normalize
 from lib.theano_utils import floatX, sharedX
-
+import matplotlib.pyplot as plt
 from load import cifar10
 
 def transform(X):
@@ -23,10 +23,7 @@ def inverse_transform(X):
     return X
 
 def plot_learning_curve(cost_values, cost_names, save_as):
-    import matplotlib.pyplot as plt
     for cost in cost_values:
-        print cost
-
         plt.plot(xrange(len(cost)), cost)
 
     plt.legend(cost_names, loc='upper right')
