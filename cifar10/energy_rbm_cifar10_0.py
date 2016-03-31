@@ -125,8 +125,8 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
 
 
     # ENERGY LAYER (LINEAR)
-    feature_mean = bias_ifn(num_eng_filters2*(min_image_size*min_image_size), 'feature_mean')
-    feature_std  = bias_ifn(num_eng_filters2*(min_image_size*min_image_size), 'feature_std')
+    feature_mean = bias_ifn((num_eng_filters2*(min_image_size*min_image_size), ), 'feature_mean')
+    feature_std  = bias_ifn((num_eng_filters2*(min_image_size*min_image_size), ), 'feature_std')
     linear_w0    = difn((num_eng_filters2*(min_image_size*min_image_size), num_hiddens), 'eng_linear_w0')
     linear_b0    = bias_ifn(num_hiddens, 'eng_linear_b0')
 
