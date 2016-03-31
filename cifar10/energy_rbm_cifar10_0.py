@@ -380,13 +380,14 @@ def train_model(train_stream,
         for b, train_batch_data in enumerate(train_batch_iters):
             # set update function inputs
             input_data   = transform(train_batch_data[0])
+            num_data     = input_data.shape[0]
+
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
-                                                 size=(model_config_dict['batch_size'], model_config_dict['hidden_size'])))
+                                                 size=(num_data, model_config_dict['hidden_size'])))
             noise_data   = floatX(np_rng.normal(size=input_data.shape))
             noise_data   = noise_data*model_config_dict['init_noise']*(model_config_dict['noise_decay']**e)
 
-            print  noise_data.shape
             # update generator
             generator_update_inputs = [hidden_data,
                                        noise_data,
@@ -416,10 +417,11 @@ def train_model(train_stream,
         valid_batch_iters = valid_stream.get_epoch_iterator()
         for b, valid_batch_data in enumerate(valid_batch_iters):
             # set function inputs
-            input_data  = transform(valid_batch_data[0])
+            input_data   = transform(valid_batch_data[0])
+            num_data     = input_data.shape[0]
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
-                                                 size=(model_config_dict['batch_size'], model_config_dict['hidden_size'])))
+                                                 size=(num_data, model_config_dict['hidden_size'])))
             # evaluate model
             evaluation_input = [input_data,  hidden_data]
             outputs = evaluation_function(*evaluation_input)
