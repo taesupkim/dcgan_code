@@ -233,6 +233,7 @@ def set_generator_update_function(feature_function,
 
     # update function input
     update_function_inputs  = [hidden_data,
+                               noise_data,
                                annealing]
 
     # update function output
