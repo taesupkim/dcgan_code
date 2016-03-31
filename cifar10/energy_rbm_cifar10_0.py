@@ -397,6 +397,8 @@ def train_model(train_stream,
                                     hidden_data,
                                     e]
             [input_energy, sample_energy, ] = energy_updater(*energy_update_inputs)
+            print input_energy.mean(), sample_energy.mean()
+            raw_input()
             # get output values
             epoch_train_input_energy  += input_energy.mean()
             epoch_train_sample_energy += sample_energy.mean()
