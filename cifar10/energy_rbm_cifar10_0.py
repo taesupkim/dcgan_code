@@ -392,15 +392,11 @@ def train_model(train_stream,
                                        e]
             [sample_energy, ] = generator_updater(*generator_update_inputs)
 
-            print sample_energy.mean()
-            raw_input()
             # update energy function
             energy_update_inputs = [input_data,
                                     hidden_data,
                                     e]
             [input_energy, sample_energy, ] = energy_updater(*energy_update_inputs)
-            print sample_energy.mean(), input_energy.mean()
-            raw_input()
             # get output values
             epoch_train_input_energy  += input_energy.mean()
             epoch_train_sample_energy += sample_energy.mean()
