@@ -21,7 +21,6 @@ class Normal(object):
 
     def __call__(self, shape, name=None):
         value = np_rng.normal(loc=self.loc, scale=self.scale, size=shape)
-        print value.mean()
         return sharedX(value, name=name)
 
 class Orthogonal(object):

@@ -476,7 +476,7 @@ if __name__=="__main__":
 
     hidden_size_list = [100, 1000]
     num_filters_list = [32, 16]
-    lr_list          = [1e-3]
+    lr_list          = [1e-4]
     dropout_list     = [False, ]
     lambda_eng_list  = [1e-5, 1e-10]
     lambda_gen_list  = [1e-5, 1e-10]
