@@ -396,7 +396,7 @@ def train_model(train_stream,
             epoch_train_count         += 1.
 
             if num_data==80:
-                print input_energy_val.mean(), sample_energy_val.mean()
+                print input_data.mean(), hidden_data.mean(), noise_data.mean()
 
 
         epoch_train_input_energy  /= epoch_train_count
