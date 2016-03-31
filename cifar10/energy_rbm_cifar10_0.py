@@ -377,7 +377,6 @@ def train_model(train_stream,
         for b, train_batch_data in enumerate(train_batch_iters):
             # set update function inputs
             input_data   = transform(train_batch_data[0])
-            print input_data.mean()
             num_data     = input_data.shape[0]
 
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
