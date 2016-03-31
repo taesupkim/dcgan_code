@@ -114,9 +114,12 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
     conv_b2   = bias_ifn(num_eng_filters2, 'feat_conv_b2')
 
     def feature_function(input_data, is_train=True):
+        # h0 = dropout(relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
+        # h1 = dropout(relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)) + conv_b1.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
+        # h2 = dropout(tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
         h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x'))
-        h1 = dropout(relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)) + conv_b1.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
-        h2 = dropout(tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
+        h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)) + conv_b1.dimshuffle('x', 0, 'x', 'x'))
+        h2 = tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x'))
         f  = T.flatten(h2, 2)
         return f
 
