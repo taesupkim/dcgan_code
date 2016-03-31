@@ -7,6 +7,7 @@ from fuel.datasets.hdf5 import H5PYDataset
 from fuel.schemes import ShuffledScheme, SequentialScheme
 from fuel.streams import DataStream
 from fuel.transformers.image import RandomFixedSizeCrop
+from fuel.datasets.imagenet import ILSVRC2010
 
 def cifar10(ntrain=None, nval=None, ntest=None, window_size=(32, 32), batch_size=128):
 
