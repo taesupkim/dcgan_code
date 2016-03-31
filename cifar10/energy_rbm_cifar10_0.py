@@ -377,13 +377,14 @@ def train_model(train_stream,
         for b, train_batch_data in enumerate(train_batch_iters):
             # set update function inputs
             input_data   = transform(train_batch_data[0])
+            print input_data.mean()
             num_data     = input_data.shape[0]
 
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
-            noise_data   = floatX(np_rng.normal(size=input_data.shape))
-            noise_data   = noise_data*model_config_dict['init_noise']*(model_config_dict['noise_decay']**e)
+            noise_data   = np_rng.normal(size=input_data.shape)
+            noise_data   = floatX(noise_data*model_config_dict['init_noise']*(model_config_dict['noise_decay']**e))
 
             # update generator
             generator_update_inputs = [hidden_data,
@@ -447,17 +448,17 @@ def train_model(train_stream,
         print '     sample energy    : ', epoch_valid_sample_energy
         print '================================================================'
 
-        # # plot curve data
-        # save_as = model_test_name + '_ENERGY_CURVE.png'
-        # plot_learning_curve(cost_values=[train_input_energy,
-        #                                  train_sample_energy,
-        #                                  valid_input_energy,
-        #                                  valid_sample_energy],
-        #                     cost_names=['Input Energy (train)',
-        #                                 'Sample Energy (train)',
-        #                                 'Input Energy (valid)',
-        #                                 'Sample Energy (valid)'],
-        #                     save_as=save_as)
+        # plot curve data
+        save_as = model_test_name + '_ENERGY_CURVE.png'
+        plot_learning_curve(cost_values=[train_input_energy,
+                                         train_sample_energy,
+                                         valid_input_energy,
+                                         valid_sample_energy],
+                            cost_names=['Input Energy (train)',
+                                        'Sample Energy (train)',
+                                        'Input Energy (valid)',
+                                        'Sample Energy (valid)'],
+                            save_as=save_as)
 
         # sample data
         save_as = samples_dir + '/' + model_test_name + '_TRAIN_SAMPLES{}.png'.format(e+1)
