@@ -383,20 +383,20 @@ def train_model(train_stream,
                                        noise_data,
                                        e]
             [sample_energy_val, ] = generator_updater(*generator_update_inputs)
-
+            if num_data==80:
+                print sample_energy_val.mean()
             # update energy function
             energy_update_inputs = [input_data,
                                     hidden_data,
                                     e]
             [input_energy_val, sample_energy_val, ] = energy_updater(*energy_update_inputs)
-
+            if num_data==80:
+                print sample_energy_val.mean(), input_energy_val.mean(), noise_data.mean()
             # get output values
             epoch_train_input_energy  += input_energy_val.mean()
             epoch_train_sample_energy += sample_energy_val.mean()
             epoch_train_count         += 1.
 
-            if num_data==80:
-                print input_data.mean(), hidden_data.mean(), noise_data.mean()
 
 
         epoch_train_input_energy  /= epoch_train_count
