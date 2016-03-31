@@ -132,11 +132,11 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
 
     energy_params = [conv_w0, conv_b0, conv_w1, conv_b1, conv_w2, conv_b2, feature_mean, feature_std, linear_w0, linear_b0]
 
-    def energy_function(input_data, is_train=True):
+    def energy_function(feature_data, is_train=True):
         feature_std_inv = T.inv(T.exp(feature_std)+1e-10)
-        e = softplus(T.dot(input_data*feature_std_inv, linear_w0)+linear_b0)
+        e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
-        e += 0.5*T.sqr(feature_std_inv)*T.sum(T.sqr(input_data-feature_mean), axis=1, keepdims=True)
+        e += 0.5*T.sqr(feature_std_inv)*T.sum(T.sqr(feature_data-feature_mean), axis=1, keepdims=True)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -481,7 +481,7 @@ if __name__=="__main__":
     #################
     # LOAD DATA SET #
     #################
-    train_data, test_data, train_stream, valid_stream, test_stream = cifar10(window_size=(input_shape, input_shape), batch_size=model_config_dict['batch_size'])
+    train_data, test_data, train_stream, valid_stream, test_stream = cifar10(batch_size=model_config_dict['batch_size'])
 
     hidden_size_list = [100, 1000]
     num_filters_list = [32, 16]
