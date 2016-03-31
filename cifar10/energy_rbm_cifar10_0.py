@@ -6,7 +6,7 @@ import theano.tensor as T
 from theano.sandbox.cuda.dnn import dnn_conv
 from collections import OrderedDict
 from lib.activations import Rectify, Tanh, Softplus
-from lib.updates import Adagrad, Regularizer
+from lib.updates import Adagrad, Regularizer, RMSprop
 from lib.inits import Normal, Constant
 from lib.vis import color_grid_vis
 from lib.rng import py_rng, np_rng
@@ -476,7 +476,7 @@ if __name__=="__main__":
 
     hidden_size_list = [100, 1000]
     num_filters_list = [32, 16]
-    lr_list          = [1e-4]
+    lr_list          = [1e-5]
     dropout_list     = [False, ]
     lambda_eng_list  = [1e-5, 1e-10]
     lambda_gen_list  = [1e-5, 1e-10]
@@ -498,9 +498,9 @@ if __name__=="__main__":
                                     model_config_dict['noise_decay']         = noise_decay
 
                                     # set updates
-                                    energy_optimizer    = Adagrad(lr=sharedX(lr),
+                                    energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = Adagrad(lr=sharedX(lr),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr*10.),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
