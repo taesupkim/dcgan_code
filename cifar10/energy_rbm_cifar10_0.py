@@ -86,7 +86,7 @@ def set_generator_model(num_hiddens, min_num_gen_filters):
     conv_b3   = bias_ifn(num_channels, 'gen_conv_b3')
     generator_params = [linear_w0, bn_w0, bn_b0, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, conv_w3, conv_b3]
 
-    def generator_function(hidden_data, is_training=True):
+    def generator_function(hidden_data, is_train=True):
         h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=bn_w0, b=bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
@@ -113,10 +113,10 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
     conv_w2   = difn((num_eng_filters2, num_eng_filters1, filter_size, filter_size), 'feat_conv_w2')
     conv_b2   = bias_ifn(num_eng_filters2, 'feat_conv_b2')
 
-    def feature_function(input_data, is_training):
-        h0 = dropout(relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_training)
-        h1 = dropout(relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)) + conv_b1.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_training)
-        h2 = dropout(tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_training)
+    def feature_function(input_data, is_train):
+        h0 = dropout(relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
+        h1 = dropout(relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)) + conv_b1.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
+        h2 = dropout(tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
         f  = T.flatten(h2, 2)
         return f
 
@@ -127,7 +127,7 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
     linear_b0    = bias_ifn(num_hiddens, 'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0, conv_w1, conv_b1, conv_w2, conv_b2, feature_mean, feature_std, linear_w0, linear_b0]
-    def energy_function(input_data, is_training):
+    def energy_function(input_data, is_train):
         feature_std_inv = T.inv(T.exp(feature_std)+1e-10)
         e = softplus(T.dot(input_data*feature_std_inv, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
@@ -157,15 +157,15 @@ def set_energy_update_function(feature_function,
     annealing_scale = 1.0#/(1.0+99.0*(0.9**annealing))
 
     # get sample data
-    sample_data = generator_function(hidden_data, is_training=True)
+    sample_data = generator_function(hidden_data, is_train=True)
 
     # get feature data
-    input_feature  = feature_function(input_data, is_training=True)
-    sample_feature = feature_function(sample_data, is_training=True)
+    input_feature  = feature_function(input_data, is_train=True)
+    sample_feature = feature_function(sample_data, is_train=True)
 
     # get energy value
-    input_energy  = energy_function(input_feature, is_training=True)
-    sample_energy = energy_function(sample_feature, is_training=True)
+    input_energy  = energy_function(input_feature, is_train=True)
+    sample_energy = energy_function(sample_feature, is_train=True)
 
     # get energy function cost (positive, negative)
     positive_phase      = T.mean(input_energy*annealing_scale)
@@ -211,14 +211,14 @@ def set_generator_update_function(feature_function,
     annealing_scale = 1.0#/(1.0+99.0*(0.9**annealing))
 
     # get sample data
-    sample_data = generator_function(hidden_data, is_training=True)
+    sample_data = generator_function(hidden_data, is_train=True)
     sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
-    sample_feature = feature_function(sample_data, is_training=True)
+    sample_feature = feature_function(sample_data, is_train=True)
 
     # get energy value
-    sample_energy = energy_function(sample_feature, is_training=True)
+    sample_energy = energy_function(sample_feature, is_train=True)
 
     # get generator update cost
     generator_updates_cost = T.mean(sample_energy*annealing_scale)
@@ -252,15 +252,15 @@ def set_evaluation_and_sampling_function(feature_function,
                            dtype=theano.config.floatX)
 
     # get sample data
-    sample_data = generator_function(hidden_data, is_training=False)
+    sample_data = generator_function(hidden_data, is_train=False)
 
     # get feature data
-    input_feature  = feature_function(input_data, is_training=False)
-    sample_feature = feature_function(sample_data, is_training=False)
+    input_feature  = feature_function(input_data, is_train=False)
+    sample_feature = feature_function(sample_data, is_train=False)
 
     # get energy value
-    input_energy  = energy_function(input_feature, is_training=False)
-    sample_energy = energy_function(sample_feature, is_training=False)
+    input_energy  = energy_function(input_feature, is_train=False)
+    sample_energy = energy_function(sample_feature, is_train=False)
 
     function_inputs = [input_data,
                        hidden_data]
@@ -279,7 +279,7 @@ def set_sampling_train_function(generator_function):
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
 
-    sample_data = generator_function(hidden_data, is_training=True)
+    sample_data = generator_function(hidden_data, is_train=True)
 
     function_inputs = [hidden_data,]
     function_outputs = [sample_data,]
@@ -296,7 +296,7 @@ def set_sampling_test_function(generator_function):
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
 
-    sample_data = generator_function(hidden_data, is_training=False)
+    sample_data = generator_function(hidden_data, is_train=False)
 
     function_inputs = [hidden_data,]
     function_outputs = [sample_data,]
