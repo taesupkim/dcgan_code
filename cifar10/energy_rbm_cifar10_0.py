@@ -357,14 +357,6 @@ def train_model(train_stream,
                                                size=(model_config_dict['num_display'], model_config_dict['hidden_size'])))
 
     print 'START TRAINING'
-
-    # train output
-    train_input_energy  = []
-    train_sample_energy = []
-    # valid output
-    valid_input_energy  = []
-    valid_sample_energy = []
-
     # for each epoch
     for e in xrange(model_config_dict['epochs']):
         # train phase
@@ -390,24 +382,21 @@ def train_model(train_stream,
             generator_update_inputs = [hidden_data,
                                        noise_data,
                                        e]
-            [sample_energy, ] = generator_updater(*generator_update_inputs)
+            [sample_energy_val, ] = generator_updater(*generator_update_inputs)
 
             # update energy function
             energy_update_inputs = [input_data,
                                     hidden_data,
                                     e]
-            [input_energy, sample_energy, ] = energy_updater(*energy_update_inputs)
-            print input_energy.mean(), sample_energy.mean()
-            raw_input()
+            [input_energy_val, sample_energy_val, ] = energy_updater(*energy_update_inputs)
+
             # get output values
-            epoch_train_input_energy  += input_energy.mean()
-            epoch_train_sample_energy += sample_energy.mean()
+            epoch_train_input_energy  += input_energy_val.mean()
+            epoch_train_sample_energy += sample_energy_val.mean()
             epoch_train_count         += 1.
 
         epoch_train_input_energy  /= epoch_train_count
         epoch_train_sample_energy /= epoch_train_count
-        train_input_energy.append(epoch_train_input_energy)
-        train_sample_energy.append(epoch_train_sample_energy)
 
         # validation phase
         epoch_valid_input_energy     = 0.
@@ -430,8 +419,6 @@ def train_model(train_stream,
 
         epoch_valid_input_energy  /= epoch_valid_count
         epoch_valid_sample_energy /= epoch_valid_count
-        valid_input_energy.append(epoch_valid_input_energy)
-        valid_sample_energy.append(epoch_valid_sample_energy)
 
         print '================================================================'
         print 'EPOCH #{}'.format(e), model_test_name
