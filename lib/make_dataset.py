@@ -1,0 +1,67 @@
+import os
+import h5py
+import numpy
+from PIL import Image
+from fuel.datasets.hdf5 import H5PYDataset
+
+IMAGENET_FOLDER = '/data/lisa/data/ImageNet_ILSVRC2010/pylearn2_h5/'
+IMAGENET_TRAIN  = 'imagenet_2010_train.h5'
+IMAGENET_TEST   = 'imagenet_2010_test.h5'
+IMAGENET_VALID  = 'imagenet_2010_valid.h5'
+
+def make_imagenet_dataset(original_hdf5_path,
+                          fuel_hdf5_path,
+                          dataset_type,
+                          resize_shape):
+
+    original_file = h5py.File(name=original_hdf5_path,
+                              mode='r')
+    fuel_file     = h5py.File(name=fuel_hdf5_path,
+                              mode='w')
+
+    # get original shape
+    original_shape = original_file['x'].shape
+    num_images     = original_shape[0]
+
+    # set new dataset for fuel file
+    image_data = fuel_file.create_dataset(name='image_data',
+                                          shape=original_shape,
+                                          dtype='uint8')
+
+    for idx, original_image in enumerate(original_file['x']):
+        original_image = Image.fromarray(numpy.transpose(original_image, (1, 2, 0)))
+        original_image.thumbnail(resize_shape, Image.ANTIALIAS)
+
+        original_image = numpy.asarray(original_image)
+        image_data[idx] = numpy.transpose(original_image, (2, 0, 1))
+    image_data.dims[0].label = 'batch'
+    image_data.dims[1].label = 'channel'
+    image_data.dims[2].label = 'height'
+    image_data.dims[3].label = 'width'
+
+    split_dict = { dataset_type : {'image_data': (0, num_images)}}
+    fuel_file .attrs['split'] = H5PYDataset.create_split_array(split_dict)
+
+    fuel_file.flush()
+    fuel_file.close()
+
+    original_file.close()
+
+    print 'DONE : {} (num of images :{})'.format(fuel_hdf5_path, num_images)
+
+
+if __name__=="__main__":
+    output_folder = '/data/lisatmp4/taesup/data/imagenet64x64/'
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    resize_shape = (64, 64)
+    make_imagenet_dataset(original_hdf5_path=IMAGENET_FOLDER+IMAGENET_TRAIN,
+                          fuel_hdf5_path=output_folder+'imagenet64x64_train.hdf5',
+                          dataset_type='train',
+                          resize_shape=resize_shape)
+
+    make_imagenet_dataset(original_hdf5_path=IMAGENET_FOLDER+IMAGENET_VALID,
+                          fuel_hdf5_path=output_folder+'imagenet64x64_valid.hdf5',
+                          dataset_type='valid',
+                          resize_shape=resize_shape)
