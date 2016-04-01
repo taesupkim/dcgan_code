@@ -30,7 +30,7 @@ def plot_learning_curve(cost_values, cost_names, save_as):
     plt.savefig(save_as)
     plt.close()
 
-model_name  = 'ENERGY_RBM_CIFAR10_NEW'
+model_name  = 'ENERGY_RBM_CIFAR10_LARGE'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -445,7 +445,7 @@ if __name__=="__main__":
     model_config_dict['batch_size']          = 128
     model_config_dict['num_display']         = 16*16
     model_config_dict['hidden_distribution'] = 1.
-    model_config_dict['epochs']              = 100
+    model_config_dict['epochs']              = 200
 
     #################
     # LOAD DATA SET #
@@ -453,13 +453,13 @@ if __name__=="__main__":
     train_data, test_data, train_stream, test_stream = cifar10(batch_size=model_config_dict['batch_size'])
 
     hidden_size_list = [100, 1000]
-    num_filters_list = [32, 16]
+    num_filters_list = [64]
     lr_list          = [1e-5]
     dropout_list     = [False, ]
-    lambda_eng_list  = [1e-5, 1e-10]
-    lambda_gen_list  = [1e-5, 1e-10]
-    init_noise_list  = [1e-2, 1e-3]
-    noise_decay_list = [1.00, 0.98]
+    lambda_eng_list  = [1e-5]
+    lambda_gen_list  = [1e-5]
+    init_noise_list  = [1e-2]
+    noise_decay_list = [0.98]
 
     for lr in lr_list:
         for num_filters in num_filters_list:
