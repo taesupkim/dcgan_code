@@ -452,14 +452,14 @@ if __name__=="__main__":
     #################
     train_data, test_data, train_stream, test_stream = svhn(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [100]
-    num_filters_list = [16]
+    hidden_size_list = [10, 100]
+    num_filters_list = [32]
     lr_list          = [1e-5]
     dropout_list     = [False, ]
-    lambda_eng_list  = [1e-5, 1e-10]
-    lambda_gen_list  = [1e-5, 1e-10]
-    init_noise_list  = [1e-2, 1e-3]
-    noise_decay_list = [1.00, 0.98]
+    lambda_eng_list  = [1e-5]
+    lambda_gen_list  = [1e-5]
+    init_noise_list  = [1e-2]
+    noise_decay_list = [0.98]
 
     for lr in lr_list:
         for num_filters in num_filters_list:
