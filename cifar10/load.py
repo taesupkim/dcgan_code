@@ -31,8 +31,8 @@ def cifar10(ntrain=None,  ntest=None, window_size=(32, 32), batch_size=128):
 
 def svhn(ntrain=None,  ntest=None, window_size=(32, 32), batch_size=128):
 
-    tr_data = SVHN(which_sets=('train',), sources=('features',))
-    te_data = SVHN(which_sets=('test',), sources=('features',))
+    tr_data = SVHN(which_format=2, which_sets=('train',), sources=('features',))
+    te_data = SVHN(which_format=2, which_sets=('test',), sources=('features',))
 
     if ntrain is None:
         ntrain = tr_data.num_examples
