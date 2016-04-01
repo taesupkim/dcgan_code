@@ -3,7 +3,7 @@ import h5py
 import numpy
 from PIL import Image
 from fuel.datasets.hdf5 import H5PYDataset
-
+import glob
 IMAGENET_FOLDER = '/data/lisa/data/ImageNet_ILSVRC2010/pylearn2_h5/'
 IMAGENET_TRAIN  = 'imagenet_2010_train.h5'
 IMAGENET_TEST   = 'imagenet_2010_test.h5'
@@ -22,10 +22,11 @@ def make_imagenet_dataset(original_hdf5_path,
     # get original shape
     original_shape = original_file['x'].shape
     num_images     = original_shape[0]
+    num_channels   = original_shape[1]
 
     # set new dataset for fuel file
     image_data = fuel_file.create_dataset(name='image_data',
-                                          shape=original_shape,
+                                          shape=(num_images, num_channels) + resize_shape,
                                           dtype='uint8')
 
     for idx, original_image in enumerate(original_file['x']):
@@ -50,17 +51,22 @@ def make_imagenet_dataset(original_hdf5_path,
     print 'DONE : {} (num of images :{})'.format(fuel_hdf5_path, num_images)
 
 
+def make_celeb_dataset():
+    image_list = glob.glob("/home/adam/*.txt")
+
 if __name__=="__main__":
     output_folder = '/data/lisatmp4/taesup/data/imagenet64x64/'
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
     resize_shape = (64, 64)
+    print 'START TRAINING SET'
     make_imagenet_dataset(original_hdf5_path=IMAGENET_FOLDER+IMAGENET_TRAIN,
                           fuel_hdf5_path=output_folder+'imagenet64x64_train.hdf5',
                           dataset_type='train',
                           resize_shape=resize_shape)
 
+    print 'START VALID SET'
     make_imagenet_dataset(original_hdf5_path=IMAGENET_FOLDER+IMAGENET_VALID,
                           fuel_hdf5_path=output_folder+'imagenet64x64_valid.hdf5',
                           dataset_type='valid',
