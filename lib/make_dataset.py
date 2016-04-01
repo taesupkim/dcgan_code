@@ -105,7 +105,7 @@ if __name__=="__main__":
         os.makedirs(output_folder)
 
     resize_shape = (64, 64)
-    print 'START TRAINING SET'
+    print 'START CELEB FACE TRAINING SET'
     make_celeb_dataset(fuel_hdf5_path=output_folder+'CelebFace_64x64.hdf5',
                        resize_shape=resize_shape)
 
