@@ -30,7 +30,7 @@ def plot_learning_curve(cost_values, cost_names, save_as):
     plt.savefig(save_as)
     plt.close()
 
-model_name  = 'ENERGY_RBM_CIFAR10_FF'
+model_name  = 'ENERGY_RBM_CIFAR10_FF_FF'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -66,10 +66,14 @@ def set_generator_model(num_hiddens, min_num_gen_filters):
     num_gen_filters0 = min_num_gen_filters*4
     num_gen_filters1 = min_num_gen_filters*2
     num_gen_filters2 = min_num_gen_filters*1
-    # LAYER 0 (LINEAR)
-    linear_w0 = gifn((num_hiddens, num_gen_filters0*init_image_size*init_image_size), 'gen_linear_w0')
-    bn_w0     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_w0')
-    bn_b0     = bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_b0')
+    # LAYER 0_0 (LINEAR)
+    linear_w0_0 = gifn((num_hiddens, num_gen_filters0*init_image_size/2*init_image_size/2), 'gen_linear_w0_0')
+    bn_w0_0     = gain_ifn((num_gen_filters0*init_image_size/2*init_image_size/2), 'gen_bn_w0_0')
+    bn_b0_0     = bias_ifn((num_gen_filters0*init_image_size/2*init_image_size/2), 'gen_bn_b0_0')
+    # LAYER 0_1 (LINEAR)
+    linear_w0_1 = gifn((num_gen_filters0*init_image_size/2*init_image_size/2, num_gen_filters0*init_image_size*init_image_size), 'gen_linear_w0_1')
+    bn_w0_1     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_w0_1')
+    bn_b0_1     = bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_b0_1')
     # LAYER 1 (DECONV)
     conv_w1   = gifn((num_gen_filters0, num_gen_filters1, filter_size, filter_size), 'gen_conv_w1')
     bn_w1     = gain_ifn(num_gen_filters1, 'gen_bn_w1')
@@ -81,11 +85,12 @@ def set_generator_model(num_hiddens, min_num_gen_filters):
     # LAYER 3 (DECONV)
     conv_w3   = gifn((num_gen_filters2, num_channels, filter_size, filter_size), 'gen_conv_w3')
     conv_b3   = bias_ifn(num_channels, 'gen_conv_b3')
-    generator_params = [linear_w0, bn_w0, bn_b0, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, conv_w3, conv_b3]
+    generator_params = [linear_w0_0, bn_w0_0, bn_b0_0, linear_w0_1, bn_w0_1, bn_b0_1, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, conv_w3, conv_b3]
 
     def generator_function(hidden_data, is_train=True):
-        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=bn_w0, b=bn_b0))
-        h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
+        h0_0   = relu(batchnorm(X=T.dot(hidden_data, linear_w0_0), g=bn_w0_0, b=bn_b0_0))
+        h0_1   = relu(batchnorm(X=T.dot(h0_0,        linear_w0_1), g=bn_w0_1, b=bn_b0_1))
+        h0     = h0_1.reshape((h0_1.shape[0], num_gen_filters0, init_image_size, init_image_size))
         h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
         h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
         output = tanh(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
