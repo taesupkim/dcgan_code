@@ -30,7 +30,7 @@ def plot_learning_curve(cost_values, cost_names, save_as):
     plt.savefig(save_as)
     plt.close()
 
-model_name  = 'ENERGY_RBM_FACE64'
+model_name  = 'ENERGY_RBM_FACE64_FF'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
