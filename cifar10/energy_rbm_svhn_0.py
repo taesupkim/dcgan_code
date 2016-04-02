@@ -30,7 +30,7 @@ def plot_learning_curve(cost_values, cost_names, save_as):
     plt.savefig(save_as)
     plt.close()
 
-model_name  = 'ENERGY_RBM_SVHN'
+model_name  = 'ENERGY_RBM_SVHN_FF'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -109,6 +109,9 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
     # FEATURE LAYER 2 (DECONV)
     conv_w2   = difn((num_eng_filters2, num_eng_filters1, filter_size, filter_size), 'feat_conv_w2')
     conv_b2   = bias_ifn(num_eng_filters2, 'feat_conv_b2')
+    # FEATURE LAYER 3 (FULLY_CONNECT)
+    linear_w3   = difn((num_eng_filters2*(min_image_size*min_image_size), num_eng_filters2*(min_image_size*min_image_size)/4), 'feat_linear_w3')
+    linear_b3   = bias_ifn(num_eng_filters2*(min_image_size*min_image_size)/4, 'feat_conv_b2')
 
     def feature_function(input_data, is_train=True):
         # h0 = dropout(relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
@@ -116,18 +119,19 @@ def set_energy_model(num_hiddens, min_num_eng_filters):
         # h2 = dropout(tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
         h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x'))
         h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)) + conv_b1.dimshuffle('x', 0, 'x', 'x'))
-        h2 = tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x'))
-        f  = T.flatten(h2, 2)
+        h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        h2 = T.flatten(h2, 2)
+        f  = tanh(T.dot(h2, linear_w3)+linear_b3)
         return f
 
 
     # ENERGY LAYER (LINEAR)
-    feature_mean = bias_ifn((num_eng_filters2*(min_image_size*min_image_size), ), 'feature_mean')
-    feature_std  = bias_ifn((num_eng_filters2*(min_image_size*min_image_size), ), 'feature_std')
-    linear_w0    = difn((num_eng_filters2*(min_image_size*min_image_size), num_hiddens), 'eng_linear_w0')
+    feature_mean = bias_ifn((num_eng_filters2*(min_image_size*min_image_size)/4, ), 'feature_mean')
+    feature_std  = bias_ifn((num_eng_filters2*(min_image_size*min_image_size)/4, ), 'feature_std')
+    linear_w0    = difn((num_eng_filters2*(min_image_size*min_image_size)/4, num_hiddens), 'eng_linear_w0')
     linear_b0    = bias_ifn(num_hiddens, 'eng_linear_b0')
 
-    energy_params = [conv_w0, conv_b0, conv_w1, conv_b1, conv_w2, conv_b2, feature_mean, feature_std, linear_w0, linear_b0]
+    energy_params = [conv_w0, conv_b0, conv_w1, conv_b1, conv_w2, conv_b2, linear_w3, linear_b3, feature_mean, feature_std, linear_w0, linear_b0]
 
     def energy_function(feature_data, is_train=True):
         feature_std_inv = T.inv(T.exp(feature_std)+1e-10)
@@ -452,8 +456,8 @@ if __name__=="__main__":
     #################
     train_data, test_data, train_stream, test_stream = svhn(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [10, 100]
-    num_filters_list = [32]
+    hidden_size_list = [10,]
+    num_filters_list = [16, 32]
     lr_list          = [1e-5]
     dropout_list     = [False, ]
     lambda_eng_list  = [1e-5]
