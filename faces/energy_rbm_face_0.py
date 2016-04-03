@@ -377,12 +377,9 @@ def train_model(data_stream,
 
     print 'START TRAINING'
     # for each epoch
+    batch_count = 0
     for e in xrange(model_config_dict['epochs']):
         # train phase
-        epoch_input_energy  = 0.
-        epoch_sample_energy = 0.
-        epoch_count         = 0.
-
         batch_iters = data_stream.get_epoch_iterator()
         # for each batch
         for b, batch_data in enumerate(batch_iters):
@@ -410,42 +407,29 @@ def train_model(data_stream,
             [input_energy_val, sample_energy_val, ] = energy_updater(*energy_update_inputs)
 
             # get output values
-            epoch_input_energy  += input_energy_val.mean()
-            epoch_sample_energy += sample_energy_val.mean()
-            epoch_count         += 1.
+            input_energy  = input_energy_val.mean()
+            sample_energy = sample_energy_val.mean()
 
+            # batch count up
+            batch_count += 1
 
+            if batch_count%100==0:
+                print '================================================================'
+                print 'BATCH ITER #{}'.format(batch_count), model_test_name
+                print '================================================================'
+                print '   TRAIN RESULTS'
+                print '================================================================'
+                print '     input energy     : ', input_energy
+                print '----------------------------------------------------------------'
+                print '     sample energy    : ', sample_energy
+                print '================================================================'
 
-        epoch_input_energy  /= epoch_count
-        epoch_sample_energy /= epoch_count
-
-        print '================================================================'
-        print 'EPOCH #{}'.format(e), model_test_name
-        print '================================================================'
-        print '   TRAIN RESULTS'
-        print '================================================================'
-        print '     input energy     : ', epoch_input_energy
-        print '----------------------------------------------------------------'
-        print '     sample energy    : ', epoch_sample_energy
-        print '================================================================'
-
-        # # plot curve data
-        # save_as = model_test_name + '_ENERGY_CURVE.png'
-        # plot_learning_curve(cost_values=[train_input_energy,
-        #                                  train_sample_energy,
-        #                                  valid_input_energy,
-        #                                  valid_sample_energy],
-        #                     cost_names=['Input Energy (train)',
-        #                                 'Sample Energy (train)',
-        #                                 'Input Energy (valid)',
-        #                                 'Sample Energy (valid)'],
-        #                     save_as=save_as)
-
-        # sample data
-        save_as = samples_dir + '/' + model_test_name + '_SAMPLES{}.png'.format(e+1)
-        sample_data = sampling_function(fixed_hidden_data)[0]
-        sample_data = np.asarray(sample_data)
-        color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
+            if batch_count%1000==0:
+                # sample data
+                save_as = samples_dir + '/' + model_test_name + '_SAMPLES{}.png'.format(batch_count)
+                sample_data = sampling_function(fixed_hidden_data)[0]
+                sample_data = np.asarray(sample_data)
+                color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
 
 
 if __name__=="__main__":
