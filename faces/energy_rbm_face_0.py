@@ -80,7 +80,7 @@ def set_generator_model(num_hiddens=512,
     bn_b0_1     = bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_b0_1')
 
     # LAYER 1 (DECONV)
-    conv_w1   = gifn((num_gen_filters0, num_gen_filters1, filter_size/2+1, filter_size/2+1), 'gen_conv_w1')
+    conv_w1   = gifn((num_gen_filters0, num_gen_filters1, filter_size, filter_size), 'gen_conv_w1')
     bn_w1     = gain_ifn(num_gen_filters1, 'gen_bn_w1')
     bn_b1     = bias_ifn(num_gen_filters1, 'gen_bn_b1')
     # LAYER 2 (DECONV)
@@ -106,7 +106,7 @@ def set_generator_model(num_hiddens=512,
         h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0_0), g=bn_w0_0, b=bn_b0_0))
         h0     = relu(batchnorm(X=T.dot(h0,          linear_w0_1), g=bn_w0_1, b=bn_b0_1))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
-        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(1, 1)), g=bn_w1, b=bn_b1))
+        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
         h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
         h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=bn_w3, b=bn_b3))
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
