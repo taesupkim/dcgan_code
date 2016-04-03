@@ -95,8 +95,8 @@ def set_generator_model(num_hiddens=512,
     conv_w4   = gifn((num_gen_filters3, num_channels, filter_size, filter_size), 'gen_conv_w4')
     conv_b4   = bias_ifn(num_channels, 'gen_conv_b4')
 
-    generator_params = [linear_w0_0, bn_w0_0, bn_b0,
-                        linear_w0_1, bn_w0_1, bn_b1,
+    generator_params = [linear_w0_0, bn_w0_0, bn_b0_0,
+                        linear_w0_1, bn_w0_1, bn_b0_1,
                         conv_w1, bn_w1, bn_b1,
                         conv_w2, bn_w2, bn_b2,
                         conv_w3, bn_w3, bn_b3,
