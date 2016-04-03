@@ -136,9 +136,9 @@ def set_energy_model(num_hiddens=512,
     conv_w3   = difn((num_eng_filters3, num_eng_filters2, filter_size/2+1, filter_size/2+1), 'feat_conv_w3')
     conv_b3   = bias_ifn(num_eng_filters3, 'feat_conv_b3')
     # FEATURE LAYER 4 (FULLY_CONNECT)
-    linear_w4   = difn((num_eng_filters2*(min_image_size*min_image_size),
-                        num_eng_filters2*(min_image_size*min_image_size)/2), 'feat_linear_w4')
-    linear_b4   = bias_ifn(num_eng_filters2*(min_image_size*min_image_size)/2, 'feat_linear_b4')
+    linear_w4   = difn((num_eng_filters3*(min_image_size*min_image_size),
+                        num_eng_filters3*(min_image_size*min_image_size)/2), 'feat_linear_w4')
+    linear_b4   = bias_ifn(num_eng_filters3*(min_image_size*min_image_size)/2, 'feat_linear_b4')
 
     def feature_function(input_data, is_train=True):
         h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x'))
@@ -150,9 +150,9 @@ def set_energy_model(num_hiddens=512,
         return f
 
     # ENERGY LAYER (LINEAR)
-    feature_mean = bias_ifn((num_eng_filters2*(min_image_size*min_image_size)/2, ), 'feature_mean')
-    feature_std  = bias_ifn((num_eng_filters2*(min_image_size*min_image_size)/2, ), 'feature_std')
-    linear_w0    = difn((num_eng_filters2*(min_image_size*min_image_size)/2, num_hiddens), 'eng_linear_w0')
+    feature_mean = bias_ifn((num_eng_filters3*(min_image_size*min_image_size)/2, ), 'feature_mean')
+    feature_std  = bias_ifn((num_eng_filters3*(min_image_size*min_image_size)/2, ), 'feature_std')
+    linear_w0    = difn((num_eng_filters3*(min_image_size*min_image_size)/2, num_hiddens), 'eng_linear_w0')
     linear_b0    = bias_ifn(num_hiddens, 'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,
