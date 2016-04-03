@@ -125,26 +125,30 @@ def set_energy_model(num_hiddens=128,
 
     # FEATURE LAYER 0 (DECONV)
     conv_w0   = difn((num_eng_filters0, num_channels, filter_size, filter_size), 'feat_conv_w0')
-    conv_b0   = bias_ifn(num_eng_filters0, 'feat_conv_b0')
+    bn_w0     = gain_ifn(num_eng_filters0, 'feat_bn_w0')
+    bn_b0     = bias_ifn(num_eng_filters0, 'feat_bn_b0')
     # FEATURE LAYER 1 (DECONV)
     conv_w1   = difn((num_eng_filters1, num_eng_filters0, filter_size, filter_size), 'feat_conv_w1')
-    conv_b1   = bias_ifn(num_eng_filters1, 'feat_conv_b1')
+    bn_w1     = gain_ifn(num_eng_filters1, 'feat_bn_w1')
+    bn_b1     = bias_ifn(num_eng_filters1, 'feat_bn_b1')
     # FEATURE LAYER 2 (DECONV)
     conv_w2   = difn((num_eng_filters2, num_eng_filters1, filter_size, filter_size), 'feat_conv_w2')
-    conv_b2   = bias_ifn(num_eng_filters2, 'feat_conv_b2')
+    bn_w2     = gain_ifn(num_eng_filters2, 'feat_bn_w2')
+    bn_b2     = bias_ifn(num_eng_filters2, 'feat_bn_b2')
     # FEATURE LAYER 3 (DECONV)
     conv_w3   = difn((num_eng_filters3, num_eng_filters2, filter_size/2+1, filter_size/2+1), 'feat_conv_w3')
-    conv_b3   = bias_ifn(num_eng_filters3, 'feat_conv_b3')
+    bn_w3     = gain_ifn(num_eng_filters3, 'feat_bn_w3')
+    bn_b3     = bias_ifn(num_eng_filters3, 'feat_bn_b3')
     # FEATURE LAYER 4 (FULLY_CONNECT)
     linear_w4   = difn((num_eng_filters3*(min_image_size*min_image_size),
                         num_eng_filters3*(min_image_size*min_image_size)/2), 'feat_linear_w4')
     linear_b4   = bias_ifn(num_eng_filters3*(min_image_size*min_image_size)/2, 'feat_linear_b4')
 
     def feature_function(input_data, is_train=True):
-        h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x'))
-        h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)) + conv_b1.dimshuffle('x', 0, 'x', 'x'))
-        h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x'))
-        h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(1, 1)) + conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h0 = relu(batchnorm(X=dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)), g=bn_w0, b=bn_b0))
+        h1 = relu(batchnorm(X=dnn_conv(h0,         conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
+        h2 = relu(batchnorm(X=dnn_conv(h1,         conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
+        h3 = relu(batchnorm(X=dnn_conv(h2,         conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=bn_w3, b=bn_b3))
         h3 = T.flatten(h3, 2)
         f  = tanh(T.dot(h3, linear_w4)+linear_b4)
         return f
@@ -155,10 +159,10 @@ def set_energy_model(num_hiddens=128,
     linear_w0    = difn((num_eng_filters3*(min_image_size*min_image_size)/2, num_hiddens), 'eng_linear_w0')
     linear_b0    = bias_ifn(num_hiddens, 'eng_linear_b0')
 
-    energy_params = [conv_w0, conv_b0,
-                     conv_w1, conv_b1,
-                     conv_w2, conv_b2,
-                     conv_w3, conv_b3,
+    energy_params = [conv_w0, bn_w0, bn_b0,
+                     conv_w1, bn_w1, bn_b1,
+                     conv_w2, bn_w2, bn_b2,
+                     conv_w3, bn_w3, bn_b3,
                      linear_w4, linear_b4,
                      feature_mean, feature_std,
                      linear_w0, linear_b0]
@@ -195,8 +199,12 @@ def set_energy_update_function(feature_function,
     sample_data = generator_function(hidden_data, is_train=True)
 
     # get feature data
-    input_feature  = feature_function(input_data, is_train=True)
-    sample_feature = feature_function(sample_data, is_train=True)
+    whole_data     = T.concatenate([input_data, sample_data], axis=0)
+    whole_feature  = feature_function(whole_data, is_train=True)
+    input_feature  =whole_feature[:input_data.shape[0]]
+    sample_feature = whole_feature[input_data.shape[0]:]
+    # input_feature  = feature_function(input_data, is_train=True)
+    # sample_feature = feature_function(sample_data, is_train=True)
 
     # get energy value
     input_energy  = energy_function(input_feature, is_train=True)
@@ -235,6 +243,8 @@ def set_generator_update_function(feature_function,
                                   generator_optimizer):
 
     # set input data, hidden data, noise_data annealing rate
+    input_data  = T.tensor4(name='input_data',
+                            dtype=theano.config.floatX)
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
     noise_data  = T.tensor4(name='noise_data',
@@ -250,9 +260,14 @@ def set_generator_update_function(feature_function,
     sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
-    sample_feature = feature_function(sample_data, is_train=True)
+    whole_data     = T.concatenate([input_data, sample_data], axis=0)
+    whole_feature  = feature_function(whole_data, is_train=True)
+    input_feature  =whole_feature[:input_data.shape[0]]
+    sample_feature = whole_feature[input_data.shape[0]:]
+    # sample_feature = feature_function(sample_data, is_train=True)
 
     # get energy value
+    input_energy  = energy_function(input_feature, is_train=True)
     sample_energy = energy_function(sample_feature, is_train=True)
 
     # get generator update cost
@@ -262,12 +277,14 @@ def set_generator_update_function(feature_function,
     generator_updates = generator_optimizer(generator_params, generator_updates_cost)
 
     # update function input
-    update_function_inputs  = [hidden_data,
+    update_function_inputs  = [input_data,
+                               hidden_data,
                                noise_data,
                                annealing]
 
     # update function output
-    update_function_outputs = [sample_energy,]
+    update_function_outputs = [input_energy,
+                               sample_energy,]
 
     # update function
     update_function = theano.function(inputs=update_function_inputs,
@@ -291,8 +308,12 @@ def set_evaluation_and_sampling_function(feature_function,
     sample_data = generator_function(hidden_data, is_train=False)
 
     # get feature data
-    input_feature  = feature_function(input_data, is_train=False)
-    sample_feature = feature_function(sample_data, is_train=False)
+    whole_data     = T.concatenate([input_data, sample_data], axis=0)
+    whole_feature  = feature_function(whole_data, is_train=True)
+    input_feature  =whole_feature[:input_data.shape[0]]
+    sample_feature = whole_feature[input_data.shape[0]:]
+    # input_feature  = feature_function(input_data, is_train=False)
+    # sample_feature = feature_function(sample_data, is_train=False)
 
     # get energy value
     input_energy  = energy_function(input_feature, is_train=False)
@@ -394,10 +415,11 @@ def train_model(train_stream,
             noise_data   = floatX(noise_data*model_config_dict['init_noise']*(model_config_dict['noise_decay']**e))
 
             # update generator
-            generator_update_inputs = [hidden_data,
+            generator_update_inputs = [input_data,
+                                       hidden_data,
                                        noise_data,
                                        e]
-            [sample_energy_val, ] = generator_updater(*generator_update_inputs)
+            [input_energy_val, sample_energy_val, ] = generator_updater(*generator_update_inputs)
 
             # update energy function
             energy_update_inputs = [input_data,
