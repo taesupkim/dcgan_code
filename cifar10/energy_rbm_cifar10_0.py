@@ -485,7 +485,7 @@ if __name__=="__main__":
     #################
     train_data, test_data, train_stream, test_stream = cifar10(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [100,]
+    hidden_size_list = [512,]
     num_filters_list = [32,]
     lr_list          = [1e-5]
     dropout_list     = [False, ]
