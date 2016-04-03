@@ -88,7 +88,7 @@ def set_generator_model(num_hiddens=512,
     bn_w2     = gain_ifn(num_gen_filters2, 'gen_bn_w2')
     bn_b2     = bias_ifn(num_gen_filters2, 'gen_bn_b2')
     # LAYER 3 (DECONV)
-    conv_w3   = gifn((num_gen_filters2, num_channels, filter_size, filter_size), 'gen_conv_w3')
+    conv_w3   = gifn((num_gen_filters2, num_gen_filters3, filter_size, filter_size), 'gen_conv_w3')
     bn_w3     = gain_ifn(num_gen_filters2, 'gen_bn_w3')
     bn_b3     = bias_ifn(num_gen_filters2, 'gen_bn_b3')
     # LAYER 4 (DECONV)
