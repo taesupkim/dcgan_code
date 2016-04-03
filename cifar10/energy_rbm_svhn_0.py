@@ -136,7 +136,7 @@ def set_energy_model(num_hiddens=128,
     bn_w2     = gain_ifn(num_eng_filters2, 'feat_bn_w2')
     bn_b2     = bias_ifn(num_eng_filters2, 'feat_bn_b2')
     # FEATURE LAYER 3 (DECONV)
-    conv_w3   = difn((num_eng_filters3, num_eng_filters2, filter_size/2+1, filter_size/2+1), 'feat_conv_w3')
+    conv_w3   = difn((num_eng_filters3, num_eng_filters2, filter_size, filter_size), 'feat_conv_w3')
     bn_w3     = gain_ifn(num_eng_filters3, 'feat_bn_w3')
     bn_b3     = bias_ifn(num_eng_filters3, 'feat_bn_b3')
     # FEATURE LAYER 4 (FULLY_CONNECT)
