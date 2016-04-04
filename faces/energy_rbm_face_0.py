@@ -499,6 +499,7 @@ if __name__=="__main__":
                                                       + '_rg{}'.format(int(-np.log10(lambda_gen))) \
                                                       + '_n{}'.format(int(-np.log10(init_noise))) \
                                                       + '_d{}'.format(int(1 if noise_decay is 1.0 else 0)) \
+                                                      + '_lr{}'.format(int(-np.log10(lr))) \
 
                                     train_model(data_stream=data_stream,
                                                 energy_optimizer=energy_optimizer,
