@@ -68,16 +68,12 @@ def set_generator_model(num_hiddens=512,
     num_gen_filters1 = min_num_gen_filters*4
     num_gen_filters2 = min_num_gen_filters*2
     num_gen_filters3 = min_num_gen_filters*1
+
     # LAYER 0_0 (LINEAR)
-    linear_w0_0 = gifn((num_hiddens,
-                       (num_gen_filters0*init_image_size*init_image_size)/2), 'gen_linear_w0_0')
-    bn_w0_0     = gain_ifn((num_gen_filters0*init_image_size*init_image_size)/2, 'gen_bn_w0_0')
-    bn_b0_0     = bias_ifn((num_gen_filters0*init_image_size*init_image_size)/2, 'gen_bn_b0_0')
-    # LAYER 0_1 (LINEAR)
-    linear_w0_1 = gifn(((num_gen_filters0*init_image_size*init_image_size)/2,
-                        (num_gen_filters0*init_image_size*init_image_size)), 'gen_linear_w0_1')
-    bn_w0_1     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_w0_1')
-    bn_b0_1     = bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_b0_1')
+    linear_w0 = gifn((num_hiddens,
+                     (num_gen_filters0*init_image_size*init_image_size)), 'gen_linear_w0')
+    bn_w0     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_w0')
+    bn_b0     = bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_b0')
 
     # LAYER 1 (DECONV)
     conv_w1   = gifn((num_gen_filters0, num_gen_filters1, filter_size, filter_size), 'gen_conv_w1')
@@ -95,16 +91,14 @@ def set_generator_model(num_hiddens=512,
     conv_w4   = gifn((num_gen_filters3, num_channels, filter_size, filter_size), 'gen_conv_w4')
     conv_b4   = bias_ifn(num_channels, 'gen_conv_b4')
 
-    generator_params = [linear_w0_0, bn_w0_0, bn_b0_0,
-                        linear_w0_1, bn_w0_1, bn_b0_1,
+    generator_params = [linear_w0, bn_w0, bn_b0,
                         conv_w1, bn_w1, bn_b1,
                         conv_w2, bn_w2, bn_b2,
                         conv_w3, bn_w3, bn_b3,
                         conv_w4, conv_b4]
 
     def generator_function(hidden_data, is_train=True):
-        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0_0), g=bn_w0_0, b=bn_b0_0))
-        h0     = relu(batchnorm(X=T.dot(h0,          linear_w0_1), g=bn_w0_1, b=bn_b0_1))
+        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=bn_w0, b=bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
         h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
@@ -147,8 +141,8 @@ def set_energy_model(num_hiddens=512,
 
     # FEATURE LAYER 4 (FULLY_CONNECT)
     linear_w4 = difn((num_eng_filters3*(min_image_size*min_image_size),
-                      num_eng_filters3*(min_image_size*min_image_size)/2), 'feat_linear_w4')
-    linear_b4 = bias_ifn(num_eng_filters3*(min_image_size*min_image_size)/2, 'feat_linear_b4')
+                      num_eng_filters3*(min_image_size*min_image_size)), 'feat_linear_w4')
+    linear_b4 = bias_ifn(num_eng_filters3*(min_image_size*min_image_size), 'feat_linear_b4')
 
     def feature_function(input_data, is_train=True):
         h0 = relu(batchnorm(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)), g=bn_w0, b=bn_b0))
@@ -161,9 +155,9 @@ def set_energy_model(num_hiddens=512,
 
 
     # ENERGY LAYER (LINEAR)
-    feature_mean = bias_ifn((num_eng_filters3*(min_image_size*min_image_size)/2, ), 'feature_mean')
-    feature_std  = bias_ifn((num_eng_filters3*(min_image_size*min_image_size)/2, ), 'feature_std')
-    linear_w0    = difn((num_eng_filters3*(min_image_size*min_image_size)/2,
+    feature_mean = bias_ifn((num_eng_filters3*(min_image_size*min_image_size), ), 'feature_mean')
+    feature_std  = bias_ifn((num_eng_filters3*(min_image_size*min_image_size), ), 'feature_std')
+    linear_w0    = difn((num_eng_filters3*(min_image_size*min_image_size),
                          num_hiddens), 'eng_linear_w0')
     linear_b0    = bias_ifn(num_hiddens, 'eng_linear_b0')
 
@@ -495,7 +489,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr*100.),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr*10.),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
