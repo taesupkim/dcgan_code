@@ -64,10 +64,10 @@ bias_ifn = Constant(c=0.)
 def set_generator_model(num_hiddens=512,
                         min_num_gen_filters=16):
     init_image_size  = 4
-    num_gen_filters0 = min_num_gen_filters*8
+    num_gen_filters0 = min_num_gen_filters*4
     num_gen_filters1 = min_num_gen_filters*4
-    num_gen_filters2 = min_num_gen_filters*2
-    num_gen_filters3 = min_num_gen_filters*1
+    num_gen_filters2 = min_num_gen_filters*4
+    num_gen_filters3 = min_num_gen_filters*4
 
     # LAYER 0_0 (LINEAR)
     linear_w0 = gifn((num_hiddens,
@@ -113,10 +113,10 @@ def set_generator_model(num_hiddens=512,
 def set_energy_model(num_hiddens=512,
                      min_num_eng_filters=16):
     min_image_size   = 4
-    num_eng_filters0 = min_num_eng_filters*1
-    num_eng_filters1 = min_num_eng_filters*2
+    num_eng_filters0 = min_num_eng_filters*4
+    num_eng_filters1 = min_num_eng_filters*4
     num_eng_filters2 = min_num_eng_filters*4
-    num_eng_filters3 = min_num_eng_filters*8
+    num_eng_filters3 = min_num_eng_filters*4
 
     # FEATURE LAYER 0 (DECONV)
     conv_w0   = difn((num_eng_filters0, num_channels, filter_size, filter_size), 'feat_conv_w0')
@@ -469,7 +469,7 @@ if __name__=="__main__":
 
     hidden_size_list = [128]
     num_filters_list = [16]
-    lr_list          = [1e-5]
+    lr_list          = [1e-4]
     dropout_list     = [False, ]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
