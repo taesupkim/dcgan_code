@@ -65,9 +65,9 @@ def set_generator_model(num_hiddens=512,
                         min_num_gen_filters=16):
     init_image_size  = 4
     num_gen_filters0 = min_num_gen_filters*4
-    num_gen_filters1 = min_num_gen_filters*4
-    num_gen_filters2 = min_num_gen_filters*4
-    num_gen_filters3 = min_num_gen_filters*4
+    num_gen_filters1 = min_num_gen_filters*3
+    num_gen_filters2 = min_num_gen_filters*2
+    num_gen_filters3 = min_num_gen_filters*1
 
     # LAYER 0_0 (LINEAR)
     linear_w0 = gifn((num_hiddens,
@@ -113,9 +113,9 @@ def set_generator_model(num_hiddens=512,
 def set_energy_model(num_hiddens=512,
                      min_num_eng_filters=16):
     min_image_size   = 4
-    num_eng_filters0 = min_num_eng_filters*4
-    num_eng_filters1 = min_num_eng_filters*4
-    num_eng_filters2 = min_num_eng_filters*4
+    num_eng_filters0 = min_num_eng_filters*1
+    num_eng_filters1 = min_num_eng_filters*2
+    num_eng_filters2 = min_num_eng_filters*3
     num_eng_filters3 = min_num_eng_filters*4
 
     # FEATURE LAYER 0 (DECONV)
