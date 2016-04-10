@@ -61,15 +61,20 @@ bias_ifn = Constant(c=0.)
 ###################
 # BUILD GENERATOR #
 ###################
-def set_generator_model(num_hiddens, min_num_gen_filters):
-    init_image_size  = 8
-    num_gen_filters0 = min_num_gen_filters*4
-    num_gen_filters1 = min_num_gen_filters*2
-    num_gen_filters2 = min_num_gen_filters*1
-    # LAYER 0 (LINEAR)
-    linear_w0 = gifn((num_hiddens, num_gen_filters0*init_image_size*init_image_size), 'gen_linear_w0')
+def set_generator_model(num_hiddens=512,
+                        min_num_gen_filters=16):
+    init_image_size  = 4
+    num_gen_filters0 = min_num_gen_filters*8
+    num_gen_filters1 = min_num_gen_filters*4
+    num_gen_filters2 = min_num_gen_filters*2
+    num_gen_filters3 = min_num_gen_filters*1
+
+    # LAYER 0_0 (LINEAR)
+    linear_w0 = gifn((num_hiddens,
+                     (num_gen_filters0*init_image_size*init_image_size)), 'gen_linear_w0')
     bn_w0     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_w0')
     bn_b0     = bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_b0')
+
     # LAYER 1 (DECONV)
     conv_w1   = gifn((num_gen_filters0, num_gen_filters1, filter_size, filter_size), 'gen_conv_w1')
     bn_w1     = gain_ifn(num_gen_filters1, 'gen_bn_w1')
@@ -79,59 +84,94 @@ def set_generator_model(num_hiddens, min_num_gen_filters):
     bn_w2     = gain_ifn(num_gen_filters2, 'gen_bn_w2')
     bn_b2     = bias_ifn(num_gen_filters2, 'gen_bn_b2')
     # LAYER 3 (DECONV)
-    conv_w3   = gifn((num_gen_filters2, num_channels, filter_size, filter_size), 'gen_conv_w3')
-    conv_b3   = bias_ifn(num_channels, 'gen_conv_b3')
-    generator_params = [linear_w0, bn_w0, bn_b0, conv_w1, bn_w1, bn_b1, conv_w2, bn_w2, bn_b2, conv_w3, conv_b3]
+    conv_w3   = gifn((num_gen_filters2, num_gen_filters3, filter_size, filter_size), 'gen_conv_w3')
+    bn_w3     = gain_ifn(num_gen_filters3, 'gen_bn_w3')
+    bn_b3     = bias_ifn(num_gen_filters3, 'gen_bn_b3')
+    # LAYER 4 (DECONV)
+    conv_w4   = gifn((num_gen_filters3, num_channels, filter_size, filter_size), 'gen_conv_w4')
+    conv_b4   = bias_ifn(num_channels, 'gen_conv_b4')
+
+    generator_params = [linear_w0, bn_w0, bn_b0,
+                        conv_w1, bn_w1, bn_b1,
+                        conv_w2, bn_w2, bn_b2,
+                        conv_w3, bn_w3, bn_b3,
+                        conv_w4, conv_b4]
 
     def generator_function(hidden_data, is_train=True):
         h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=bn_w0, b=bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
         h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
-        output = tanh(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=bn_w3, b=bn_b3))
+        output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
 
     return [generator_function, generator_params]
 ######################################
 # BUILD ENERGY MODEL (FEATURE_MODEL) #
 ######################################
-def set_energy_model(num_hiddens, min_num_eng_filters):
-    min_image_size   = 8
+def set_energy_model(num_hiddens=512,
+                     min_num_eng_filters=16):
+    min_image_size   = 4
     num_eng_filters0 = min_num_eng_filters*1
     num_eng_filters1 = min_num_eng_filters*2
     num_eng_filters2 = min_num_eng_filters*4
+    num_eng_filters3 = min_num_eng_filters*8
+
     # FEATURE LAYER 0 (DECONV)
     conv_w0   = difn((num_eng_filters0, num_channels, filter_size, filter_size), 'feat_conv_w0')
+    # bn_w0     = gain_ifn(num_eng_filters0, 'feat_bn_w0')
+    # bn_b0     = bias_ifn(num_eng_filters0, 'feat_bn_b0')
     conv_b0   = bias_ifn(num_eng_filters0, 'feat_conv_b0')
     # FEATURE LAYER 1 (DECONV)
     conv_w1   = difn((num_eng_filters1, num_eng_filters0, filter_size, filter_size), 'feat_conv_w1')
+    # bn_w1     = gain_ifn(num_eng_filters1, 'feat_bn_w1')
+    # bn_b1     = bias_ifn(num_eng_filters1, 'feat_bn_b1')
     conv_b1   = bias_ifn(num_eng_filters1, 'feat_conv_b1')
     # FEATURE LAYER 2 (DECONV)
     conv_w2   = difn((num_eng_filters2, num_eng_filters1, filter_size, filter_size), 'feat_conv_w2')
+    # bn_w2     = gain_ifn(num_eng_filters2, 'feat_bn_w2')
+    # bn_b2     = bias_ifn(num_eng_filters2, 'feat_bn_b2')
     conv_b2   = bias_ifn(num_eng_filters2, 'feat_conv_b2')
-    # FEATURE LAYER 3 (FULLY_CONNECT)
-    linear_w3   = difn((num_eng_filters2*(min_image_size*min_image_size), num_eng_filters2*(min_image_size*min_image_size)/4), 'feat_linear_w3')
-    linear_b3   = bias_ifn(num_eng_filters2*(min_image_size*min_image_size)/4, 'feat_conv_b2')
+    # FEATURE LAYER 3 (DECONV)
+    conv_w3   = difn((num_eng_filters3, num_eng_filters2, filter_size, filter_size), 'feat_conv_w3')
+    # bn_w3     = gain_ifn(num_eng_filters3, 'feat_bn_w3')
+    # bn_b3     = bias_ifn(num_eng_filters3, 'feat_bn_b3')
+    conv_b3   = bias_ifn(num_eng_filters3, 'feat_conv_b3')
+
+    # FEATURE LAYER 4 (FULLY_CONNECT)
+    linear_w4 = difn((num_eng_filters3*(min_image_size*min_image_size),
+                      num_eng_filters3*(min_image_size*min_image_size)), 'feat_linear_w4')
+    linear_b4 = bias_ifn(num_eng_filters3*(min_image_size*min_image_size), 'feat_linear_b4')
 
     def feature_function(input_data, is_train=True):
-        # h0 = dropout(relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
-        # h1 = dropout(relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)) + conv_b1.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
-        # h2 = dropout(tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x')), p=0.5, is_training=is_train)
-        h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)) + conv_b0.dimshuffle('x', 0, 'x', 'x'))
-        h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)) + conv_b1.dimshuffle('x', 0, 'x', 'x'))
-        h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x'))
-        h2 = T.flatten(h2, 2)
-        f  = tanh(T.dot(h2, linear_w3)+linear_b3)
+        # h0 = relu(batchnorm(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2)), g=bn_w0, b=bn_b0))
+        # h1 = relu(batchnorm(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=bn_w1, b=bn_b1))
+        # h2 = relu(batchnorm(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=bn_w2, b=bn_b2))
+        # h3 = relu(batchnorm(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=bn_w3, b=bn_b3))
+        h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
+        h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
+        h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = T.flatten(h3, 2)
+        f  = tanh(T.dot(h3, linear_w4)+linear_b4)
         return f
 
 
     # ENERGY LAYER (LINEAR)
-    feature_mean = bias_ifn((num_eng_filters2*(min_image_size*min_image_size)/4, ), 'feature_mean')
-    feature_std  = bias_ifn((num_eng_filters2*(min_image_size*min_image_size)/4, ), 'feature_std')
-    linear_w0    = difn((num_eng_filters2*(min_image_size*min_image_size)/4, num_hiddens), 'eng_linear_w0')
+    feature_mean = bias_ifn((num_eng_filters3*(min_image_size*min_image_size), ), 'feature_mean')
+    feature_std  = bias_ifn((num_eng_filters3*(min_image_size*min_image_size), ), 'feature_std')
+    linear_w0    = difn((num_eng_filters3*(min_image_size*min_image_size),
+                         num_hiddens), 'eng_linear_w0')
     linear_b0    = bias_ifn(num_hiddens, 'eng_linear_b0')
 
-    energy_params = [conv_w0, conv_b0, conv_w1, conv_b1, conv_w2, conv_b2, linear_w3, linear_b3, feature_mean, feature_std, linear_w0, linear_b0]
+    energy_params = [conv_w0, conv_b0,#bn_w0, bn_b0,
+                     conv_w1, conv_b1,#bn_w1, bn_b1,
+                     conv_w2, conv_b2,#bn_w2, bn_b2,
+                     conv_w3, conv_b3,#bn_w3, bn_b3,
+                     linear_w4, linear_b4,
+                     feature_mean, feature_std,
+                     linear_w0, linear_b0]
 
     def energy_function(feature_data, is_train=True):
         feature_std_inv = T.inv(T.exp(feature_std)+1e-10)
@@ -160,7 +200,7 @@ def set_energy_update_function(feature_function,
                          dtype=theano.config.floatX)
 
     # annealing scale
-    annealing_scale = 1.0#/(1.0+99.0*(0.9**annealing))
+    annealing_scale = 1.0/(1.0+99.0*(0.9**annealing))
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
@@ -214,7 +254,7 @@ def set_generator_update_function(feature_function,
                          dtype=theano.config.floatX)
 
     # annealing scale
-    annealing_scale = 1.0#/(1.0+99.0*(0.9**annealing))
+    annealing_scale = 1.0/(1.0+99.0*(0.9**annealing))
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
@@ -427,7 +467,7 @@ if __name__=="__main__":
     #################
     _ , data_stream = imagenet(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [1000]
+    hidden_size_list = [1024]
     num_filters_list = [64]
     lr_list          = [1e-5]
     dropout_list     = [False, ]
