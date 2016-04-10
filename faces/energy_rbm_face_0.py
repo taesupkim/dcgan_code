@@ -154,7 +154,8 @@ def set_energy_model(num_hiddens=512,
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         h3 = T.flatten(h3, 2)
-        f  = tanh(T.dot(h3, linear_w4)+linear_b4)
+        # f  = tanh(T.dot(h3, linear_w4)+linear_b4)
+        f  = (T.dot(h3, linear_w4)+linear_b4)
         return f
 
 
@@ -469,7 +470,7 @@ if __name__=="__main__":
 
     hidden_size_list = [128]
     num_filters_list = [16]
-    lr_list          = [1e-6]
+    lr_list          = [1e-5]
     dropout_list     = [False, ]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
