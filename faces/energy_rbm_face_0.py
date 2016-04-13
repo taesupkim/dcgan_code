@@ -57,7 +57,8 @@ softplus = Softplus()
 gifn = Normal(scale=0.01)
 difn = Normal(scale=0.01)
 gain_ifn = Normal(loc=1., scale=0.001)
-bias_ifn = Constant(c=0.)
+bias_ifn = Constant(c=0.0)
+small_bias_ifn = Constant(c=0.1)
 ###################
 # BUILD GENERATOR #
 ###################
@@ -73,7 +74,7 @@ def set_generator_model(num_hiddens=512,
     linear_w0 = gifn((num_hiddens,
                      (num_gen_filters0*init_image_size*init_image_size)), 'gen_linear_w0')
     bn_w0     = gain_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_w0')
-    bn_b0     = bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_b0')
+    bn_b0     = small_bias_ifn((num_gen_filters0*init_image_size*init_image_size), 'gen_bn_b0')
 
     # LAYER 1 (DECONV)
     conv_w1   = gifn((num_gen_filters0, num_gen_filters1, filter_size, filter_size), 'gen_conv_w1')
@@ -122,22 +123,22 @@ def set_energy_model(num_hiddens=512,
     conv_w0   = difn((num_eng_filters0, num_channels, filter_size, filter_size), 'feat_conv_w0')
     # bn_w0     = gain_ifn(num_eng_filters0, 'feat_bn_w0')
     # bn_b0     = bias_ifn(num_eng_filters0, 'feat_bn_b0')
-    conv_b0   = bias_ifn(num_eng_filters0, 'feat_conv_b0')
+    conv_b0   = small_bias_ifn(num_eng_filters0, 'feat_conv_b0')
     # FEATURE LAYER 1 (DECONV)
     conv_w1   = difn((num_eng_filters1, num_eng_filters0, filter_size, filter_size), 'feat_conv_w1')
     # bn_w1     = gain_ifn(num_eng_filters1, 'feat_bn_w1')
     # bn_b1     = bias_ifn(num_eng_filters1, 'feat_bn_b1')
-    conv_b1   = bias_ifn(num_eng_filters1, 'feat_conv_b1')
+    conv_b1   = small_bias_ifn(num_eng_filters1, 'feat_conv_b1')
     # FEATURE LAYER 2 (DECONV)
     conv_w2   = difn((num_eng_filters2, num_eng_filters1, filter_size, filter_size), 'feat_conv_w2')
     # bn_w2     = gain_ifn(num_eng_filters2, 'feat_bn_w2')
     # bn_b2     = bias_ifn(num_eng_filters2, 'feat_bn_b2')
-    conv_b2   = bias_ifn(num_eng_filters2, 'feat_conv_b2')
+    conv_b2   = small_bias_ifn(num_eng_filters2, 'feat_conv_b2')
     # FEATURE LAYER 3 (DECONV)
     conv_w3   = difn((num_eng_filters3, num_eng_filters2, filter_size, filter_size), 'feat_conv_w3')
     # bn_w3     = gain_ifn(num_eng_filters3, 'feat_bn_w3')
     # bn_b3     = bias_ifn(num_eng_filters3, 'feat_bn_b3')
-    conv_b3   = bias_ifn(num_eng_filters3, 'feat_conv_b3')
+    conv_b3   = small_bias_ifn(num_eng_filters3, 'feat_conv_b3')
 
     # FEATURE LAYER 4 (FULLY_CONNECT)
     linear_w4 = difn((num_eng_filters3*(min_image_size*min_image_size),
