@@ -164,7 +164,7 @@ def set_energy_model(num_hiddens=512,
     feature_std  = bias_ifn((num_eng_filters3*(min_image_size*min_image_size), ), 'feature_std')
     linear_w0    = difn((num_eng_filters3*(min_image_size*min_image_size),
                          num_hiddens), 'eng_linear_w0')
-    linear_b0    = bias_ifn(num_hiddens, 'eng_linear_b0')
+    linear_b0    = small_bias_ifn(num_hiddens, 'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,#bn_w0, bn_b0,
                      conv_w1, conv_b1,#bn_w1, bn_b1,
