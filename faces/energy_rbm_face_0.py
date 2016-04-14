@@ -261,7 +261,7 @@ def set_generator_update_function(feature_function,
                          dtype=theano.config.floatX)
 
     # annealing scale
-    annealing_scale = 1.0/(1.0+99.0*(0.9**annealing))
+    annealing_scale = 1.0#/(1.0+99.0*(0.9**annealing))
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
@@ -468,8 +468,8 @@ if __name__=="__main__":
     #################
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [1024]
-    num_filters_list = [32]
+    hidden_size_list = [512]
+    num_filters_list = [16]
     lr_list          = [1e-5]
     dropout_list     = [False, ]
     lambda_eng_list  = [1e-5]
