@@ -201,7 +201,7 @@ def set_energy_update_function(feature_function,
                          dtype=theano.config.floatX)
 
     # annealing scale
-    annealing_scale = 1.0/(1.0+99.0*(0.9**annealing))
+    annealing_scale = 1.0#/(1.0+99.0*(0.9**annealing))
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
@@ -261,7 +261,7 @@ def set_generator_update_function(feature_function,
                          dtype=theano.config.floatX)
 
     # annealing scale
-    annealing_scale = 1.0/(1.0+99.0*(0.9**annealing))
+    annealing_scale = 1.0#/(1.0+99.0*(0.9**annealing))
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
