@@ -487,8 +487,8 @@ if __name__=="__main__":
     #################
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [512]
-    num_filters_list = [16]
+    hidden_size_list = [1024]
+    num_filters_list = [32]
     lr_list          = [1e-5]
     dropout_list     = [False, ]
     lambda_eng_list  = [1e-5]
@@ -513,7 +513,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr*100),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr),
                                                                   rho=0.1,
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
