@@ -173,7 +173,7 @@ def set_energy_model(num_hiddens=512,
         h2 = tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
         # h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
-        f = T.flatten(h3, 2)
+        f = T.flatten(h2, 2)
         return f
 
     # ENERGY LAYER (LINEAR)
