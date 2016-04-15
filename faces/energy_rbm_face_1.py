@@ -481,9 +481,9 @@ def train_model(data_stream,
                 sample_data = sampling_function(fixed_hidden_data)[0]
                 sample_data = np.asarray(sample_data)
                 color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
-                np.save(file=model_name+'_input_energy',
+                np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
                         arr=np.asarray(input_energy_list))
-                np.save(file=model_name+'_sample_energy',
+                np.save(file=samples_dir + '/' + model_test_name +'_sample_energy',
                         arr=np.asarray(sample_energy_list))
 
 if __name__=="__main__":
