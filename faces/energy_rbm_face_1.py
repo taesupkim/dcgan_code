@@ -65,15 +65,15 @@ def set_generator_model(num_hiddens,
 
     # LAYER 0 (LINEAR)
     linear_w0    = weight_init((num_hiddens,
-                                (num_gen_filters0*init_image_size*init_image_size)/2),
+                                (num_gen_filters0*init_image_size*init_image_size)/4),
                                'gen_linear_w0')
-    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size)/2,
+    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size)/4,
                               'gen_linear_bn_w0')
-    linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size)/2,
+    linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size)/4,
                               'gen_linear_bn_b0')
 
     # LAYER 1 (LINEAR)
-    linear_w1    = weight_init(((num_gen_filters0*init_image_size*init_image_size)/2,
+    linear_w1    = weight_init(((num_gen_filters0*init_image_size*init_image_size)/4,
                                 (num_gen_filters0*init_image_size*init_image_size)),
                                'gen_linear_w1')
     linear_bn_w1 = scale_init((num_gen_filters0*init_image_size*init_image_size),
@@ -158,15 +158,16 @@ def set_energy_model(num_hiddens=512,
         # layer 1 (conv)
         h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
         # layer 2 (conv)
-        h2 = tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        # h2 = tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        h2 = dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x')
         f = T.flatten(h2, 2)
         return f
 
     # ENERGY LAYER (LINEAR)
     feature_mean = bias_zero((num_eng_filters2*(min_image_size*min_image_size), ),
                              'feature_mean')
-    feature_std  = bias_zero((num_eng_filters2*(min_image_size*min_image_size), ),
-                             'feature_std')
+    feature_std  = bias_const((num_eng_filters2*(min_image_size*min_image_size), ),
+                              'feature_std')
     linear_w0    = weight_init((num_eng_filters2*(min_image_size*min_image_size), num_hiddens),
                                'eng_linear_w0')
     linear_b0    = bias_zero(num_hiddens,
