@@ -167,9 +167,9 @@ def set_energy_model(num_hiddens=512,
                           'feat_conv_b2')
 
     # FEATURE LAYER 3 (DECONV)
-    conv_w3   = weight_init((num_eng_filters2, num_eng_filters1, filter_size, filter_size),
+    conv_w3   = weight_init((num_eng_filters3, num_eng_filters2, filter_size, filter_size),
                             'feat_conv_w3')
-    conv_b3   = bias_zero(num_eng_filters2,
+    conv_b3   = bias_zero(num_eng_filters3,
                           'feat_conv_b3')
     def feature_function(input_data, is_train=True):
         # layer 0 (conv)
