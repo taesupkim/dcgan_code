@@ -165,12 +165,18 @@ def set_energy_model(num_hiddens=512,
                             'feat_conv_w2')
     conv_b2   = bias_const(num_eng_filters2,
                           'feat_conv_b2')
-
     # FEATURE LAYER 3 (DECONV)
     conv_w3   = weight_init((num_eng_filters3, num_eng_filters2, filter_size, filter_size),
                             'feat_conv_w3')
-    conv_b3   = bias_zero(num_eng_filters3,
-                          'feat_conv_b3')
+    conv_b3   = bias_const(num_eng_filters3,
+                           'feat_conv_b3')
+    # FEATURE LAYER 4 (LINEAR)
+    linear_w4 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
+                             num_eng_filters3*(min_image_size*min_image_size)/4),
+                            'feat_linear_w4')
+    linear_b4 = bias_zero(num_eng_filters3*(min_image_size*min_image_size)/4,
+                          'feat_linear_b4')
+
     def feature_function(input_data, is_train=True):
         # layer 0 (conv)
         h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
@@ -179,16 +185,18 @@ def set_energy_model(num_hiddens=512,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x')
-        f = T.flatten(h3, 2)
+        h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = T.flatten(h3, 2)
+        f  = T.dot(h3, linear_w4)+linear_b4
         return f
 
     # ENERGY LAYER (LINEAR)
-    feature_mean = bias_zero((num_eng_filters3*(min_image_size*min_image_size), ),
+    feature_mean = bias_zero((num_eng_filters3*(min_image_size*min_image_size)/4, ),
                              'feature_mean')
-    feature_std  = bias_const((num_eng_filters3*(min_image_size*min_image_size), ),
+    feature_std  = bias_const((num_eng_filters3*(min_image_size*min_image_size)/4, ),
                               'feature_std')
-    linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size), num_hiddens),
+    linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size)/4,
+                                num_hiddens),
                                'eng_linear_w0')
     linear_b0    = bias_zero(num_hiddens,
                              'eng_linear_b0')
@@ -197,6 +205,7 @@ def set_energy_model(num_hiddens=512,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
+                     linear_w4, linear_b4,
                      feature_mean, feature_std,
                      linear_w0, linear_b0]
 
@@ -516,7 +525,7 @@ if __name__=="__main__":
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
     hidden_size_list = [1024]
-    num_filters_list = [128]
+    num_filters_list = [32]
     lr_list          = [1e-5]
     dropout_list     = [False, ]
     lambda_eng_list  = [1e-5]
