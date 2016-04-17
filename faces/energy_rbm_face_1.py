@@ -58,13 +58,16 @@ bias_const  = Constant(c=0.1)
 ###################
 def set_generator_model(num_hiddens,
                         min_num_gen_filters):
+    # initial square image size
     init_image_size  = 4
+
+    # set num of filters for each layer
     num_gen_filters0 = min_num_gen_filters*8
     num_gen_filters1 = min_num_gen_filters*4
     num_gen_filters2 = min_num_gen_filters*2
     num_gen_filters3 = min_num_gen_filters*1
 
-    # LAYER 0 (LINEAR)
+    # LAYER 0 (LINEAR W/ BN)
     linear_w0    = weight_init((num_hiddens,
                                 (num_gen_filters0*init_image_size*init_image_size)/4),
                                'gen_linear_w0')
