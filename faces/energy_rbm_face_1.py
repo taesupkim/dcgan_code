@@ -49,7 +49,7 @@ softplus = Softplus()
 # SET INITIALIZER #
 ###################
 weight_init = Normal(scale=0.01)
-scale_init  = Normal(loc=1., scale=0.001)
+scale_init  = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
 bias_const  = Constant(c=0.1)
 
@@ -142,8 +142,8 @@ def set_generator_model(num_hiddens,
 ######################################
 # BUILD ENERGY MODEL (FEATURE_MODEL) #
 ######################################
-def set_energy_model(num_hiddens=512,
-                     min_num_eng_filters=16):
+def set_energy_model(num_hiddens,
+                     min_num_eng_filters):
     min_image_size   = 4
     num_eng_filters0 = min_num_eng_filters*1
     num_eng_filters1 = min_num_eng_filters*2
@@ -187,7 +187,7 @@ def set_energy_model(num_hiddens=512,
         # layer 3 (conv)
         h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         h3 = T.flatten(h3, 2)
-        f  = T.dot(h3, linear_w4)+linear_b4
+        f  = tanh(T.dot(h3, linear_w4)+linear_b4)
         return f
 
     # ENERGY LAYER (LINEAR)
