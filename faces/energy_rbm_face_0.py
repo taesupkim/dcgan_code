@@ -500,7 +500,7 @@ if __name__=="__main__":
 
     hidden_size_list = [100]
     num_filters_list = [128]
-    lr_list          = [1e-7]
+    lr_list          = [1e-5]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
@@ -525,7 +525,7 @@ if __name__=="__main__":
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   rho=0.5,
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr*100),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr),
                                                                   rho=0.5,
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
