@@ -498,8 +498,8 @@ if __name__=="__main__":
     #################
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [100]
-    num_filters_list = [64]
+    hidden_size_list = [1024]
+    num_filters_list = [128]
     lr_list          = [1e-4]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-5]
