@@ -525,7 +525,7 @@ if __name__=="__main__":
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   rho=0.5,
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr*10.0),
                                                                   rho=0.5,
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
