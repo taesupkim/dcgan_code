@@ -48,7 +48,7 @@ softplus = Softplus()
 ###################
 # SET INITIALIZER #
 ###################
-weight_init = Normal(scale=0.001)
+weight_init = Normal(scale=0.01)
 scale_init  = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
 bias_const  = Constant(c=0.1)
@@ -523,10 +523,8 @@ if __name__=="__main__":
 
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
-                                                                  rho=0.5,
                                                                   regularizer=Regularizer(l2=lambda_eng))
                                     generator_optimizer = RMSprop(lr=sharedX(lr*10.0),
-                                                                  rho=0.5,
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
