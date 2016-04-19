@@ -48,7 +48,7 @@ softplus = Softplus()
 ###################
 # SET INITIALIZER #
 ###################
-weight_init = Normal(scale=0.01)
+weight_init = Normal(scale=0.001)
 scale_init  = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
 bias_const  = Constant(c=0.1)
