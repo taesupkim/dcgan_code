@@ -178,8 +178,8 @@ def set_energy_model(num_hiddens,
     # ENERGY LAYER (LINEAR)
     feature_mean = bias_zero((num_eng_filters3*(min_image_size*min_image_size), ),
                              'feature_mean')
-    feature_std  = bias_const((num_eng_filters3*(min_image_size*min_image_size), ),
-                              'feature_std')
+    feature_std  = bias_zero((num_eng_filters3*(min_image_size*min_image_size), ),
+                             'feature_std')
     linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
                                 num_hiddens),
                                'eng_linear_w0')
@@ -195,7 +195,7 @@ def set_energy_model(num_hiddens,
 
     def energy_function(feature_data, is_train=True):
         # feature-wise std
-        feature_std_inv = T.inv(T.nnet.softplus(feature_std)+1e-10)
+        feature_std_inv = T.inv(T.nnet.exp(feature_std)+1e-10)
         # energy hidden-feature
         e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
@@ -204,6 +204,7 @@ def set_energy_model(num_hiddens,
         return e
 
     return [feature_function, energy_function, energy_params]
+
 ########################
 # ENERGY MODEL UPDATER #
 ########################
