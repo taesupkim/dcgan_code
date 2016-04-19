@@ -504,8 +504,8 @@ if __name__=="__main__":
     num_filters_list = [32]
     lr_list          = [1e-4]
     dropout_list     = [False,]
-    lambda_eng_list  = [1e-10]
-    lambda_gen_list  = [1e-10]
+    lambda_eng_list  = [1e-5]
+    lambda_gen_list  = [1e-5]
     init_noise_list  = [1e-2]
     noise_decay_list = [0.98]
 
