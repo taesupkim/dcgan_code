@@ -130,6 +130,7 @@ def set_generator_model(num_hiddens,
         return output
 
     return [generator_function, generator_params, generator_entropy_params]
+
 ######################################
 # BUILD ENERGY MODEL (FEATURE_MODEL) #
 ######################################
@@ -500,7 +501,7 @@ if __name__=="__main__":
 
     hidden_size_list = [100]
     num_filters_list = [32]
-    lr_list          = [1e-5]
+    lr_list          = [1e-4]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
