@@ -283,7 +283,7 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1., 1.)
+    # sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
