@@ -195,7 +195,7 @@ def set_energy_model(num_hiddens,
 
     def energy_function(feature_data, is_train=True):
         # feature-wise std
-        feature_std_inv = T.inv(T.nnet.exp(feature_std)+1e-10)
+        feature_std_inv = T.inv(T.exp(feature_std)+1e-10)
         # energy hidden-feature
         e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
