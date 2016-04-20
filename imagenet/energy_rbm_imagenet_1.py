@@ -542,22 +542,6 @@ def train_model(data_stream,
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
 
-            # noise_data   = np_rng.normal(size=input_data.shape)
-            # noise_data   = floatX(noise_data*model_config_dict['init_noise']*(model_config_dict['noise_decay']**e))
-
-            # update generator
-            # generator_update_inputs = [input_data,
-            #                            hidden_data,
-            #                            noise_data,
-            #                            e]
-            # [input_energy_val, sample_energy_val, entropy_cost] = generator_updater(*generator_update_inputs)
-
-            # update energy function
-            # energy_update_inputs = [input_data,
-            #                         hidden_data,
-            #                         e]
-            # [input_energy_val, sample_energy_val, ] = energy_updater(*energy_update_inputs)
-
             updater_inputs = [input_data,
                               hidden_data,
                               e]
