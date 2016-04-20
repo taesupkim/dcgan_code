@@ -160,8 +160,8 @@ def set_energy_model(num_hiddens,
     # FEATURE LAYER 3 (DECONV)
     conv_w3   = weight_init((num_eng_filters3, num_eng_filters2, filter_size, filter_size),
                             'feat_conv_w3')
-    conv_b3   = bias_zero(num_eng_filters3,
-                          'feat_conv_b3')
+    # conv_b3   = bias_zero(num_eng_filters3,
+    #                       'feat_conv_b3')
 
     def feature_function(input_data, is_train=True):
         # layer 0 (conv)
@@ -171,7 +171,7 @@ def set_energy_model(num_hiddens,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = batchnorm(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = batchnorm(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)))
         f  = T.flatten(h3, 2)
         return f
 
@@ -189,7 +189,7 @@ def set_energy_model(num_hiddens,
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
-                     conv_w3, conv_b3,
+                     conv_w3, #conv_b3,
                      # feature_mean, feature_std,
                      linear_w0, linear_b0]
 
@@ -205,6 +205,71 @@ def set_energy_model(num_hiddens,
         return e
 
     return [feature_function, energy_function, energy_params]
+
+######################
+# FULL MODEL UPDATER #
+######################
+def set_updater_function(feature_function,
+                         energy_function,
+                         generator_function,
+                         energy_params,
+                         generator_params,
+                         generator_entropy_params,
+                         energy_optimizer,
+                         generator_optimizer):
+
+    # set input data, hidden data, annealing rate
+    input_data  = T.tensor4(name='input_data',
+                            dtype=theano.config.floatX)
+    hidden_data = T.matrix(name='hidden_data',
+                           dtype=theano.config.floatX)
+    annealing = T.scalar(name='annealing',
+                         dtype=theano.config.floatX)
+
+    # annealing scale
+    annealing_scale = 1.0#/(1.0+99.0*(0.9**annealing))
+
+    # get sample data
+    sample_data = generator_function(hidden_data, is_train=True)
+
+    # get feature data
+    whole_data    = T.concatenate([input_data, sample_data], axis=0)
+    whole_feature = feature_function(whole_data, is_train=True)
+    input_feature  = whole_feature[:input_data.shape[0]]
+    sample_feature = whole_feature[input_data.shape[0]:]
+    # get energy value
+    input_energy  = energy_function(input_feature, is_train=True)
+    sample_energy = energy_function(sample_feature, is_train=True)
+
+    # get energy function cost (positive, negative)
+    positive_phase      = T.mean(input_energy*annealing_scale)
+    negative_phase      = T.mean(sample_energy*annealing_scale)
+
+    # get cost for energy/generator
+    energy_updates_cost    = positive_phase - negative_phase
+    generator_updates_cost = negative_phase
+
+    # get energy updates
+    energy_updates = energy_optimizer(energy_params, energy_updates_cost)
+
+    # get generator updates
+    generator_updates = generator_optimizer(generator_params, generator_updates_cost)
+
+    # updater function input
+    updater_function_inputs  = [input_data,
+                                hidden_data,
+                                annealing]
+
+    # updater function output
+    updater_function_outputs = [input_energy,
+                                sample_energy]
+
+    # updater function
+    updater_function = theano.function(inputs=updater_function_inputs,
+                                       outputs=updater_function_outputs,
+                                       updates=energy_updates+generator_updates,
+                                       on_unused_input='ignore')
+    return updater_function
 
 ########################
 # ENERGY MODEL UPDATER #
@@ -373,6 +438,7 @@ def set_sampling_function(generator_function):
                                outputs=function_outputs,
                                on_unused_input='ignore')
     return function
+
 ###########
 # TRAINER #
 ###########
@@ -389,27 +455,38 @@ def train_model(data_stream,
     # compile functions
     print 'COMPILING ENERGY UPDATER'
     t=time()
-    energy_updater = set_energy_update_function(feature_function=feature_function,
-                                                energy_function=energy_function,
-                                                generator_function=generator_function,
-                                                energy_params=energy_params,
-                                                energy_optimizer=energy_optimizer)
+    updater_function = set_updater_function(feature_function=feature_function,
+                                            energy_function=energy_function,
+                                            generator_function=generator_function,
+                                            energy_params=energy_params,
+                                            generator_params=generator_params,
+                                            generator_entropy_params=generator_entropy_params,
+                                            energy_optimizer=energy_optimizer,
+                                            generator_optimizer=generator_optimizer)
     print '%.2f SEC '%(time()-t)
-    print 'COMPILING GENERATOR UPDATER'
-    t=time()
-    generator_updater = set_generator_update_function(feature_function=feature_function,
-                                                      energy_function=energy_function,
-                                                      generator_function=generator_function,
-                                                      generator_params=generator_params,
-                                                      generator_entropy_params=generator_entropy_params,
-                                                      generator_optimizer=generator_optimizer)
-    print '%.2f SEC '%(time()-t)
-    print 'COMPILING EVALUATION FUNCTION'
-    t=time()
-    evaluation_function = set_evaluation_and_sampling_function(feature_function=feature_function,
-                                                               energy_function=energy_function,
-                                                               generator_function=generator_function)
-    print '%.2f SEC '%(time()-t)
+    # print 'COMPILING ENERGY UPDATER'
+    # t=time()
+    # energy_updater = set_energy_update_function(feature_function=feature_function,
+    #                                             energy_function=energy_function,
+    #                                             generator_function=generator_function,
+    #                                             energy_params=energy_params,
+    #                                             energy_optimizer=energy_optimizer)
+    # print '%.2f SEC '%(time()-t)
+    # print 'COMPILING GENERATOR UPDATER'
+    # t=time()
+    # generator_updater = set_generator_update_function(feature_function=feature_function,
+    #                                                   energy_function=energy_function,
+    #                                                   generator_function=generator_function,
+    #                                                   generator_params=generator_params,
+    #                                                   generator_entropy_params=generator_entropy_params,
+    #                                                   generator_optimizer=generator_optimizer)
+    # print '%.2f SEC '%(time()-t)
+    # print 'COMPILING EVALUATION FUNCTION'
+    # t=time()
+    # evaluation_function = set_evaluation_and_sampling_function(feature_function=feature_function,
+    #                                                            energy_function=energy_function,
+    #                                                            generator_function=generator_function)
+    # print '%.2f SEC '%(time()-t)
     print 'COMPILING SAMPLING FUNCTION'
     t=time()
     sampling_function = set_sampling_function(generator_function=generator_function)
@@ -442,17 +519,17 @@ def train_model(data_stream,
             noise_data   = floatX(noise_data*model_config_dict['init_noise']*(model_config_dict['noise_decay']**e))
 
             # update generator
-            generator_update_inputs = [input_data,
-                                       hidden_data,
-                                       noise_data,
-                                       e]
-            [input_energy_val, sample_energy_val, entropy_cost] = generator_updater(*generator_update_inputs)
+            # generator_update_inputs = [input_data,
+            #                            hidden_data,
+            #                            noise_data,
+            #                            e]
+            # [input_energy_val, sample_energy_val, entropy_cost] = generator_updater(*generator_update_inputs)
 
             # update energy function
             energy_update_inputs = [input_data,
                                     hidden_data,
                                     e]
-            [input_energy_val, sample_energy_val, ] = energy_updater(*energy_update_inputs)
+            [input_energy_val, sample_energy_val, ] = updater_function(*energy_update_inputs)
 
             # get output values
             input_energy  = input_energy_val.mean()
@@ -473,8 +550,6 @@ def train_model(data_stream,
                 print '     input energy     : ', input_energy
                 print '----------------------------------------------------------------'
                 print '     sample energy    : ', sample_energy
-                print '----------------------------------------------------------------'
-                print '     entropy cost     : ', entropy_cost
                 print '================================================================'
 
             if batch_count%100==0:
@@ -491,7 +566,7 @@ def train_model(data_stream,
 if __name__=="__main__":
 
     model_config_dict = OrderedDict()
-    model_config_dict['batch_size']          = 128
+    model_config_dict['batch_size']          = 64
     model_config_dict['num_display']         = 16*16
     model_config_dict['hidden_distribution'] = 1.
     model_config_dict['epochs']              = 200
