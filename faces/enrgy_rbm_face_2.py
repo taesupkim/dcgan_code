@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_FACE_RELU_WITH_BIAS'
+model_name  = 'ENERGY_RBM_FACE_RELU'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -201,7 +201,7 @@ def set_energy_model(num_hiddens,
         e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
         # energy feature prior
-        e += 0.5*T.sum(T.sqr(feature_std_inv)*T.sqr(feature_data), axis=1)
+        # e += 0.5*T.sum(T.sqr(feature_std_inv)*T.sqr(feature_data), axis=1)
         return e
 
     return [feature_function, energy_function, energy_params]
