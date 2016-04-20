@@ -172,8 +172,8 @@ def set_energy_model(num_hiddens,
     # FEATURE LAYER 3 (DECONV)
     conv_w3   = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                             'feat_conv_w3')
-    # conv_b3   = bias_zero(num_eng_filters3,
-    #                       'feat_conv_b3')
+    conv_b3   = bias_zero(num_eng_filters3,
+                          'feat_conv_b3')
 
 
     # set feature extractor
@@ -188,8 +188,8 @@ def set_energy_model(num_hiddens,
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
 
         # layer 3 (conv)
-        # h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
-        h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
+        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        # h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
         f  = T.flatten(h3, 2)
         return f
 
