@@ -373,11 +373,12 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
-    input_feature  = feature_function(input_data, is_train=True)
-    sample_feature = feature_function(sample_data, is_train=True)
+    whole_data    = T.concatenate([input_data, sample_data], axis=0)
+    whole_feature = feature_function(whole_data, is_train=True)
+    input_feature  = whole_feature[:input_data.shape[0]]
+    sample_feature = whole_feature[input_data.shape[0]:]
 
     # get energy value
     input_energy = energy_function(input_feature, is_train=True)
