@@ -172,8 +172,8 @@ def set_energy_model(num_hiddens,
     # FEATURE LAYER 3 (DECONV)
     conv_w3   = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                             'feat_conv_w3')
-    conv_b3   = bias_zero(num_eng_filters3,
-                          'feat_conv_b3')
+    # conv_b3   = bias_zero(num_eng_filters3,
+    #                       'feat_conv_b3')
 
 
     # set feature extractor
@@ -188,8 +188,9 @@ def set_energy_model(num_hiddens,
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
 
         # layer 3 (conv)
-        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        # h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         # h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
+        h3 = batchnorm(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)))
         f  = T.flatten(h3, 2)
         return f
 
@@ -197,10 +198,10 @@ def set_energy_model(num_hiddens,
     feature_size = num_eng_filters3*min_image_size*min_image_size
 
     # ENERGY LAYER (LINEAR)
-    feature_mean = bias_zero((feature_size, ),
-                             'feature_mean')
-    feature_std  = bias_zero((feature_size, ),
-                             'feature_std')
+    # feature_mean = bias_zero((feature_size, ),
+    #                          'feature_mean')
+    # feature_std  = bias_zero((feature_size, ),
+    #                          'feature_std')
     linear_w0    = weight_init((feature_size, num_hiddens),
                                'eng_linear_w0')
     linear_b0    = bias_zero(num_hiddens,
@@ -211,18 +212,20 @@ def set_energy_model(num_hiddens,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, #conv_b3,
-                     feature_mean, feature_std,
+                     # feature_mean, feature_std,
                      linear_w0, linear_b0]
 
     # set energy function
     def energy_function(feature_data, is_train=True):
         # feature-wise std
-        feature_std_inv = T.inv(T.nnet.softplus(feature_std)+1e-10)
+        # feature_std_inv = T.inv(T.nnet.softplus(feature_std)+1e-10)
         # energy hidden-feature
-        e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
+        # e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
+        e = softplus(T.dot(feature_data, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
         # energy feature prior
-        e += 0.5*T.sum(T.sqr(feature_std_inv)*T.sqr(feature_data-feature_mean), axis=1)
+        # e += 0.5*T.sum(T.sqr(feature_std_inv)*T.sqr(feature_data-feature_mean), axis=1)
+        e += 0.5*T.sum(T.sqr(feature_data), axis=1).reshape((feature_data.shape[0],1))
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -253,8 +256,12 @@ def set_updater_function(feature_function,
     sample_data = generator_function(hidden_data, is_train=True)
 
     # get feature data
-    input_feature  = feature_function(input_data, is_train=True)
-    sample_feature = feature_function(sample_data, is_train=True)
+    whole_data    = T.concatenate([input_data, sample_data], axis=0)
+    whole_feature = feature_function(whole_data, is_train=True)
+    # input_feature  = feature_function(input_data, is_train=True)
+    # sample_feature = feature_function(sample_data, is_train=True)
+    input_feature  = whole_feature[:input_data.shape[0]]
+    sample_feature = whole_feature[input_data.shape[0]:]
 
     # get energy value
     input_energy  = energy_function(input_feature, is_train=True)
