@@ -49,6 +49,8 @@ softplus = Softplus()
 # SET INITIALIZER #
 ###################
 weight_init = Normal(scale=0.01)
+weight_init_low  = Normal(scale=0.001)
+weight_init_high = Normal(scale=0.1)
 scale_init  = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
 bias_const  = Constant(c=0.1)
@@ -70,8 +72,8 @@ def set_generator_model(num_hiddens,
     init_hidden_size = num_gen_filters0*init_image_size*init_image_size
 
     # LAYER 0 (LINEAR W/ BN)
-    linear_w0    = weight_init((num_hiddens, init_hidden_size),
-                               'gen_linear_w0')*10.0
+    linear_w0    = weight_init_high((num_hiddens, init_hidden_size),
+                               'gen_linear_w0')
     linear_bn_w0 = scale_init((init_hidden_size,),
                               'gen_linear_bn_w0')
     linear_bn_b0 = bias_const((init_hidden_size,),
@@ -202,8 +204,8 @@ def set_energy_model(num_hiddens,
     #                          'feature_mean')
     # feature_std  = bias_zero((feature_size, ),
     #                          'feature_std')
-    linear_w0    = weight_init((feature_size, num_hiddens),
-                               'eng_linear_w0')*0.1
+    linear_w0    = weight_init_low((feature_size, num_hiddens),
+                               'eng_linear_w0')
     linear_b0    = bias_zero(num_hiddens,
                              'eng_linear_b0')
 
