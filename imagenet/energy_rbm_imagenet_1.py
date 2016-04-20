@@ -71,7 +71,7 @@ def set_generator_model(num_hiddens,
 
     # LAYER 0 (LINEAR W/ BN)
     linear_w0    = weight_init((num_hiddens, init_hidden_size),
-                               'gen_linear_w0')
+                               'gen_linear_w0')*10.0
     linear_bn_w0 = scale_init((init_hidden_size,),
                               'gen_linear_bn_w0')
     linear_bn_b0 = bias_const((init_hidden_size,),
