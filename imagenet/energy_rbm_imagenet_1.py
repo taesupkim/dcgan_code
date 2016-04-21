@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_TANH_INV_UNIF'
+model_name  = 'ENERGY_RBM_IMAGENET_TANH_NO_BIAS'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -190,8 +190,6 @@ def set_energy_model(num_hiddens,
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
 
         # layer 3 (conv)
-        # h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
-        # h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
         h3 = tanh(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         f  = T.flatten(h3, 2)
         return f
@@ -627,6 +625,7 @@ if __name__=="__main__":
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
                                     generator_optimizer = RMSprop(lr=sharedX(lr),
+                                                                  rho=0.5,
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
