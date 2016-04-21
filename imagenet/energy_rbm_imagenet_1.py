@@ -10,7 +10,7 @@ from lib.updates import Adagrad, Regularizer, RMSprop, Adam
 from lib.inits import Normal, Constant
 from lib.vis import color_grid_vis
 from lib.rng import py_rng, np_rng
-from lib.ops import batchnorm, conv_cond_concat, deconv, dropout, l2normalize
+from lib.ops import batchnorm, entropykeep, deconv, dropout, l2normalize
 from lib.theano_utils import floatX, sharedX
 from load import imagenet
 
@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_TANH_NO_BIAS'
+model_name  = 'ENERGY_RBM_IMAGENET_TANH_ENTROPY'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -124,17 +124,17 @@ def set_generator_model(num_hiddens,
     # set generator function
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = relu(entropykeep(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
 
         # layer 1 (deconv)
-        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = relu(entropykeep(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
 
         # layer 2 (deconv)
-        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = relu(entropykeep(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
 
         # layer 3 (deconv)
-        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = relu(entropykeep(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
 
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
@@ -191,8 +191,7 @@ def set_energy_model(num_hiddens,
 
         # layer 3 (conv)
         h3 = tanh(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
-        f  = T.flatten(h3, 2)
-        return f
+        return T.flatten(h3, 2)
 
     # feature size
     feature_size = num_eng_filters3*min_image_size*min_image_size
@@ -600,7 +599,7 @@ if __name__=="__main__":
 
     hidden_size_list = [512]
     num_filters_list = [128]
-    lr_list          = [1e-6]
+    lr_list          = [1e-5]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
