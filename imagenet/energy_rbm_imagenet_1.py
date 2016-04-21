@@ -611,7 +611,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr*2.0),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
