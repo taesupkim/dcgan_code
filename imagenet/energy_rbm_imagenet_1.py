@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_TANH_ENTROPY'
+model_name  = 'ENERGY_RBM_IMAGENET_TANH_LEAKEY'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -50,8 +50,6 @@ softplus = Softplus()
 # SET INITIALIZER #
 ###################
 weight_init = Normal(scale=0.01)
-weight_init_low  = Normal(scale=0.001)
-weight_init_high = Normal(scale=0.1)
 scale_init  = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
 bias_const  = Constant(c=0.1)
@@ -73,7 +71,7 @@ def set_generator_model(num_hiddens,
     init_hidden_size = num_gen_filters0*init_image_size*init_image_size
 
     # LAYER 0 (LINEAR W/ BN)
-    linear_w0    = weight_init_high((num_hiddens, init_hidden_size),
+    linear_w0    = weight_init((num_hiddens, init_hidden_size),
                                'gen_linear_w0')
     linear_bn_w0 = scale_init((init_hidden_size,),
                               'gen_linear_bn_w0')
@@ -125,17 +123,17 @@ def set_generator_model(num_hiddens,
     # set generator function
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = lrelu(entropykeep(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = lrelu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
 
         # layer 1 (deconv)
-        h1     = lrelu(entropykeep(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = lrelu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
 
         # layer 2 (deconv)
-        h2     = lrelu(entropykeep(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = lrelu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
 
         # layer 3 (deconv)
-        h3     = lrelu(entropykeep(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = lrelu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
 
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
@@ -202,7 +200,7 @@ def set_energy_model(num_hiddens,
     #                          'feature_mean')
     # feature_std  = bias_zero((feature_size, ),
     #                          'feature_std')
-    linear_w0    = weight_init_low((feature_size, num_hiddens),
+    linear_w0    = weight_init((feature_size, num_hiddens),
                                'eng_linear_w0')
     linear_b0    = bias_zero(num_hiddens,
                              'eng_linear_b0')
@@ -255,10 +253,9 @@ def set_updater_function(feature_function,
     sample_data = generator_function(hidden_data, is_train=True)
 
     # get feature data
-    whole_data    = T.concatenate([input_data, sample_data], axis=0)
-    whole_feature = feature_function(whole_data, is_train=True)
-    input_feature  = whole_feature[:input_data.shape[0]]
-    sample_feature = whole_feature[input_data.shape[0]:]
+    input_feature  = feature_function(input_data, is_train=True)
+    sample_feature = feature_function(sample_data, is_train=True)
+
     # get energy value
     input_energy  = energy_function(input_feature, is_train=True)
     sample_energy = energy_function(sample_feature, is_train=True)
@@ -612,7 +609,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr*2.0),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr*100.0),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
