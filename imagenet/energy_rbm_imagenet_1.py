@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_TANH_LEAKEY'
+model_name  = 'ENERGY_RBM_IMAGENET_LEAKEY_FEAT_SINGLE'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -123,17 +123,17 @@ def set_generator_model(num_hiddens,
     # set generator function
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = lrelu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
 
         # layer 1 (deconv)
-        h1     = lrelu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
 
         # layer 2 (deconv)
-        h2     = lrelu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
 
         # layer 3 (deconv)
-        h3     = lrelu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
 
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
@@ -180,13 +180,13 @@ def set_energy_model(num_hiddens,
     # set feature extractor
     def feature_function(input_data, is_train=True):
         # layer 0 (conv)
-        h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
+        h0 = lrelu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
 
         # layer 1 (conv)
-        h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
+        h1 = lrelu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
 
         # layer 2 (conv)
-        h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        h2 = lrelu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
 
         # layer 3 (conv)
         h3 = tanh(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
@@ -464,36 +464,36 @@ def train_model(data_stream,
     [feature_function, energy_function, energy_params] = set_energy_model(model_config_dict['hidden_size'],
                                                                           model_config_dict['min_num_eng_filters'])
 
-    # print 'COMPILING UPDATER FUNCTION'
-    # t=time()
-    # updater_function = set_updater_function(feature_function=feature_function,
-    #                                         energy_function=energy_function,
-    #                                         generator_function=generator_function,
-    #                                         energy_params=energy_params,
-    #                                         generator_params=generator_params,
-    #                                         generator_entropy_params=generator_entropy_params,
-    #                                         energy_optimizer=energy_optimizer,
-    #                                         generator_optimizer=generator_optimizer)
-    # print '%.2f SEC '%(time()-t)
+    print 'COMPILING UPDATER FUNCTION'
+    t=time()
+    updater_function = set_updater_function(feature_function=feature_function,
+                                            energy_function=energy_function,
+                                            generator_function=generator_function,
+                                            energy_params=energy_params,
+                                            generator_params=generator_params,
+                                            generator_entropy_params=generator_entropy_params,
+                                            energy_optimizer=energy_optimizer,
+                                            generator_optimizer=generator_optimizer)
+    print '%.2f SEC '%(time()-t)
 
     # compile functions
-    print 'COMPILING ENERGY UPDATER'
-    t=time()
-    energy_updater = set_energy_update_function(feature_function=feature_function,
-                                                energy_function=energy_function,
-                                                generator_function=generator_function,
-                                                energy_params=energy_params,
-                                                energy_optimizer=energy_optimizer)
-    print '%.2f SEC '%(time()-t)
-
-    print 'COMPILING GENERATOR UPDATER'
-    t=time()
-    generator_updater = set_generator_update_function(feature_function=feature_function,
-                                                      energy_function=energy_function,
-                                                      generator_function=generator_function,
-                                                      generator_params=generator_params,
-                                                      generator_optimizer=generator_optimizer)
-    print '%.2f SEC '%(time()-t)
+    # print 'COMPILING ENERGY UPDATER'
+    # t=time()
+    # energy_updater = set_energy_update_function(feature_function=feature_function,
+    #                                             energy_function=energy_function,
+    #                                             generator_function=generator_function,
+    #                                             energy_params=energy_params,
+    #                                             energy_optimizer=energy_optimizer)
+    # print '%.2f SEC '%(time()-t)
+    #
+    # print 'COMPILING GENERATOR UPDATER'
+    # t=time()
+    # generator_updater = set_generator_update_function(feature_function=feature_function,
+    #                                                   energy_function=energy_function,
+    #                                                   generator_function=generator_function,
+    #                                                   generator_params=generator_params,
+    #                                                   generator_optimizer=generator_optimizer)
+    # print '%.2f SEC '%(time()-t)
 
     # print 'COMPILING EVALUATION FUNCTION'
     # t=time()
@@ -533,8 +533,7 @@ def train_model(data_stream,
             updater_inputs = [input_data,
                               hidden_data,
                               e]
-            updater_outputs = generator_updater(*updater_inputs)
-            updater_outputs = energy_updater(*updater_inputs)
+            updater_outputs = updater_function(*updater_inputs)
 
             # get output values
             input_energy  = updater_outputs[0].mean()
@@ -609,7 +608,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr*100.0),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
