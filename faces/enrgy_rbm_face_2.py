@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_FACE_TANH_INV_MAP'
+model_name  = 'ENERGY_RBM_FACE_TANH_NO_BIAS'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -326,6 +326,7 @@ def set_energy_update_function(feature_function,
                                       updates=energy_updates,
                                       on_unused_input='ignore')
     return update_function
+
 #####################
 # GENERATOR UPDATER #
 #####################
@@ -341,8 +342,6 @@ def set_generator_update_function(feature_function,
                             dtype=theano.config.floatX)
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
-    noise_data  = T.tensor4(name='noise_data',
-                            dtype=theano.config.floatX)
     annealing = T.scalar(name='annealing',
                          dtype=theano.config.floatX)
 
@@ -351,7 +350,6 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -375,7 +373,6 @@ def set_generator_update_function(feature_function,
     # update function input
     update_function_inputs  = [input_data,
                                hidden_data,
-                               noise_data,
                                annealing]
 
     # update function output
@@ -392,9 +389,9 @@ def set_generator_update_function(feature_function,
 #############
 # EVALUATOR #
 #############
-def set_evaluation_and_sampling_function(feature_function,
-                                         energy_function,
-                                         generator_function):
+def set_validation_function(feature_function,
+                            energy_function,
+                            generator_function):
     # set input data, hidden data, annealing rate
     input_data  = T.tensor4(name='input_data',
                             dtype=theano.config.floatX)
@@ -573,9 +570,9 @@ if __name__=="__main__":
     #################
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [100]
-    num_filters_list = [32]
-    lr_list          = [1e-4]
+    hidden_size_list = [512]
+    num_filters_list = [128]
+    lr_list          = [1e-5]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
