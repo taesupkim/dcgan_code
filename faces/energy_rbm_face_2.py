@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_FACE_MEAN'
+model_name  = 'ENERGY_RBM_FACE_NO_BIAS'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -183,22 +183,22 @@ def set_energy_model(num_hiddens,
     linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
                                 num_hiddens),
                                'eng_linear_w0')
-    linear_b0    = bias_zero(num_hiddens,
-                             'eng_linear_b0')
+    # linear_b0    = bias_zero(num_hiddens,
+    #                          'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
                      # feature_mean, feature_std,
-                     linear_w0, linear_b0]
+                     linear_w0]#, linear_b0]
 
     def energy_function(feature_data, is_train=True):
         # feature-wise std
         # feature_std_inv = T.inv(T.nnet.softplus(feature_std)+1e-10)
         feature_std_inv = 1.0
         # energy hidden-feature
-        e = softplus(T.dot(feature_data, linear_w0)+linear_b0)
+        e = softplus(T.dot(feature_data, linear_w0))#+linear_b0)
         # e = T.sum(-e, axis=1)
         e = T.mean(-e, axis=1)
         # energy feature prior
@@ -580,7 +580,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr*10),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
