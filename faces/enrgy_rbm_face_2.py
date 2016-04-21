@@ -496,7 +496,6 @@ def train_model(data_stream,
     fixed_hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                high=model_config_dict['hidden_distribution'],
                                                size=(model_config_dict['num_display'], model_config_dict['hidden_size'])))
-    fixed_hidden_data  = np.arctanh(fixed_hidden_data)
 
     print 'START TRAINING'
     # for each epoch
@@ -515,7 +514,6 @@ def train_model(data_stream,
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
-            hidden_data  = np.arctanh(hidden_data)
 
             # update generator
             # generator_update_inputs = [input_data,
