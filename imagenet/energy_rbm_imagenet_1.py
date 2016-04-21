@@ -220,7 +220,8 @@ def set_energy_model(num_hiddens,
         # energy hidden-feature
         # e = softplus(T.dot(feature_data*feature_std_inv, linear_w0)+linear_b0)
         e = softplus(T.dot(feature_data, linear_w0)+linear_b0)
-        e = T.sum(-e, axis=1)
+        # e = T.sum(-e, axis=1)
+        e = T.mean(-e, axis=1)
         # energy feature prior
         # e += 0.5*T.sum(T.sqr(feature_data), axis=1)
         return e
