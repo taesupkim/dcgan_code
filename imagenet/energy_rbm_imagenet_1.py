@@ -364,7 +364,7 @@ def set_generator_update_function(feature_function,
                          dtype=theano.config.floatX)
 
     # annealing scale
-    annealing_scale = 1.0#/(1.0+99.0*(0.9**annealing))
+    annealing_scale = 1.0/(1.0+99.0*(0.99**annealing))
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
@@ -464,36 +464,36 @@ def train_model(data_stream,
     [feature_function, energy_function, energy_params] = set_energy_model(model_config_dict['hidden_size'],
                                                                           model_config_dict['min_num_eng_filters'])
 
-    print 'COMPILING UPDATER FUNCTION'
-    t=time()
-    updater_function = set_updater_function(feature_function=feature_function,
-                                            energy_function=energy_function,
-                                            generator_function=generator_function,
-                                            energy_params=energy_params,
-                                            generator_params=generator_params,
-                                            generator_entropy_params=generator_entropy_params,
-                                            energy_optimizer=energy_optimizer,
-                                            generator_optimizer=generator_optimizer)
-    print '%.2f SEC '%(time()-t)
-
-    # compile functions
-    # print 'COMPILING ENERGY UPDATER'
+    # print 'COMPILING UPDATER FUNCTION'
     # t=time()
-    # energy_updater = set_energy_update_function(feature_function=feature_function,
-    #                                             energy_function=energy_function,
-    #                                             generator_function=generator_function,
-    #                                             energy_params=energy_params,
-    #                                             energy_optimizer=energy_optimizer)
+    # updater_function = set_updater_function(feature_function=feature_function,
+    #                                         energy_function=energy_function,
+    #                                         generator_function=generator_function,
+    #                                         energy_params=energy_params,
+    #                                         generator_params=generator_params,
+    #                                         generator_entropy_params=generator_entropy_params,
+    #                                         energy_optimizer=energy_optimizer,
+    #                                         generator_optimizer=generator_optimizer)
     # print '%.2f SEC '%(time()-t)
     #
-    # print 'COMPILING GENERATOR UPDATER'
-    # t=time()
-    # generator_updater = set_generator_update_function(feature_function=feature_function,
-    #                                                   energy_function=energy_function,
-    #                                                   generator_function=generator_function,
-    #                                                   generator_params=generator_params,
-    #                                                   generator_optimizer=generator_optimizer)
-    # print '%.2f SEC '%(time()-t)
+    # compile functions
+    print 'COMPILING ENERGY UPDATER'
+    t=time()
+    energy_updater = set_energy_update_function(feature_function=feature_function,
+                                                energy_function=energy_function,
+                                                generator_function=generator_function,
+                                                energy_params=energy_params,
+                                                energy_optimizer=energy_optimizer)
+    print '%.2f SEC '%(time()-t)
+
+    print 'COMPILING GENERATOR UPDATER'
+    t=time()
+    generator_updater = set_generator_update_function(feature_function=feature_function,
+                                                      energy_function=energy_function,
+                                                      generator_function=generator_function,
+                                                      generator_params=generator_params,
+                                                      generator_optimizer=generator_optimizer)
+    print '%.2f SEC '%(time()-t)
 
     # print 'COMPILING EVALUATION FUNCTION'
     # t=time()
@@ -532,9 +532,9 @@ def train_model(data_stream,
 
             updater_inputs = [input_data,
                               hidden_data,
-                              e]
-            # updater_outputs = generator_updater(*updater_inputs)
-            updater_outputs = updater_function(*updater_inputs)
+                              batch_count]
+            updater_outputs = generator_updater(*updater_inputs)
+            updater_outputs = energy_updater(*updater_inputs)
 
             # get output values
             input_energy  = updater_outputs[0].mean()
@@ -609,7 +609,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr*10),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
