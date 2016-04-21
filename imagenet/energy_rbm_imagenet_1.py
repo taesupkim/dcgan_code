@@ -174,8 +174,8 @@ def set_energy_model(num_hiddens,
     # FEATURE LAYER 3 (DECONV)
     conv_w3   = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                             'feat_conv_w3')
-    # conv_b3   = bias_zero(num_eng_filters3,
-    #                       'feat_conv_b3')
+    conv_b3   = bias_zero(num_eng_filters3,
+                          'feat_conv_b3')
 
 
     # set feature extractor
@@ -192,7 +192,7 @@ def set_energy_model(num_hiddens,
         # layer 3 (conv)
         # h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         # h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
-        h3 = relu(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)))
+        h3 = tanh(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         f  = T.flatten(h3, 2)
         return f
 
@@ -213,7 +213,7 @@ def set_energy_model(num_hiddens,
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
-                     conv_w3, #conv_b3,
+                     conv_w3, conv_b3,
                      # feature_mean, feature_std,
                      linear_w0, linear_b0]
 
@@ -226,7 +226,7 @@ def set_energy_model(num_hiddens,
         e = softplus(T.dot(feature_data, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
         # energy feature prior
-        e += 0.5*T.sum(T.sqr(feature_data), axis=1)
+        # e += 0.5*T.sum(T.sqr(feature_data), axis=1)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -529,6 +529,7 @@ def train_model(data_stream,
     fixed_hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                high=model_config_dict['hidden_distribution'],
                                                size=(model_config_dict['num_display'], model_config_dict['hidden_size'])))
+    fixed_hidden_data = np.arctanh(fixed_hidden_data)
 
     print 'START TRAINING'
     # for each epoch
@@ -547,6 +548,7 @@ def train_model(data_stream,
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
+            hidden_data = np.arctanh(hidden_data)
 
             updater_inputs = [input_data,
                               hidden_data,
@@ -602,7 +604,7 @@ if __name__=="__main__":
 
     hidden_size_list = [512]
     num_filters_list = [128]
-    lr_list          = [1e-6]
+    lr_list          = [1e-5]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
@@ -626,7 +628,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr*10.0),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
