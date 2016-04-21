@@ -574,8 +574,8 @@ if __name__=="__main__":
     num_filters_list = [128]
     lr_list          = [1e-5]
     dropout_list     = [False,]
-    lambda_eng_list  = [1e-5]
-    lambda_gen_list  = [1e-5]
+    lambda_eng_list  = [1e-10]
+    lambda_gen_list  = [1e-10]
     init_noise_list  = [1e-2]
     noise_decay_list = [0.98]
 
@@ -597,7 +597,6 @@ if __name__=="__main__":
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
                                     generator_optimizer = RMSprop(lr=sharedX(lr),
-                                                                  rho=0.5,
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
