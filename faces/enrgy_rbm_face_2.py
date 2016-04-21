@@ -560,7 +560,7 @@ def train_model(data_stream,
 if __name__=="__main__":
 
     model_config_dict = OrderedDict()
-    model_config_dict['batch_size']          = 64
+    model_config_dict['batch_size']          = 128
     model_config_dict['num_display']         = 16*16
     model_config_dict['hidden_distribution'] = 1.
     model_config_dict['epochs']              = 200
