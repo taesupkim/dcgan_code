@@ -211,7 +211,7 @@ def set_energy_model(num_hiddens,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
                      # feature_mean, feature_std,
-                     linear_w0, #linear_b0]
+                     linear_w0] #linear_b0]
 
     # set energy function
     def energy_function(feature_data, is_train=True):
@@ -609,7 +609,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr*10),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
