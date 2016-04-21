@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_LEAKEY_FEAT_SINGLE'
+model_name  = 'ENERGY_RBM_IMAGENET_SINGLE'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -180,13 +180,13 @@ def set_energy_model(num_hiddens,
     # set feature extractor
     def feature_function(input_data, is_train=True):
         # layer 0 (conv)
-        h0 = lrelu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
+        h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
 
         # layer 1 (conv)
-        h1 = lrelu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
+        h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
 
         # layer 2 (conv)
-        h2 = lrelu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
 
         # layer 3 (conv)
         h3 = tanh(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
@@ -584,7 +584,7 @@ if __name__=="__main__":
 
     hidden_size_list = [512]
     num_filters_list = [128]
-    lr_list          = [1e-6]
+    lr_list          = [1e-5]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
@@ -608,7 +608,7 @@ if __name__=="__main__":
                                     # set updates
                                     energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                                   regularizer=Regularizer(l2=lambda_eng))
-                                    generator_optimizer = RMSprop(lr=sharedX(lr),
+                                    generator_optimizer = RMSprop(lr=sharedX(lr*2.0),
                                                                   regularizer=Regularizer(l2=lambda_gen))
                                     model_test_name = model_name \
                                                       + '_f{}'.format(int(num_filters)) \
