@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_RELU_WITH_BIAS'
+model_name  = 'ENERGY_RBM_IMAGENET_TANH_INV_UNIF'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
