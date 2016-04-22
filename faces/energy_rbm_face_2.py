@@ -207,8 +207,8 @@ def set_energy_update_function(feature_function,
                             dtype=theano.config.floatX)
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
-    noise_data  = T.matrix(name='noise_data',
-                           dtype=theano.config.floatX)
+    noise_data  = T.tensor4(name='noise_data',
+                            dtype=theano.config.floatX)
     annealing = T.scalar(name='annealing',
                          dtype=theano.config.floatX)
 
@@ -265,8 +265,8 @@ def set_generator_update_function(feature_function,
                             dtype=theano.config.floatX)
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
-    noise_data  = T.matrix(name='noise_data',
-                           dtype=theano.config.floatX)
+    noise_data  = T.tensor4(name='noise_data',
+                            dtype=theano.config.floatX)
     annealing = T.scalar(name='annealing',
                          dtype=theano.config.floatX)
 
