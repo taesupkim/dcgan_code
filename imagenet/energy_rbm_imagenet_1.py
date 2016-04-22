@@ -480,7 +480,7 @@ if __name__=="__main__":
     _ , data_stream = imagenet(batch_size=model_config_dict['batch_size'])
 
     hidden_size_list = [100]
-    num_filters_list = [64]
+    num_filters_list = [128]
     lr_list          = [1e-5]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-5]
@@ -511,6 +511,6 @@ if __name__=="__main__":
 
                             train_model(data_stream=data_stream,
                                         energy_optimizer=energy_optimizer,
-                                        generator_optimizer=generator_optimizer,
+                                        generator_optimizer=energy_optimizer,
                                         model_config_dict=model_config_dict,
                                         model_test_name=model_test_name)
