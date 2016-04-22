@@ -477,7 +477,7 @@ if __name__=="__main__":
 
     hidden_size_list = [100]
     num_filters_list = [64]
-    lr_list          = [1e-2]
+    lr_list          = [1e-3]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
@@ -495,7 +495,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(lr),
+                            generator_optimizer = Adagrad(lr=sharedX(lr*10),
                                                           regularizer=Regularizer(l2=lambda_gen))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
