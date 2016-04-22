@@ -218,7 +218,7 @@ def set_energy_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = sample_data + noise_data
+    # sample_data = sample_data + noise_data
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
     sample_feature = feature_function(sample_data, is_train=True)
@@ -276,7 +276,7 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = sample_data + noise_data
+    # sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
