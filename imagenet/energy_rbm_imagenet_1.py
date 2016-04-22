@@ -221,7 +221,7 @@ def set_energy_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = sample_data + noise_data
+    sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -280,7 +280,7 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = sample_data + noise_data
+    sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -483,7 +483,7 @@ if __name__=="__main__":
     num_filters_list = [64]
     lr_list          = [1e-5]
     dropout_list     = [False,]
-    lambda_eng_list  = [1e-10]
+    lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-10]
 
     for lr in lr_list:
@@ -499,7 +499,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = RMSprop(lr=sharedX(lr*100),
+                            generator_optimizer = RMSprop(lr=sharedX(lr*10),
                                                           regularizer=Regularizer(l2=lambda_gen))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
