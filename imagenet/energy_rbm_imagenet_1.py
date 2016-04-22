@@ -475,7 +475,7 @@ if __name__=="__main__":
     #################
     _ , data_stream = imagenet(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [1024]
+    hidden_size_list = [100]
     num_filters_list = [64]
     lr_list          = [1e-5]
     dropout_list     = [False,]
