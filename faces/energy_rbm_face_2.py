@@ -115,14 +115,14 @@ def set_generator_model(num_hiddens,
 
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = relu(entropykeep(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = relu(entropykeep(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = relu(entropykeep(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = relu(entropykeep(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -173,10 +173,6 @@ def set_energy_model(num_hiddens,
         return T.flatten(h3, 2)
 
     # ENERGY LAYER (LINEAR)
-    # feature_mean = bias_zero((num_eng_filters3*(min_image_size*min_image_size), ),
-    #                          'feature_mean')
-    # feature_std  = bias_zero((num_eng_filters3*(min_image_size*min_image_size), ),
-    #                          'feature_std')
     linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
                                 num_hiddens),
                                'eng_linear_w0')
@@ -187,18 +183,12 @@ def set_energy_model(num_hiddens,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     # feature_mean, feature_std,
                      linear_w0, linear_b0]
 
     def energy_function(feature_data, is_train=True):
-        # feature-wise std
-        # feature_std_inv = T.inv(T.nnet.softplus(feature_std)+1e-10)
-        feature_std_inv = 1.0
         # energy hidden-feature
         e = softplus(T.dot(feature_data, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
-        # energy feature prior
-        # e += 0.5*T.sum(T.sqr(feature_std_inv)*T.sqr(feature_data), axis=1)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -212,12 +202,13 @@ def set_energy_update_function(feature_function,
                                energy_params,
                                energy_optimizer):
 
-    # set input data, hidden data, annealing rate
+    # set input data, hidden data, noise data,  annealing rate
     input_data  = T.tensor4(name='input_data',
                             dtype=theano.config.floatX)
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
-
+    noise_data  = T.matrix(name='noise_data',
+                           dtype=theano.config.floatX)
     annealing = T.scalar(name='annealing',
                          dtype=theano.config.floatX)
 
@@ -226,7 +217,7 @@ def set_energy_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-
+    sample_data = sample_data + noise_data
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
     sample_feature = feature_function(sample_data, is_train=True)
@@ -246,6 +237,7 @@ def set_energy_update_function(feature_function,
     # update function input
     update_function_inputs  = [input_data,
                                hidden_data,
+                               sample_data,
                                annealing]
 
     # update function output
@@ -273,6 +265,8 @@ def set_generator_update_function(feature_function,
                             dtype=theano.config.floatX)
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
+    noise_data  = T.matrix(name='noise_data',
+                           dtype=theano.config.floatX)
     annealing = T.scalar(name='annealing',
                          dtype=theano.config.floatX)
 
@@ -281,6 +275,7 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
+    sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -299,6 +294,7 @@ def set_generator_update_function(feature_function,
     # update function input
     update_function_inputs  = [input_data,
                                hidden_data,
+                               noise_data,
                                annealing]
 
     # update function output
@@ -421,9 +417,12 @@ def train_model(data_stream,
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
+            noise_data   = floatX(np_rng.normal(scale=0.01*(0.99**int(batch_count/100)),
+                                                size=(num_data, num_channels, input_shape, input_shape)))
 
             updater_inputs = [input_data,
                               hidden_data,
+                              noise_data,
                               batch_count]
             updater_outputs = generator_updater(*updater_inputs)
             updater_outputs = energy_updater(*updater_inputs)
@@ -438,15 +437,17 @@ def train_model(data_stream,
             # batch count up
             batch_count += 1
 
-            if batch_count%10==0:
+            if batch_count%100==0:
                 print '================================================================'
                 print 'BATCH ITER #{}'.format(batch_count), model_test_name
                 print '================================================================'
                 print '   TRAIN RESULTS'
                 print '================================================================'
-                print '     input energy     : ', input_energy
+                print '     input energy     : ', input_energy_list[-1]
                 print '----------------------------------------------------------------'
-                print '     sample energy    : ', sample_energy
+                print '     sample energy    : ', sample_energy_list[-1]
+                print '================================================================'
+                print '     learning rate    : ', 0.01*(0.99**int(batch_count/100))
                 print '================================================================'
 
             if batch_count%100==0:
@@ -474,11 +475,11 @@ if __name__=="__main__":
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
     hidden_size_list = [1024]
-    num_filters_list = [128]
+    num_filters_list = [64]
     lr_list          = [1e-4]
     dropout_list     = [False,]
-    lambda_eng_list  = [1e-10]
-    lambda_gen_list  = [1e-10]
+    lambda_eng_list  = [1e-5]
+    lambda_gen_list  = [1e-5]
 
     for lr in lr_list:
         for num_filters in num_filters_list:

@@ -98,7 +98,7 @@ def entropykeep(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
             b_s = (1. - a)*1. + a*b_s
         X = (X - b_u) / T.sqrt(b_s + e)
         if g is not None and b is not None:
-            X = X*T.nnet.softplus(g.dimshuffle('x', 0, 'x', 'x')+1.0)+b.dimshuffle('x', 0, 'x', 'x')
+            X = X*(1.0+T.nnet.softplus(g.dimshuffle('x', 0, 'x', 'x')))+b.dimshuffle('x', 0, 'x', 'x')
     elif X.ndim == 2:
         if u is None and s is None:
             u = T.mean(X, axis=0)
@@ -108,7 +108,7 @@ def entropykeep(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
             s = (1. - a)*1. + a*s
         X = (X - u) / T.sqrt(s + e)
         if g is not None and b is not None:
-            X = X*T.nnet.softplus(g+1.0)+b
+            X = X*(1.0+T.nnet.softplus(g))+b
     else:
         raise NotImplementedError
     return X
