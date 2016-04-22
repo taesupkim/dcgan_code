@@ -450,7 +450,7 @@ def train_model(data_stream,
                 print '     learning rate    : ', 0.01*(0.99**int(batch_count/100))
                 print '================================================================'
 
-            if batch_count%100==0:
+            if batch_count%1000==0:
                 # sample data
                 save_as = samples_dir + '/' + model_test_name + '_SAMPLES{}.png'.format(batch_count)
                 sample_data = sampling_function(fixed_hidden_data)[0]
