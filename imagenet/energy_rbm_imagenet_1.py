@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_SEPARATE'
+model_name  = 'ENERGY_IMAGENET_FACE_SEPARATE'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -41,6 +41,7 @@ filter_size  = 5
 ##############################
 # SET ACTIVATIONS AND OTHERS #
 ##############################
+lrelu = LeakyRectify()
 relu  = Rectify()
 tanh  = Tanh()
 softplus = Softplus()
@@ -48,7 +49,6 @@ softplus = Softplus()
 ###################
 # SET INITIALIZER #
 ###################
-filter_init = Normal(scale=0.01)
 weight_init = Normal(scale=0.01)
 scale_init  = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
@@ -78,7 +78,7 @@ def set_generator_model(num_hiddens,
                               'gen_linear_bn_b0')
 
     # LAYER 1 (DECONV)
-    conv_w1    = filter_init((num_gen_filters0, num_gen_filters1, filter_size, filter_size),
+    conv_w1    = weight_init((num_gen_filters0, num_gen_filters1, filter_size, filter_size),
                              'gen_conv_w1')
     conv_bn_w1 = scale_init(num_gen_filters1,
                             'gen_conv_bn_w1')
@@ -86,7 +86,7 @@ def set_generator_model(num_hiddens,
                             'gen_conv_bn_b1')
 
     # LAYER 2 (DECONV)
-    conv_w2    = filter_init((num_gen_filters1, num_gen_filters2, filter_size, filter_size),
+    conv_w2    = weight_init((num_gen_filters1, num_gen_filters2, filter_size, filter_size),
                              'gen_conv_w2')
     conv_bn_w2 = scale_init(num_gen_filters2,
                             'gen_conv_bn_w2')
@@ -94,7 +94,7 @@ def set_generator_model(num_hiddens,
                             'gen_conv_bn_b2')
 
     # LAYER 2 (DECONV)
-    conv_w3    = filter_init((num_gen_filters2, num_gen_filters3, filter_size, filter_size),
+    conv_w3    = weight_init((num_gen_filters2, num_gen_filters3, filter_size, filter_size),
                              'gen_conv_w3')
     conv_bn_w3 = scale_init(num_gen_filters3,
                             'gen_conv_bn_w3')
@@ -102,7 +102,7 @@ def set_generator_model(num_hiddens,
                             'gen_conv_bn_b3')
 
     # LAYER 3 (DECONV)
-    conv_w4 = filter_init((num_gen_filters3, num_channels, filter_size, filter_size),
+    conv_w4 = weight_init((num_gen_filters3, num_channels, filter_size, filter_size),
                           'gen_conv_w4')
     conv_b4 = bias_zero(num_channels,
                         'gen_conv_b4')
@@ -134,33 +134,29 @@ def set_generator_model(num_hiddens,
 ######################################
 def set_energy_model(num_hiddens,
                      min_num_eng_filters):
-
-    # MIN SQUARE IMAGE SIZE
     min_image_size   = 4
-
-    # NUM FILTERS FOR EACH LAYER
     num_eng_filters0 = min_num_eng_filters*1
     num_eng_filters1 = min_num_eng_filters*2
     num_eng_filters2 = min_num_eng_filters*4
     num_eng_filters3 = min_num_eng_filters*8
 
     # FEATURE LAYER 0 (DECONV)
-    conv_w0   = filter_init((num_eng_filters0, num_channels, filter_size, filter_size),
+    conv_w0   = weight_init((num_eng_filters0, num_channels, filter_size, filter_size),
                             'feat_conv_w0')
     conv_b0   = bias_const(num_eng_filters0,
                            'feat_conv_b0')
     # FEATURE LAYER 1 (DECONV)
-    conv_w1   = filter_init((num_eng_filters1, num_eng_filters0, filter_size, filter_size),
+    conv_w1   = weight_init((num_eng_filters1, num_eng_filters0, filter_size, filter_size),
                             'feat_conv_w1')
     conv_b1   = bias_const(num_eng_filters1,
                            'feat_conv_b1')
     # FEATURE LAYER 2 (DECONV)
-    conv_w2   = filter_init((num_eng_filters2, num_eng_filters1, filter_size, filter_size),
+    conv_w2   = weight_init((num_eng_filters2, num_eng_filters1, filter_size, filter_size),
                             'feat_conv_w2')
     conv_b2   = bias_const(num_eng_filters2,
                           'feat_conv_b2')
     # FEATURE LAYER 3 (DECONV)
-    conv_w3   = filter_init((num_eng_filters3, num_eng_filters2, filter_size, filter_size),
+    conv_w3   = weight_init((num_eng_filters3, num_eng_filters2, filter_size, filter_size),
                             'feat_conv_w3')
     conv_b3   = bias_zero(num_eng_filters3,
                           'feat_conv_b3')
@@ -177,11 +173,11 @@ def set_energy_model(num_hiddens,
         return T.flatten(h3, 2)
 
     # ENERGY LAYER (LINEAR)
-    linear_w0 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
-                             num_hiddens),
-                             'eng_linear_w0')
-    linear_b0 = bias_zero(num_hiddens,
-                          'eng_linear_b0')
+    linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
+                                num_hiddens),
+                               'eng_linear_w0')
+    linear_b0    = bias_zero(num_hiddens,
+                             'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
@@ -221,7 +217,7 @@ def set_energy_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = sample_data + noise_data
+    sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -242,7 +238,7 @@ def set_energy_update_function(feature_function,
     # update function input
     update_function_inputs  = [input_data,
                                hidden_data,
-                               sample_data,
+                               noise_data,
                                annealing]
 
     # update function output
@@ -280,7 +276,7 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = sample_data + noise_data
+    sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -480,10 +476,10 @@ if __name__=="__main__":
     _ , data_stream = imagenet(batch_size=model_config_dict['batch_size'])
 
     hidden_size_list = [100]
-    num_filters_list = [128]
+    num_filters_list = [64]
     lr_list          = [1e-5]
     dropout_list     = [False,]
-    lambda_eng_list  = [1e-5]
+    lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
 
     for lr in lr_list:
@@ -497,9 +493,9 @@ if __name__=="__main__":
                             model_config_dict['min_num_eng_filters'] = num_filters
 
                             # set updates
-                            energy_optimizer    = RMSprop(lr=sharedX(lr),
+                            energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(100.0),
+                            generator_optimizer = Adagrad(lr=sharedX(lr*10),
                                                           regularizer=Regularizer(l2=lambda_gen))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
@@ -511,6 +507,6 @@ if __name__=="__main__":
 
                             train_model(data_stream=data_stream,
                                         energy_optimizer=energy_optimizer,
-                                        generator_optimizer=energy_optimizer,
+                                        generator_optimizer=generator_optimizer,
                                         model_config_dict=model_config_dict,
                                         model_test_name=model_test_name)
