@@ -177,18 +177,18 @@ def set_energy_model(num_hiddens,
     linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
                                 num_hiddens),
                                'eng_linear_w0')
-    linear_b0    = bias_zero(num_hiddens,
-                             'eng_linear_b0')
+    # linear_b0    = bias_zero(num_hiddens,
+    #                          'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     linear_w0, linear_b0]
+                     linear_w0]#, linear_b0]
 
     def energy_function(feature_data, is_train=True):
         # energy hidden-feature
-        e = softplus(T.dot(feature_data, linear_w0)+linear_b0)
+        e = softplus(T.dot(feature_data, linear_w0))#+linear_b0)
         e = T.sum(-e, axis=1)
         return e
 
