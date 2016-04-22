@@ -49,7 +49,6 @@ softplus = Softplus()
 ###################
 # SET INITIALIZER #
 ###################
-filter_init = Normal(scale=0.01)
 weight_init = Normal(scale=0.01)
 scale_init  = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
@@ -79,7 +78,7 @@ def set_generator_model(num_hiddens,
                               'gen_linear_bn_b0')
 
     # LAYER 1 (DECONV)
-    conv_w1    = filter_init((num_gen_filters0, num_gen_filters1, filter_size, filter_size),
+    conv_w1    = weight_init((num_gen_filters0, num_gen_filters1, filter_size, filter_size),
                              'gen_conv_w1')
     conv_bn_w1 = scale_init(num_gen_filters1,
                             'gen_conv_bn_w1')
@@ -87,7 +86,7 @@ def set_generator_model(num_hiddens,
                             'gen_conv_bn_b1')
 
     # LAYER 2 (DECONV)
-    conv_w2    = filter_init((num_gen_filters1, num_gen_filters2, filter_size, filter_size),
+    conv_w2    = weight_init((num_gen_filters1, num_gen_filters2, filter_size, filter_size),
                              'gen_conv_w2')
     conv_bn_w2 = scale_init(num_gen_filters2,
                             'gen_conv_bn_w2')
@@ -95,7 +94,7 @@ def set_generator_model(num_hiddens,
                             'gen_conv_bn_b2')
 
     # LAYER 2 (DECONV)
-    conv_w3    = filter_init((num_gen_filters2, num_gen_filters3, filter_size, filter_size),
+    conv_w3    = weight_init((num_gen_filters2, num_gen_filters3, filter_size, filter_size),
                              'gen_conv_w3')
     conv_bn_w3 = scale_init(num_gen_filters3,
                             'gen_conv_bn_w3')
@@ -103,7 +102,7 @@ def set_generator_model(num_hiddens,
                             'gen_conv_bn_b3')
 
     # LAYER 3 (DECONV)
-    conv_w4 = filter_init((num_gen_filters3, num_channels, filter_size, filter_size),
+    conv_w4 = weight_init((num_gen_filters3, num_channels, filter_size, filter_size),
                           'gen_conv_w4')
     conv_b4 = bias_zero(num_channels,
                         'gen_conv_b4')
@@ -142,22 +141,22 @@ def set_energy_model(num_hiddens,
     num_eng_filters3 = min_num_eng_filters*8
 
     # FEATURE LAYER 0 (DECONV)
-    conv_w0   = filter_init((num_eng_filters0, num_channels, filter_size, filter_size),
+    conv_w0   = weight_init((num_eng_filters0, num_channels, filter_size, filter_size),
                             'feat_conv_w0')
     conv_b0   = bias_const(num_eng_filters0,
                            'feat_conv_b0')
     # FEATURE LAYER 1 (DECONV)
-    conv_w1   = filter_init((num_eng_filters1, num_eng_filters0, filter_size, filter_size),
+    conv_w1   = weight_init((num_eng_filters1, num_eng_filters0, filter_size, filter_size),
                             'feat_conv_w1')
     conv_b1   = bias_const(num_eng_filters1,
                            'feat_conv_b1')
     # FEATURE LAYER 2 (DECONV)
-    conv_w2   = filter_init((num_eng_filters2, num_eng_filters1, filter_size, filter_size),
+    conv_w2   = weight_init((num_eng_filters2, num_eng_filters1, filter_size, filter_size),
                             'feat_conv_w2')
     conv_b2   = bias_const(num_eng_filters2,
                           'feat_conv_b2')
     # FEATURE LAYER 3 (DECONV)
-    conv_w3   = filter_init((num_eng_filters3, num_eng_filters2, filter_size, filter_size),
+    conv_w3   = weight_init((num_eng_filters3, num_eng_filters2, filter_size, filter_size),
                             'feat_conv_w3')
     conv_b3   = bias_zero(num_eng_filters3,
                           'feat_conv_b3')
@@ -170,7 +169,7 @@ def set_energy_model(num_hiddens,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = tanh(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         return T.flatten(h3, 2)
 
     # ENERGY LAYER (LINEAR)
@@ -219,6 +218,7 @@ def set_energy_update_function(feature_function,
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
     sample_data = sample_data + noise_data
+
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
     sample_feature = feature_function(sample_data, is_train=True)
@@ -238,7 +238,7 @@ def set_energy_update_function(feature_function,
     # update function input
     update_function_inputs  = [input_data,
                                hidden_data,
-                               sample_data,
+                               noise_data,
                                annealing]
 
     # update function output
@@ -475,7 +475,7 @@ if __name__=="__main__":
     #################
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [1024]
+    hidden_size_list = [100]
     num_filters_list = [64]
     lr_list          = [1e-5]
     dropout_list     = [False,]
@@ -495,7 +495,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(1.0),
+                            generator_optimizer = Adagrad(lr=sharedX(lr*10),
                                                           regularizer=Regularizer(l2=lambda_gen))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
