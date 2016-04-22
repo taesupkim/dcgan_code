@@ -41,7 +41,6 @@ filter_size  = 5
 ##############################
 # SET ACTIVATIONS AND OTHERS #
 ##############################
-lrelu = LeakyRectify()
 relu  = Rectify()
 tanh  = Tanh()
 softplus = Softplus()
@@ -135,7 +134,11 @@ def set_generator_model(num_hiddens,
 ######################################
 def set_energy_model(num_hiddens,
                      min_num_eng_filters):
+
+    # MIN SQUARE IMAGE SIZE
     min_image_size   = 4
+
+    # NUM FILTERS FOR EACH LAYER
     num_eng_filters0 = min_num_eng_filters*1
     num_eng_filters1 = min_num_eng_filters*2
     num_eng_filters2 = min_num_eng_filters*4
@@ -170,25 +173,25 @@ def set_energy_model(num_hiddens,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = tanh(dnn_conv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         return T.flatten(h3, 2)
 
     # ENERGY LAYER (LINEAR)
-    linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
-                                num_hiddens),
-                               'eng_linear_w0')
-    # linear_b0    = bias_zero(num_hiddens,
-    #                          'eng_linear_b0')
+    linear_w0 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
+                             num_hiddens),
+                             'eng_linear_w0')
+    linear_b0 = bias_zero(num_hiddens,
+                          'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     linear_w0]#, linear_b0]
+                     linear_w0, linear_b0]
 
     def energy_function(feature_data, is_train=True):
         # energy hidden-feature
-        e = softplus(T.dot(feature_data, linear_w0))#+linear_b0)
+        e = softplus(T.dot(feature_data, linear_w0)+linear_b0)
         e = T.sum(-e, axis=1)
         return e
 
@@ -219,6 +222,7 @@ def set_energy_update_function(feature_function,
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
     # sample_data = sample_data + noise_data
+
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
     sample_feature = feature_function(sample_data, is_train=True)
@@ -495,7 +499,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = RMSprop(lr=sharedX(lr*10),
+                            generator_optimizer = RMSprop(lr=sharedX(lr*100),
                                                           regularizer=Regularizer(l2=lambda_gen))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
