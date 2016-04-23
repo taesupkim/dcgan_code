@@ -12,7 +12,7 @@ from lib.vis import color_grid_vis
 from lib.rng import py_rng, np_rng
 from lib.ops import batchnorm, entropykeep, deconv, dropout, l2normalize
 from lib.theano_utils import floatX, sharedX
-from load import faces
+from load import bedroom
 
 def transform(X):
     return floatX(X)/127.5 - 1.
@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_FACE_SEPARATE'
+model_name  = 'ENERGY_RBM_BEDROOM'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -223,7 +223,6 @@ def set_energy_update_function(feature_function,
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
     sample_data = sample_data + noise_data
-    sample_data = T.clip(sample_data, -1.0, 1.0)
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -284,7 +283,6 @@ def set_generator_update_function(feature_function,
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
     sample_data = sample_data + noise_data
-    sample_data = T.clip(sample_data, -1.0, 1.0)
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -489,11 +487,11 @@ if __name__=="__main__":
     #################
     # LOAD DATA SET #
     #################
-    _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
+    _ , data_stream = bedroom(batch_size=model_config_dict['batch_size'])
 
     hidden_size_list = [100]
     num_filters_list = [128]
-    lr_list          = [1e-5]
+    lr_list          = [1e-4]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
@@ -509,9 +507,9 @@ if __name__=="__main__":
                             model_config_dict['min_num_eng_filters'] = num_filters
 
                             # set updates
-                            energy_optimizer    = RMSprop(lr=sharedX(lr),
+                            energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = RMSprop(lr=sharedX(lr*10),
+                            generator_optimizer = Adagrad(lr=sharedX(lr*10),
                                                           regularizer=Regularizer(l2=lambda_gen))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \

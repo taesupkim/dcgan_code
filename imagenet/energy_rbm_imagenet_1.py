@@ -133,7 +133,7 @@ def set_generator_model(num_hiddens,
 ######################################
 # BUILD ENERGY MODEL (FEATURE_MODEL) #
 ######################################
-def set_energy_model(num_hiddens,
+def set_energy_model(num_experts,
                      min_num_eng_filters):
 
     # minimum square image size
@@ -179,9 +179,9 @@ def set_energy_model(num_hiddens,
 
     # ENERGY LAYER (LINEAR)
     linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
-                                num_hiddens),
+                                num_experts),
                                'eng_linear_w0')
-    linear_b0    = bias_zero(num_hiddens,
+    linear_b0    = bias_zero(num_experts,
                              'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,
@@ -379,7 +379,7 @@ def train_model(data_stream,
 
     [generator_function, generator_params] = set_generator_model(model_config_dict['hidden_size'],
                                                                  model_config_dict['min_num_gen_filters'])
-    [feature_function, energy_function, energy_params] = set_energy_model(model_config_dict['hidden_size'],
+    [feature_function, energy_function, energy_params] = set_energy_model(model_config_dict['expert_size'],
                                                                           model_config_dict['min_num_eng_filters'])
     # compile functions
     print 'COMPILING ENERGY UPDATER'
@@ -489,6 +489,7 @@ if __name__=="__main__":
     #################
     _ , data_stream = imagenet(batch_size=model_config_dict['batch_size'])
 
+    expert_size_list = [1024]
     hidden_size_list = [100]
     num_filters_list = [128]
     lr_list          = [1e-4]
@@ -499,28 +500,30 @@ if __name__=="__main__":
     for lr in lr_list:
         for num_filters in num_filters_list:
             for hidden_size in hidden_size_list:
-                for dropout in dropout_list:
-                    for lambda_eng in lambda_eng_list:
-                        for lambda_gen in lambda_gen_list:
-                            model_config_dict['hidden_size']         = hidden_size
-                            model_config_dict['min_num_gen_filters'] = num_filters
-                            model_config_dict['min_num_eng_filters'] = num_filters
+                for expert_size in expert_size_list:
+                    for dropout in dropout_list:
+                        for lambda_eng in lambda_eng_list:
+                            for lambda_gen in lambda_gen_list:
+                                model_config_dict['hidden_size']         = hidden_size
+                                model_config_dict['expert_size']         = expert_size
+                                model_config_dict['min_num_gen_filters'] = num_filters
+                                model_config_dict['min_num_eng_filters'] = num_filters
 
-                            # set updates
-                            energy_optimizer    = Adagrad(lr=sharedX(lr),
-                                                          regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(lr*10),
-                                                          regularizer=Regularizer(l2=lambda_gen))
-                            model_test_name = model_name \
-                                              + '_f{}'.format(int(num_filters)) \
-                                              + '_h{}'.format(int(hidden_size)) \
-                                              + '_d{}'.format(int(dropout)) \
-                                              + '_re{}'.format(int(-np.log10(lambda_eng))) \
-                                              + '_rg{}'.format(int(-np.log10(lambda_gen))) \
-                                              + '_lr{}'.format(int(-np.log10(lr))) \
+                                # set updates
+                                energy_optimizer    = Adagrad(lr=sharedX(lr),
+                                                              regularizer=Regularizer(l2=lambda_eng))
+                                generator_optimizer = Adagrad(lr=sharedX(lr),
+                                                              regularizer=Regularizer(l2=lambda_gen))
+                                model_test_name = model_name \
+                                                  + '_f{}'.format(int(num_filters)) \
+                                                  + '_h{}'.format(int(hidden_size)) \
+                                                  + '_d{}'.format(int(dropout)) \
+                                                  + '_re{}'.format(int(-np.log10(lambda_eng))) \
+                                                  + '_rg{}'.format(int(-np.log10(lambda_gen))) \
+                                                  + '_lr{}'.format(int(-np.log10(lr))) \
 
-                            train_model(data_stream=data_stream,
-                                        energy_optimizer=energy_optimizer,
-                                        generator_optimizer=generator_optimizer,
-                                        model_config_dict=model_config_dict,
-                                        model_test_name=model_test_name)
+                                train_model(data_stream=data_stream,
+                                            energy_optimizer=energy_optimizer,
+                                            generator_optimizer=generator_optimizer,
+                                            model_config_dict=model_config_dict,
+                                            model_test_name=model_test_name)
