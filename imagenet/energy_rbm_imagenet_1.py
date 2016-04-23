@@ -510,13 +510,14 @@ if __name__=="__main__":
                                 model_config_dict['min_num_eng_filters'] = num_filters
 
                                 # set updates
-                                energy_optimizer    = Adagrad(lr=sharedX(lr),
+                                energy_optimizer    = RMSprop(lr=sharedX(lr),
                                                               regularizer=Regularizer(l2=lambda_eng))
-                                generator_optimizer = Adagrad(lr=sharedX(lr),
+                                generator_optimizer = RMSprop(lr=sharedX(lr),
                                                               regularizer=Regularizer(l2=lambda_gen))
                                 model_test_name = model_name \
                                                   + '_f{}'.format(int(num_filters)) \
                                                   + '_h{}'.format(int(hidden_size)) \
+                                                  + '_e{}'.format(int(expert_size)) \
                                                   + '_d{}'.format(int(dropout)) \
                                                   + '_re{}'.format(int(-np.log10(lambda_eng))) \
                                                   + '_rg{}'.format(int(-np.log10(lambda_gen))) \
