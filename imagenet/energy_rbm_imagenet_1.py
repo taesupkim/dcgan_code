@@ -505,7 +505,7 @@ if __name__=="__main__":
     expert_size_list = [1024]
     hidden_size_list = [100]
     num_filters_list = [128]
-    lr_list          = [1e-3]
+    lr_list          = [1e-4]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
@@ -525,7 +525,7 @@ if __name__=="__main__":
                                 # set updates
                                 energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                               regularizer=Regularizer(l2=lambda_eng))
-                                generator_optimizer = Adagrad(lr=sharedX(lr),
+                                generator_optimizer = Adagrad(lr=sharedX(lr*10),
                                                               regularizer=Regularizer(l2=lambda_gen))
                                 generator_bn_optimizer = Adagrad(lr=sharedX(lr),
                                                                  regularizer=Regularizer(l2=0.0))
