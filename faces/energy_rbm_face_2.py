@@ -21,7 +21,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_FACE_SEPARATE'
+model_name  = 'ENERGY_RBM_FACE_NO_BN_REG'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -108,11 +108,16 @@ def set_generator_model(num_hiddens,
     conv_b4 = bias_zero(num_channels,
                         'gen_conv_b4')
 
-    generator_params = [linear_w0, linear_bn_w0, linear_bn_b0,
-                        conv_w1, conv_bn_w1, conv_bn_b1,
-                        conv_w2, conv_bn_w2, conv_bn_b2,
-                        conv_w3, conv_bn_w3, conv_bn_b3,
+    generator_params = [linear_w0, linear_bn_b0,
+                        conv_w1, conv_bn_b1,
+                        conv_w2, conv_bn_b2,
+                        conv_w3, conv_bn_b3,
                         conv_w4, conv_b4]
+
+    generator_bn_params = [linear_bn_w0,
+                           conv_bn_w1,
+                           conv_bn_w2,
+                           conv_bn_w3]
 
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
@@ -128,12 +133,12 @@ def set_generator_model(num_hiddens,
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
 
-    return [generator_function, generator_params]
+    return [generator_function, generator_params, generator_bn_params]
 
 ######################################
 # BUILD ENERGY MODEL (FEATURE_MODEL) #
 ######################################
-def set_energy_model(num_hiddens,
+def set_energy_model(num_experts,
                      min_num_eng_filters):
 
     # minimum square image size
@@ -179,9 +184,9 @@ def set_energy_model(num_hiddens,
 
     # ENERGY LAYER (LINEAR)
     linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
-                                num_hiddens),
+                                num_experts),
                                'eng_linear_w0')
-    linear_b0    = bias_zero(num_hiddens,
+    linear_b0    = bias_zero(num_experts,
                              'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,
@@ -222,8 +227,7 @@ def set_energy_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = sample_data + noise_data
-    sample_data = T.clip(sample_data, -1.0, 1.0)
+    # sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -266,7 +270,9 @@ def set_generator_update_function(feature_function,
                                   energy_function,
                                   generator_function,
                                   generator_params,
-                                  generator_optimizer):
+                                  generator_bn_params,
+                                  generator_optimizer,
+                                  generator_bn_optimizer):
 
     # set input data, hidden data, noise_data annealing rate
     input_data  = T.tensor4(name='input_data',
@@ -283,8 +289,7 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = sample_data + noise_data
-    sample_data = T.clip(sample_data, -1.0, 1.0)
+    # sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -302,6 +307,9 @@ def set_generator_update_function(feature_function,
     generator_updates = generator_optimizer(generator_params,
                                             generator_updates_cost)
 
+    generator_bn_updates = generator_bn_optimizer(generator_bn_params,
+                                                  generator_updates_cost)
+
     # update function input
     update_function_inputs  = [input_data,
                                hidden_data,
@@ -315,7 +323,7 @@ def set_generator_update_function(feature_function,
     # update function
     update_function = theano.function(inputs=update_function_inputs,
                                       outputs=update_function_outputs,
-                                      updates=generator_updates,
+                                      updates=generator_updates+generator_bn_updates,
                                       on_unused_input='ignore')
     return update_function
 
@@ -376,12 +384,13 @@ def set_sampling_function(generator_function):
 def train_model(data_stream,
                 energy_optimizer,
                 generator_optimizer,
+                generator_bn_optimizer,
                 model_config_dict,
                 model_test_name):
 
-    [generator_function, generator_params] = set_generator_model(model_config_dict['hidden_size'],
-                                                                 model_config_dict['min_num_gen_filters'])
-    [feature_function, energy_function, energy_params] = set_energy_model(model_config_dict['hidden_size'],
+    [generator_function, generator_params, generator_bn_params] = set_generator_model(model_config_dict['hidden_size'],
+                                                                                      model_config_dict['min_num_gen_filters'])
+    [feature_function, energy_function, energy_params] = set_energy_model(model_config_dict['expert_size'],
                                                                           model_config_dict['min_num_eng_filters'])
     # compile functions
     print 'COMPILING ENERGY UPDATER'
@@ -398,7 +407,9 @@ def train_model(data_stream,
                                                       energy_function=energy_function,
                                                       generator_function=generator_function,
                                                       generator_params=generator_params,
-                                                      generator_optimizer=generator_optimizer)
+                                                      generator_bn_params=generator_bn_params,
+                                                      generator_optimizer=generator_optimizer,
+                                                      generator_bn_optimizer=generator_bn_optimizer)
     print '%.2f SEC '%(time()-t)
 
     print 'COMPILING SAMPLING FUNCTION'
@@ -491,9 +502,10 @@ if __name__=="__main__":
     #################
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
+    expert_size_list = [1024]
     hidden_size_list = [100]
     num_filters_list = [128]
-    lr_list          = [1e-5]
+    lr_list          = [1e-4]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
@@ -501,28 +513,34 @@ if __name__=="__main__":
     for lr in lr_list:
         for num_filters in num_filters_list:
             for hidden_size in hidden_size_list:
-                for dropout in dropout_list:
-                    for lambda_eng in lambda_eng_list:
-                        for lambda_gen in lambda_gen_list:
-                            model_config_dict['hidden_size']         = hidden_size
-                            model_config_dict['min_num_gen_filters'] = num_filters
-                            model_config_dict['min_num_eng_filters'] = num_filters
+                for expert_size in expert_size_list:
+                    for dropout in dropout_list:
+                        for lambda_eng in lambda_eng_list:
+                            for lambda_gen in lambda_gen_list:
+                                model_config_dict['hidden_size']         = hidden_size
+                                model_config_dict['expert_size']         = expert_size
+                                model_config_dict['min_num_gen_filters'] = num_filters
+                                model_config_dict['min_num_eng_filters'] = num_filters
 
-                            # set updates
-                            energy_optimizer    = RMSprop(lr=sharedX(lr),
-                                                          regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = RMSprop(lr=sharedX(lr*10),
-                                                          regularizer=Regularizer(l2=lambda_gen))
-                            model_test_name = model_name \
-                                              + '_f{}'.format(int(num_filters)) \
-                                              + '_h{}'.format(int(hidden_size)) \
-                                              + '_d{}'.format(int(dropout)) \
-                                              + '_re{}'.format(int(-np.log10(lambda_eng))) \
-                                              + '_rg{}'.format(int(-np.log10(lambda_gen))) \
-                                              + '_lr{}'.format(int(-np.log10(lr))) \
+                                # set updates
+                                energy_optimizer    = Adagrad(lr=sharedX(lr),
+                                                              regularizer=Regularizer(l2=lambda_eng))
+                                generator_optimizer = Adagrad(lr=sharedX(lr),
+                                                              regularizer=Regularizer(l2=lambda_gen))
+                                generator_bn_optimizer = Adagrad(lr=sharedX(lr),
+                                                                 regularizer=Regularizer(l2=0.0))
+                                model_test_name = model_name \
+                                                  + '_f{}'.format(int(num_filters)) \
+                                                  + '_h{}'.format(int(hidden_size)) \
+                                                  + '_e{}'.format(int(expert_size)) \
+                                                  + '_d{}'.format(int(dropout)) \
+                                                  + '_re{}'.format(int(-np.log10(lambda_eng))) \
+                                                  + '_rg{}'.format(int(-np.log10(lambda_gen))) \
+                                                  + '_lr{}'.format(int(-np.log10(lr))) \
 
-                            train_model(data_stream=data_stream,
-                                        energy_optimizer=energy_optimizer,
-                                        generator_optimizer=generator_optimizer,
-                                        model_config_dict=model_config_dict,
-                                        model_test_name=model_test_name)
+                                train_model(data_stream=data_stream,
+                                            energy_optimizer=energy_optimizer,
+                                            generator_optimizer=generator_optimizer,
+                                            generator_bn_optimizer=generator_bn_optimizer,
+                                            model_config_dict=model_config_dict,
+                                            model_test_name=model_test_name)
