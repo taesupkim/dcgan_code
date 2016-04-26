@@ -304,6 +304,11 @@ def set_updater_function(feature_extractor,
         moment_match_cost += T.sum(T.sqr(T.mean(pos_feat, axis=0)-T.mean(neg_feat, axis=0)))
         moment_match_cost += T.sum(T.sqr(T.mean(T.sqr(pos_feat), axis=0)-T.mean(T.sqr(neg_feat), axis=0)))
 
+    pos_feat = T.flatten(input_data, 2)
+    neg_feat = T.flatten(negative_data, 2)
+    moment_match_cost += T.sum(T.sqr(T.mean(pos_feat, axis=0)-T.mean(neg_feat, axis=0)))
+    moment_match_cost += T.sum(T.sqr(T.mean(T.sqr(pos_feat), axis=0)-T.mean(T.sqr(neg_feat), axis=0)))
+
     generator_updates = generator_optimizer(generator_parameters,
                                             moment_match_cost)
 
