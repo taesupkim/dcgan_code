@@ -381,12 +381,14 @@ def train_model(model_name,
                 data_stream,
                 num_hiddens,
                 num_epochs,
-                generator_optimizer):
+                optimizer):
 
     # set models
     print 'LOADING VGG'
     t=time()
     feature_extractor = load_vgg_feature_extractor()
+    encoder_mean, encoder_mean_params      = set_encoder_mean_model(num_hiddens)
+    encoder_variance,  encoder_var_params = set_encoder_variance_model(num_hiddens)
     print '%.2f SEC '%(time()-t)
     sample_generator , generator_parameters = set_generator_model(num_hiddens)
 
@@ -394,9 +396,12 @@ def train_model(model_name,
     print 'COMPILING UPDATER AND SAMPLER'
     t=time()
     updater_function = set_updater_function(feature_extractor,
+                                            encoder_mean,
+                                            encoder_variance,
                                             sample_generator,
+                                            encoder_mean_params+encoder_var_params,
                                             generator_parameters,
-                                            generator_optimizer)
+                                            optimizer)
     sampling_function = set_sampling_function(sample_generator)
     print '%.2f SEC '%(time()-t)
 
