@@ -265,8 +265,8 @@ def set_generator_model(num_hiddens):
         return [T.flatten(h4_1, 2), T.flatten(h4_0, 2),
                 T.flatten(h3_1, 2), T.flatten(h3_0, 2),
                 T.flatten(h2_2, 2), T.flatten(h2_1, 2), T.flatten(h2_0, 2),
-                T.flatten(h1_2, 2), T.flatten(h1_1, 2), T.flatten(h1_2, 2),
-                T.flatten(h0_2, 2), T.flatten(h0_1, 2), T.flatten(h0_2, 2),
+                T.flatten(h1_2, 2), T.flatten(h1_1, 2), T.flatten(h1_0, 2),
+                T.flatten(h0_2, 2), T.flatten(h0_1, 2), T.flatten(h0_0, 2),
                 T.flatten(seed, 2),
                 output]
 
