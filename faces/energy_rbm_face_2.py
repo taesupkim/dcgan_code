@@ -13,6 +13,7 @@ from lib.rng import py_rng, np_rng
 from lib.ops import batchnorm, entropykeep, deconv, dropout, l2normalize
 from lib.theano_utils import floatX, sharedX
 from load import faces
+from lib.save_utils import save_model
 
 def transform(X):
     return floatX(X)/127.5 - 1.
@@ -21,7 +22,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'ENERGY_RBM_FACE_NO_BN_REG'
+model_name  = 'ENERGY_RBM_FACE_26APR'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -71,12 +72,20 @@ def set_generator_model(num_hiddens,
 
     # LAYER 0 (LINEAR W/ BN)
     linear_w0    = weight_init((num_hiddens,
-                                (num_gen_filters0*init_image_size*init_image_size)),
+                                (num_gen_filters0*init_image_size*init_image_size)/4),
                                'gen_linear_w0')
-    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size),
+    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size)/4,
                               'gen_linear_bn_w0')
-    linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size),
+    linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size)/4,
                               'gen_linear_bn_b0')
+
+    linear_w1    = weight_init(((num_gen_filters0*init_image_size*init_image_size)/4,
+                                (num_gen_filters0*init_image_size*init_image_size)),
+                               'gen_linear_w1')
+    linear_bn_w1 = scale_init((num_gen_filters0*init_image_size*init_image_size),
+                              'gen_linear_bn_w1')
+    linear_bn_b1 = bias_const((num_gen_filters0*init_image_size*init_image_size),
+                              'gen_linear_bn_b1')
 
     # LAYER 1 (DECONV)
     conv_w1    = weight_init((num_gen_filters0, num_gen_filters1) + filter_shape,
@@ -109,12 +118,14 @@ def set_generator_model(num_hiddens,
                         'gen_conv_b4')
 
     generator_params = [linear_w0, linear_bn_b0,
+                        linear_w1, linear_bn_b1,
                         conv_w1, conv_bn_b1,
                         conv_w2, conv_bn_b2,
                         conv_w3, conv_bn_b3,
                         conv_w4, conv_b4]
 
     generator_bn_params = [linear_bn_w0,
+                           linear_bn_w1,
                            conv_bn_w1,
                            conv_bn_w2,
                            conv_bn_w3]
@@ -122,6 +133,7 @@ def set_generator_model(num_hiddens,
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
         h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = relu(batchnorm(X=T.dot(         h0, linear_w1), g=linear_bn_w1, b=linear_bn_b1))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
         h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
@@ -183,11 +195,11 @@ def set_energy_model(num_experts,
         return T.flatten(h3, 2)
 
     # ENERGY LAYER (LINEAR)
-    linear_w0 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
-                             num_experts),
-                            'eng_linear_w0')
-    linear_b0 = bias_zero(num_experts,
-                          'eng_linear_b0')
+    linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
+                                num_experts),
+                               'eng_linear_w0')
+    linear_b0    = bias_zero(num_experts,
+                             'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
@@ -368,10 +380,12 @@ def set_sampling_function(generator_function):
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
 
-    sample_data = generator_function(hidden_data, is_train=False)
+    sample_data_t = generator_function(hidden_data, is_train=True)
+    sample_data_f = generator_function(hidden_data, is_train=False)
 
     function_inputs = [hidden_data,]
-    function_outputs = [sample_data,]
+    function_outputs = [sample_data_t,
+                        sample_data_f]
 
     function = theano.function(inputs=function_inputs,
                                outputs=function_outputs,
@@ -475,19 +489,25 @@ def train_model(data_stream,
                 print '----------------------------------------------------------------'
                 print '     sample energy    : ', sample_energy_list[-1]
                 print '================================================================'
-                print '     learning rate    : ', 0.01*(0.99**int(batch_count/100))
-                print '================================================================'
 
             if batch_count%1000==0:
                 # sample data
-                save_as = samples_dir + '/' + model_test_name + '_SAMPLES{}.png'.format(batch_count)
-                sample_data = sampling_function(fixed_hidden_data)[0]
-                sample_data = np.asarray(sample_data)
-                color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
+                [sample_data_t, sample_data_f] = sampling_function(fixed_hidden_data)
+                sample_data_t = np.asarray(sample_data_t)
+                save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
+                color_grid_vis(inverse_transform(sample_data_t).transpose([0,2,3,1]), (16, 16), save_as)
+                sample_data_f = np.asarray(sample_data_f)
+                save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TEST){}.png'.format(batch_count)
+                color_grid_vis(inverse_transform(sample_data_f).transpose([0,2,3,1]), (16, 16), save_as)
                 np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
                         arr=np.asarray(input_energy_list))
                 np.save(file=samples_dir + '/' + model_test_name +'_sample_energy',
                         arr=np.asarray(sample_energy_list))
+
+                save_as = samples_dir + '/' + model_test_name + '_MODEL.pkl'
+                save_model(tensor_params_list=generator_params + generator_bn_params + energy_params,
+                           save_to=save_as)
+
 
 if __name__=="__main__":
 
@@ -527,7 +547,7 @@ if __name__=="__main__":
                                                               regularizer=Regularizer(l2=lambda_eng))
                                 generator_optimizer = Adagrad(lr=sharedX(lr*2),
                                                               regularizer=Regularizer(l2=lambda_gen))
-                                generator_bn_optimizer = Adagrad(lr=sharedX(lr),
+                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*2),
                                                                  regularizer=Regularizer(l2=0.0))
                                 model_test_name = model_name \
                                                   + '_f{}'.format(int(num_filters)) \
