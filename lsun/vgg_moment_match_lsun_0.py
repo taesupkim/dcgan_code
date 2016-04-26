@@ -294,7 +294,7 @@ def set_updater_function(feature_extractor,
     # sample data
     negative_features = sample_generator(hidden_data)
     negative_data     = negative_features[-1]
-    negative_features = negative_features[:1]
+    negative_features = negative_features[:-1]
 
     # moment matching
     moment_match_cost = 0
