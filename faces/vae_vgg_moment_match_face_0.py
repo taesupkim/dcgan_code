@@ -6,7 +6,7 @@ import h5py
 from theano.sandbox.cuda.dnn import dnn_conv, dnn_pool
 from lib.theano_utils import floatX, sharedX
 from lib.ops import deconv
-from lib.activations import Rectify, Tanh
+from lib.activations import Rectify, Tanh, Sigmoid
 from lib.inits import Normal, Constant
 from lib.rng import np_rng
 from lib.vis import color_grid_vis
@@ -24,14 +24,16 @@ if not os.path.exists(samples_dir):
 
 relu        = Rectify()
 tanh        = Tanh()
+sigm        = Sigmoid()
 weight_init = Normal(scale=0.01)
 bias_init   = Constant(c=0.0)
 
 def transform(X):
-    return floatX(X)/127.5 - 1.
+    return floatX(X)/255.0
+    # return floatX(X)/127.5 - 1.
 
 def inverse_transform(X):
-    X = (X+1.)/2.
+    # X = (X+1.)/2.
     return X
 
 def load_vgg_feature_extractor():
@@ -284,7 +286,7 @@ def set_generator_model(num_hiddens):
 
         # deconv output (64x64x64=>64x64x3)
         output = dnn_conv(relu(h4_1), conv_w5, subsample=(1, 1), border_mode=(1, 1))+conv_b5.dimshuffle('x', 0, 'x', 'x')
-        output = tanh(output)
+        output = sigm(output)
         return [T.flatten(seed, 2),
                 T.flatten(h0_0, 2), T.flatten(h0_1, 2), T.flatten(h0_2, 2),
                 T.flatten(h1_0, 2), T.flatten(h1_1, 2), T.flatten(h1_2, 2),
