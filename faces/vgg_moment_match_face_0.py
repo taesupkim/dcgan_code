@@ -415,7 +415,7 @@ if __name__=="__main__":
 
 
     num_hiddens   = 100
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     l2_weight     = 1e-10
 
     generator_optimizer = Adagrad(lr=sharedX(learning_rate),
