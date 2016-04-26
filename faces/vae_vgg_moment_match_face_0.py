@@ -466,8 +466,8 @@ if __name__=="__main__":
     learning_rate = 1e-4
     l2_weight     = 1e-5
 
-    generator_optimizer = Adagrad(lr=sharedX(learning_rate),
-                                  regularizer=Regularizer(l2=l2_weight))
+    optimizer = Adagrad(lr=sharedX(learning_rate),
+                        regularizer=Regularizer(l2=l2_weight))
 
     model_test_name = model_name \
                       + '_HIDDEN{}'.format(int(num_hiddens)) \
@@ -478,4 +478,4 @@ if __name__=="__main__":
                 data_stream=data_stream,
                 num_hiddens=num_hiddens,
                 num_epochs=num_epochs,
-                generator_optimizer=generator_optimizer)
+                optimizer=optimizer)
