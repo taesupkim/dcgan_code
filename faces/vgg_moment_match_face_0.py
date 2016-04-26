@@ -365,7 +365,7 @@ def train_model(model_name,
     # set fixed hidden data for sampling
     fixed_hidden_data  = floatX(np_rng.uniform(low=-1.0,
                                                high=1.0,
-                                               size=(64*64, num_hiddens)))
+                                               size=(10*10, num_hiddens)))
 
     print 'START TRAINING'
     # for each epoch
