@@ -365,7 +365,7 @@ def train_model(model_name,
     # set fixed hidden data for sampling
     fixed_hidden_data  = floatX(np_rng.uniform(low=-1.0,
                                                high=1.0,
-                                               size=(10*10, num_hiddens)))
+                                               size=(16*16, num_hiddens)))
 
     print 'START TRAINING'
     # for each epoch
@@ -415,8 +415,8 @@ if __name__=="__main__":
 
 
     num_hiddens   = 100
-    learning_rate = 1e-4
-    l2_weight     = 1e-10
+    learning_rate = 1e-2
+    l2_weight     = 1e-5
 
     generator_optimizer = Adagrad(lr=sharedX(learning_rate),
                                   regularizer=Regularizer(l2=l2_weight))
