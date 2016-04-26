@@ -414,8 +414,8 @@ if __name__=="__main__":
     _ , data_stream = faces(batch_size=batch_size)
 
 
-    num_hiddens   = 100
-    learning_rate = 1e-2
+    num_hiddens   = 1024
+    learning_rate = 1e-4
     l2_weight     = 1e-5
 
     generator_optimizer = Adagrad(lr=sharedX(learning_rate),
