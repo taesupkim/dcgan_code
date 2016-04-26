@@ -12,6 +12,7 @@ from lib.rng import np_rng
 from lib.vis import color_grid_vis
 from lib.updates import Adagrad, Regularizer, RMSprop, Adam
 from load import bedroom
+from time import time
 
 
 vgg_filepath = '/data/lisatmp4/taesup/data/vgg/vgg16_weights.h5'
@@ -340,16 +341,21 @@ def train_model(model_name,
                 generator_optimizer):
 
     # set models
+    print 'LOADING VGG'
+    t=time()
     feature_extractor = load_vgg_feature_extractor()
+    print '%.2f SEC '%(time()-t)
     sample_generator , generator_parameters = set_generator_model(num_hiddens)
 
 
+    print 'COMPILING UPDATER AND SAMPLER'
+    t=time()
     updater_function = set_updater_function(feature_extractor,
                                             sample_generator,
                                             generator_parameters,
                                             generator_optimizer)
-
     sampling_function = set_sampling_function(sample_generator)
+    print '%.2f SEC '%(time()-t)
 
     # set fixed hidden data for sampling
     fixed_hidden_data  = floatX(np_rng.uniform(low=-1.0,
