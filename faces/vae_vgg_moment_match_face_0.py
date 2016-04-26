@@ -411,6 +411,7 @@ def train_model(model_name,
     print 'START TRAINING'
     # for each epoch
     moment_cost_list = []
+    vae_cost_list = []
     batch_count = 0
     for e in xrange(num_epochs):
         # train phase
@@ -427,6 +428,7 @@ def train_model(model_name,
                               negative_hidden]
             updater_outputs = updater_function(*updater_inputs)
             moment_cost_list.append(updater_outputs[0])
+            vae_cost_list.append(updater_outputs[1].mean())
 
             # batch count up
             batch_count += 1
@@ -438,6 +440,8 @@ def train_model(model_name,
                 print '   TRAIN RESULTS'
                 print '================================================================'
                 print '     moment matching cost     : ', moment_cost_list[-1]
+                print '----------------------------------------------------------------'
+                print '     vae cost                 : ', vae_cost_list[-1]
                 print '================================================================'
 
             if batch_count%100==0:
@@ -449,7 +453,8 @@ def train_model(model_name,
 
                 np.save(file=samples_dir + '/' + model_name +'_MOMENT_COST',
                         arr=np.asarray(moment_cost_list))
-
+                np.save(file=samples_dir + '/' + model_name +'_VAE_COST',
+                        arr=np.asarray(vae_cost_list))
 if __name__=="__main__":
 
     batch_size = 128
