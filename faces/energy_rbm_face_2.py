@@ -183,11 +183,11 @@ def set_energy_model(num_experts,
         return T.flatten(h3, 2)
 
     # ENERGY LAYER (LINEAR)
-    linear_w0    = weight_init((num_eng_filters3*(min_image_size*min_image_size),
-                                num_experts),
-                               'eng_linear_w0')
-    linear_b0    = bias_zero(num_experts,
-                             'eng_linear_b0')
+    linear_w0 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
+                             num_experts),
+                            'eng_linear_w0')
+    linear_b0 = bias_zero(num_experts,
+                          'eng_linear_b0')
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
