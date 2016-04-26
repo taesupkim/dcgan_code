@@ -301,13 +301,13 @@ def set_updater_function(feature_extractor,
     for i in xrange(len(positive_features)):
         pos_feat = positive_features[i]
         neg_feat = negative_features[i]
-        moment_match_cost += T.sum(T.sqr(T.mean(pos_feat, axis=0)-T.mean(neg_feat, axis=0)))
-        moment_match_cost += T.sum(T.sqr(T.mean(T.sqr(pos_feat), axis=0)-T.mean(T.sqr(neg_feat), axis=0)))
+        moment_match_cost += T.mean(T.sqr(T.mean(pos_feat, axis=0)-T.mean(neg_feat, axis=0)))
+        moment_match_cost += T.mean(T.sqr(T.mean(T.sqr(pos_feat), axis=0)-T.mean(T.sqr(neg_feat), axis=0)))
 
     pos_feat = T.flatten(input_data, 2)
     neg_feat = T.flatten(negative_data, 2)
-    moment_match_cost += T.sum(T.sqr(T.mean(pos_feat, axis=0)-T.mean(neg_feat, axis=0)))
-    moment_match_cost += T.sum(T.sqr(T.mean(T.sqr(pos_feat), axis=0)-T.mean(T.sqr(neg_feat), axis=0)))
+    moment_match_cost += T.mean(T.sqr(T.mean(pos_feat, axis=0)-T.mean(neg_feat, axis=0)))
+    moment_match_cost += T.mean(T.sqr(T.mean(T.sqr(pos_feat), axis=0)-T.mean(T.sqr(neg_feat), axis=0)))
 
     generator_updates = generator_optimizer(generator_parameters,
                                             moment_match_cost)
@@ -388,7 +388,7 @@ def train_model(model_name,
             # batch count up
             batch_count += 1
 
-            if batch_count%100==0:
+            if batch_count%10==0:
                 print '================================================================'
                 print 'BATCH ITER #{}'.format(batch_count), model_name
                 print '================================================================'
@@ -397,7 +397,7 @@ def train_model(model_name,
                 print '     moment matching cost     : ', moment_cost_list[-1]
                 print '================================================================'
 
-            if batch_count%1000==0:
+            if batch_count%100==0:
                 # sample data
                 save_as = samples_dir + '/' + model_name + '_SAMPLES{}.png'.format(batch_count)
                 sample_data = sampling_function(fixed_hidden_data)[0]
