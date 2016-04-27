@@ -96,6 +96,12 @@ def load_vgg_feature_extractor():
     conv_w4_2 = sharedX(vgg_param_dict['layer_29']['param_0'], name='feat_conv_w4_2')
     conv_b4_2 = sharedX(vgg_param_dict['layer_29']['param_1'], name='feat_conv_b4_2')
 
+    parameter_set = [conv_w0_0, conv_b0_0, conv_w0_1, conv_b0_1,
+                     conv_w1_0, conv_b1_0, conv_w1_1, conv_b1_1,
+                     conv_w2_0, conv_b2_0, conv_w2_1, conv_b2_1, conv_w2_2, conv_b2_2,
+                     conv_w3_0, conv_b3_0, conv_w3_1, conv_b3_1, conv_w3_2, conv_b3_2,
+                     conv_w4_0, conv_b4_0, conv_w4_1, conv_b4_1, conv_w4_2, conv_b4_2]
+
     def feature_extractor(input_data):
         # conv stage 0 (64x64=>32x32)
         h0_0 = dnn_conv(input_data, conv_w0_0, border_mode=(1, 1))+conv_b0_0.dimshuffle('x', 0, 'x', 'x')
@@ -123,7 +129,7 @@ def load_vgg_feature_extractor():
 
         return T.flatten(  h4, 2)
 
-    return feature_extractor
+    return feature_extractor, parameter_set
 
 def set_encoder_mean_model(hidden_size,
                            feature_size=2048):
@@ -387,9 +393,9 @@ def train_model(model_name,
     # set models
     print 'LOADING VGG'
     t=time()
-    feature_extractor = load_vgg_feature_extractor()
+    feature_extractor, encoder_feat_params = load_vgg_feature_extractor()
     encoder_mean, encoder_mean_params      = set_encoder_mean_model(num_hiddens)
-    encoder_variance,  encoder_var_params = set_encoder_variance_model(num_hiddens)
+    encoder_variance,  encoder_var_params  = set_encoder_variance_model(num_hiddens)
     print '%.2f SEC '%(time()-t)
     sample_generator , generator_parameters = set_generator_model(num_hiddens)
 
@@ -400,7 +406,7 @@ def train_model(model_name,
                                             encoder_mean,
                                             encoder_variance,
                                             sample_generator,
-                                            encoder_mean_params+encoder_var_params,
+                                            encoder_feat_params + encoder_mean_params + encoder_var_params,
                                             generator_parameters,
                                             optimizer)
     sampling_function = set_sampling_function(sample_generator)
