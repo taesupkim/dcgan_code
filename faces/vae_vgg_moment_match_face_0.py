@@ -34,7 +34,7 @@ def transform(X):
 
 def inverse_transform(X):
     X = (X+1.)/2.
-    # return X
+    return X
 
 def load_vgg_feature_extractor():
     vgg_param_dict = h5py.File(vgg_filepath, 'r')
