@@ -17,7 +17,7 @@ from time import time
 
 vgg_filepath = '/data/lisatmp4/taesup/data/vgg/vgg16_weights.h5'
 
-model_name  = 'vgg_moment_match_face'
+model_name  = 'vae_vgg_moment_match_face'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -29,12 +29,12 @@ weight_init = Normal(scale=0.01)
 bias_init   = Constant(c=0.0)
 
 def transform(X):
-    return floatX(X)/255.0
-    # return floatX(X)/127.5 - 1.
+    # return floatX(X)/255.0
+    return floatX(X)/127.5 - 1.
 
 def inverse_transform(X):
-    # X = (X+1.)/2.
-    return X
+    X = (X+1.)/2.
+    # return X
 
 def load_vgg_feature_extractor():
     vgg_param_dict = h5py.File(vgg_filepath, 'r')
@@ -286,7 +286,7 @@ def set_generator_model(num_hiddens):
 
         # deconv output (64x64x64=>64x64x3)
         output = dnn_conv(relu(h4_1), conv_w5, subsample=(1, 1), border_mode=(1, 1))+conv_b5.dimshuffle('x', 0, 'x', 'x')
-        output = sigm(output)
+        output = tanh(output)
         return [T.flatten(seed, 2),
                 T.flatten(h0_0, 2), T.flatten(h0_1, 2), T.flatten(h0_2, 2),
                 T.flatten(h1_0, 2), T.flatten(h1_1, 2), T.flatten(h1_2, 2),
@@ -327,7 +327,7 @@ def set_updater_function(feature_extractor,
     positive_sample   = positive_generate[-1]
     positive_generate = positive_generate[:-1]
     # positive vae cost
-    positive_rec_cost = T.nnet.binary_crossentropy(output=positive_sample, target=input_data).sum(axis=(1,2,3))
+    positive_rec_cost = T.sum(T.sqr(positive_sample-input_data), axis=(1,2,3))
     positive_kl_cost  = 0.5*T.sum((1.0+positive_log_var-T.sqr(positive_mean)-T.exp(positive_log_var)), axis=1)
     positive_vae_cost = positive_rec_cost - positive_kl_cost
 
@@ -336,7 +336,6 @@ def set_updater_function(feature_extractor,
     ##################
     # negative generate
     negative_generate = sample_generator(negative_hidden)
-    negative_sample   = negative_generate[-1]
     negative_generate = negative_generate[:-1]
 
     # moment matching
