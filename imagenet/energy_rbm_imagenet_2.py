@@ -28,9 +28,12 @@ def inverse_transform(X):
 def get_entropy_cost(entropy_params_list):
     entropy_const = 0.5*(1.0+np.log(np.pi))
     entropy_const = entropy_const.astype(theano.config.floatX)
-    entropy_cost = 0.
+
+    entropy_params_list= []
     for entropy_params in entropy_params_list:
-        entropy_cost += T.sum(-entropy_const-entropy_params)
+        entropy_params_list.append(entropy_params.reshape((1,-1)))
+    entropy_params_list = T.concatenate(entropy_params_list, axis=1)
+    entropy_cost = T.mean(-entropy_const-entropy_params_list)
     return entropy_cost
 
 def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
@@ -383,6 +386,7 @@ def set_generator_update_function(feature_function,
     # update function output
     update_function_outputs = [input_energy,
                                sample_energy,
+                               entropy_cost,
                                entropy_weights]
 
     # update function
@@ -512,6 +516,7 @@ def train_model(data_stream,
                               noise_data,
                               batch_count]
             updater_outputs = generator_updater(*updater_inputs)
+            entropy_cost    = updater_outputs[-2]
             entropy_weights = updater_outputs[-1]
             noise_data   = floatX(np_rng.normal(scale=0.01*(0.99**int(batch_count/100)),
                                                 size=(num_data, num_channels, input_shape, input_shape)))
@@ -541,6 +546,8 @@ def train_model(data_stream,
             print '     sample energy    : ', sample_energy_list[-1]
             print '----------------------------------------------------------------'
             print '     entropy weight   : ', entropy_weights
+            print '----------------------------------------------------------------'
+            print '     entropy cost     : ', entropy_cost
             print '================================================================'
 
             if batch_count%1000==0:
