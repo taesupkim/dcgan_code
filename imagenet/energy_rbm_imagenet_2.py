@@ -344,7 +344,7 @@ def set_generator_update_function(feature_function,
     sample_energy = energy_function(sample_feature, is_train=True)
 
     # entropy cost
-    entropy_cost = get_entropy_cost(generator_bn_params)*512
+    entropy_cost = get_entropy_cost(generator_bn_params)
 
     # entropy weight
     entropy_weights = []
@@ -355,7 +355,7 @@ def set_generator_update_function(feature_function,
     entropy_weights = T.mean(entropy_weights)
 
     # get generator update cost
-    negative_phase         = T.mean(sample_energy*annealing_scale)
+    negative_phase         = T.mean(sample_energy*annealing_scale)/1024.0
     generator_updates_cost = negative_phase + entropy_cost
 
     # get generator updates
