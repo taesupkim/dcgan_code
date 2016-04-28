@@ -374,8 +374,8 @@ def set_generator_update_function(feature_function,
     generator_updates = generator_optimizer(generator_params,
                                             generator_updates_cost)
 
-    generator_bn_updates = generator_bn_optimizer(generator_bn_params,
-                                                  generator_updates_cost)
+    # generator_bn_updates = generator_bn_optimizer(generator_bn_params,
+    #                                               generator_updates_cost)
 
     # update function input
     update_function_inputs  = [input_data,
@@ -392,7 +392,7 @@ def set_generator_update_function(feature_function,
     # update function
     update_function = theano.function(inputs=update_function_inputs,
                                       outputs=update_function_outputs,
-                                      updates=generator_updates+generator_bn_updates,
+                                      updates=generator_updates,#+generator_bn_updates,
                                       on_unused_input='ignore')
     return update_function
 
