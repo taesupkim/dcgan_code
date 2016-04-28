@@ -26,9 +26,11 @@ def inverse_transform(X):
 # SET INITIALIZER #
 ###################
 def get_entropy_cost(entropy_params_list):
+    entropy_const = 0.5*(1.0+np.log(np.pi))
+    entropy_const = entropy_const.astype(theano.config.floatX)
     entropy_cost = 0.
     for entropy_params in entropy_params_list:
-        entropy_cost += T.sum(T.exp(-0.05*entropy_params))
+        entropy_cost += T.sum(-entropy_const-entropy_params)
     return entropy_cost
 
 def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
@@ -49,7 +51,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
             b_s = (1. - a)*1. + a*b_s
         X = (X - b_u) / T.sqrt(b_s + e)
         if g is not None and b is not None:
-            X = X*T.exp(0.05*g.dimshuffle('x', 0, 'x', 'x'))+b.dimshuffle('x', 0, 'x', 'x')
+            X = X*T.exp(g.dimshuffle('x', 0, 'x', 'x'))+b.dimshuffle('x', 0, 'x', 'x')
     elif X.ndim == 2:
         if u is None and s is None:
             u = T.mean(X, axis=0)
@@ -59,7 +61,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
             s = (1. - a)*1. + a*s
         X = (X - u) / T.sqrt(s + e)
         if g is not None and b is not None:
-            X = X*T.exp(0.05*g)+b
+            X = X*T.exp(g)+b
     else:
         raise NotImplementedError
     return X
@@ -280,7 +282,6 @@ def set_energy_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -342,7 +343,6 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -354,6 +354,14 @@ def set_generator_update_function(feature_function,
 
     # entropy cost
     entropy_cost = get_entropy_cost(generator_bn_params)
+
+    # entropy weight
+    entropy_weights = []
+    for param_tensor in generator_bn_params:
+        entropy_weights.append(param_tensor.reshape((1,-1)))
+    entropy_weights = T.concatenate(entropy_weights, axis=1)
+    entropy_weights = T.exp(entropy_weights)
+    entropy_weights = T.mean(entropy_weights)
 
     # get generator update cost
     negative_phase         = T.mean(sample_energy*annealing_scale)
@@ -374,7 +382,8 @@ def set_generator_update_function(feature_function,
 
     # update function output
     update_function_outputs = [input_energy,
-                               sample_energy]
+                               sample_energy,
+                               entropy_weights]
 
     # update function
     update_function = theano.function(inputs=update_function_inputs,
@@ -503,6 +512,7 @@ def train_model(data_stream,
                               noise_data,
                               batch_count]
             updater_outputs = generator_updater(*updater_inputs)
+            entropy_weights = updater_outputs[-1]
             noise_data   = floatX(np_rng.normal(scale=0.01*(0.99**int(batch_count/100)),
                                                 size=(num_data, num_channels, input_shape, input_shape)))
             updater_inputs = [input_data,
@@ -521,16 +531,17 @@ def train_model(data_stream,
             # batch count up
             batch_count += 1
 
-            if batch_count%100==0:
-                print '================================================================'
-                print 'BATCH ITER #{}'.format(batch_count), model_test_name
-                print '================================================================'
-                print '   TRAIN RESULTS'
-                print '================================================================'
-                print '     input energy     : ', input_energy_list[-1]
-                print '----------------------------------------------------------------'
-                print '     sample energy    : ', sample_energy_list[-1]
-                print '================================================================'
+            print '================================================================'
+            print 'BATCH ITER #{}'.format(batch_count), model_test_name
+            print '================================================================'
+            print '   TRAIN RESULTS'
+            print '================================================================'
+            print '     input energy     : ', input_energy_list[-1]
+            print '----------------------------------------------------------------'
+            print '     sample energy    : ', sample_energy_list[-1]
+            print '----------------------------------------------------------------'
+            print '     entropy weight   : ', entropy_weights
+            print '================================================================'
 
             if batch_count%1000==0:
                 # sample data
@@ -584,9 +595,9 @@ if __name__=="__main__":
                                 # set updates
                                 energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                               regularizer=Regularizer(l2=lambda_eng))
-                                generator_optimizer = Adagrad(lr=sharedX(lr*2),
+                                generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
                                                               regularizer=Regularizer(l2=lambda_gen))
-                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*2),
+                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
                                                                  regularizer=Regularizer(l2=0.0))
                                 model_test_name = model_name \
                                                   + '_f{}'.format(int(num_filters)) \
