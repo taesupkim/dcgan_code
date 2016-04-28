@@ -37,11 +37,6 @@ def get_entropy_cost(entropy_params_list):
     return entropy_cost
 
 def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
-    """
-    batchnorm with support for not using scale and shift parameters
-    as well as inference values (u and s) and partial batchnorm (via a)
-    will detect and use convolutional or fully connected version
-    """
     if X.ndim == 4:
         if u is not None and s is not None:
             b_u = u.dimshuffle('x', 0, 'x', 'x')
@@ -90,7 +85,6 @@ filter_shape = (filter_size, filter_size)
 ##############################
 # SET ACTIVATIONS AND OTHERS #
 ##############################
-lrelu = LeakyRectify()
 relu  = Rectify()
 tanh  = Tanh()
 softplus = Softplus()
@@ -101,6 +95,7 @@ softplus = Softplus()
 weight_init = Normal(scale=0.01)
 scale_init  = Constant(c=0.0)
 bias_zero   = Constant(c=0.0)
+bias_const  = Constant(c=0.1)
 
 ###################
 # BUILD GENERATOR #
@@ -122,31 +117,31 @@ def set_generator_model(num_hiddens,
                                'gen_linear_w0')
     linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size),
                               'gen_linear_bn_w0')
-    linear_bn_b0 = bias_zero((num_gen_filters0*init_image_size*init_image_size),
-                             'gen_linear_bn_b0')
+    linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size),
+                              'gen_linear_bn_b0')
     # LAYER 1 (DECONV)
     conv_w1    = weight_init((num_gen_filters0, num_gen_filters1) + filter_shape,
                              'gen_conv_w1')
     conv_bn_w1 = scale_init(num_gen_filters1,
                             'gen_conv_bn_w1')
-    conv_bn_b1 = bias_zero(num_gen_filters1,
-                           'gen_conv_bn_b1')
+    conv_bn_b1 = bias_const(num_gen_filters1,
+                            'gen_conv_bn_b1')
 
     # LAYER 2 (DECONV)
     conv_w2    = weight_init((num_gen_filters1, num_gen_filters2) + filter_shape,
                              'gen_conv_w2')
     conv_bn_w2 = scale_init(num_gen_filters2,
                             'gen_conv_bn_w2')
-    conv_bn_b2 = bias_zero(num_gen_filters2,
-                           'gen_conv_bn_b2')
+    conv_bn_b2 = bias_const(num_gen_filters2,
+                            'gen_conv_bn_b2')
 
     # LAYER 2 (DECONV)
     conv_w3    = weight_init((num_gen_filters2, num_gen_filters3) + filter_shape,
                              'gen_conv_w3')
     conv_bn_w3 = scale_init(num_gen_filters3,
                             'gen_conv_bn_w3')
-    conv_bn_b3 = bias_zero(num_gen_filters3,
-                           'gen_conv_bn_b3')
+    conv_bn_b3 = bias_const(num_gen_filters3,
+                            'gen_conv_bn_b3')
 
     # LAYER 3 (DECONV)
     conv_w4 = weight_init((num_gen_filters3, num_channels) + filter_shape,
@@ -199,18 +194,18 @@ def set_energy_model(num_experts,
     # FEATURE LAYER 0 (DECONV)
     conv_w0   = weight_init((num_eng_filters0, num_channels) + filter_shape,
                             'feat_conv_w0')
-    conv_b0   = bias_zero(num_eng_filters0,
-                          'feat_conv_b0')
+    conv_b0   = bias_const(num_eng_filters0,
+                           'feat_conv_b0')
     # FEATURE LAYER 1 (DECONV)
     conv_w1   = weight_init((num_eng_filters1, num_eng_filters0) + filter_shape,
                             'feat_conv_w1')
-    conv_b1   = bias_zero(num_eng_filters1,
-                          'feat_conv_b1')
+    conv_b1   = bias_const(num_eng_filters1,
+                           'feat_conv_b1')
     # FEATURE LAYER 2 (DECONV)
     conv_w2   = weight_init((num_eng_filters2, num_eng_filters1) + filter_shape,
                             'feat_conv_w2')
-    conv_b2   = bias_zero(num_eng_filters2,
-                          'feat_conv_b2')
+    conv_b2   = bias_const(num_eng_filters2,
+                           'feat_conv_b2')
     # FEATURE LAYER 3 (DECONV)
     conv_w3   = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                             'feat_conv_w3')
