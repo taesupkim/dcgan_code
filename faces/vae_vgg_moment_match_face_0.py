@@ -249,7 +249,7 @@ def set_generator_model(num_hiddens):
                           'gen_conv_b4_1')
 
     # output (32x32x128, 64x64x64)
-    conv_w5   = weight_init((num_gen_filters5, num_gen_filters4) + filter_shape,
+    conv_w5   = weight_init((num_gen_filters4, num_gen_filters5) + filter_shape,
                             'gen_conv_w5')
     conv_b5   = bias_init(num_gen_filters5,
                           'gen_conv_b5')
@@ -268,30 +268,30 @@ def set_generator_model(num_hiddens):
         seed = seed.reshape((seed.shape[0], num_gen_filters0, init_image_size, init_image_size))
 
         # deconv stage 0 (2x2x512=>4x4x512=>4x4x512=>4x4x512)
-        h0_0 =   deconv(relu(seed), conv_w0_0, subsample=(2, 2), border_mode=(1, 1))+conv_b0_0.dimshuffle('x', 0, 'x', 'x')
-        h0_1 = dnn_conv(relu(h0_0), conv_w0_1, subsample=(1, 1), border_mode=(1, 1))+conv_b0_1.dimshuffle('x', 0, 'x', 'x')
-        h0_2 = dnn_conv(relu(h0_1), conv_w0_2, subsample=(1, 1), border_mode=(1, 1))+conv_b0_2.dimshuffle('x', 0, 'x', 'x')
+        h0_0 = deconv(relu(seed), conv_w0_0, subsample=(2, 2), border_mode=(1, 1))+conv_b0_0.dimshuffle('x', 0, 'x', 'x')
+        h0_1 = deconv(relu(h0_0), conv_w0_1, subsample=(1, 1), border_mode=(1, 1))+conv_b0_1.dimshuffle('x', 0, 'x', 'x')
+        h0_2 = deconv(relu(h0_1), conv_w0_2, subsample=(1, 1), border_mode=(1, 1))+conv_b0_2.dimshuffle('x', 0, 'x', 'x')
 
         # deconv stage 1 (4x4x512=>8x8x512=>8x8x512=>8x8x512)
-        h1_0 =   deconv(relu(h0_2), conv_w1_0, subsample=(2, 2), border_mode=(1, 1))+conv_b1_0.dimshuffle('x', 0, 'x', 'x')
-        h1_1 = dnn_conv(relu(h1_0), conv_w1_1, subsample=(1, 1), border_mode=(1, 1))+conv_b1_1.dimshuffle('x', 0, 'x', 'x')
-        h1_2 = dnn_conv(relu(h1_1), conv_w1_2, subsample=(1, 1), border_mode=(1, 1))+conv_b1_2.dimshuffle('x', 0, 'x', 'x')
+        h1_0 = deconv(relu(h0_2), conv_w1_0, subsample=(2, 2), border_mode=(1, 1))+conv_b1_0.dimshuffle('x', 0, 'x', 'x')
+        h1_1 = deconv(relu(h1_0), conv_w1_1, subsample=(1, 1), border_mode=(1, 1))+conv_b1_1.dimshuffle('x', 0, 'x', 'x')
+        h1_2 = deconv(relu(h1_1), conv_w1_2, subsample=(1, 1), border_mode=(1, 1))+conv_b1_2.dimshuffle('x', 0, 'x', 'x')
 
         # deconv stage 2 (8x8x512=>16x16x256=>16x16x256=>16x16x256)
-        h2_0 =   deconv(relu(h1_2), conv_w2_0, subsample=(2, 2), border_mode=(1, 1))+conv_b2_0.dimshuffle('x', 0, 'x', 'x')
-        h2_1 = dnn_conv(relu(h2_0), conv_w2_1, subsample=(1, 1), border_mode=(1, 1))+conv_b2_1.dimshuffle('x', 0, 'x', 'x')
-        h2_2 = dnn_conv(relu(h2_1), conv_w2_2, subsample=(1, 1), border_mode=(1, 1))+conv_b2_2.dimshuffle('x', 0, 'x', 'x')
+        h2_0 = deconv(relu(h1_2), conv_w2_0, subsample=(2, 2), border_mode=(1, 1))+conv_b2_0.dimshuffle('x', 0, 'x', 'x')
+        h2_1 = deconv(relu(h2_0), conv_w2_1, subsample=(1, 1), border_mode=(1, 1))+conv_b2_1.dimshuffle('x', 0, 'x', 'x')
+        h2_2 = deconv(relu(h2_1), conv_w2_2, subsample=(1, 1), border_mode=(1, 1))+conv_b2_2.dimshuffle('x', 0, 'x', 'x')
 
         # deconv stage 3 (16x16x256=>32x32x128=>32x32x128)
-        h3_0 =   deconv(relu(h2_2), conv_w3_0, subsample=(2, 2), border_mode=(1, 1))+conv_b3_0.dimshuffle('x', 0, 'x', 'x')
-        h3_1 = dnn_conv(relu(h3_0), conv_w3_1, subsample=(1, 1), border_mode=(1, 1))+conv_b3_1.dimshuffle('x', 0, 'x', 'x')
+        h3_0 = deconv(relu(h2_2), conv_w3_0, subsample=(2, 2), border_mode=(1, 1))+conv_b3_0.dimshuffle('x', 0, 'x', 'x')
+        h3_1 = deconv(relu(h3_0), conv_w3_1, subsample=(1, 1), border_mode=(1, 1))+conv_b3_1.dimshuffle('x', 0, 'x', 'x')
 
         # deconv stage 4 (32x32x128=>64x64x64=>64x64x64)
-        h4_0 =   deconv(relu(h3_1), conv_w4_0, subsample=(2, 2), border_mode=(1, 1))+conv_b4_0.dimshuffle('x', 0, 'x', 'x')
-        h4_1 = dnn_conv(relu(h4_0), conv_w4_1, subsample=(1, 1), border_mode=(1, 1))+conv_b4_1.dimshuffle('x', 0, 'x', 'x')
+        h4_0 = deconv(relu(h3_1), conv_w4_0, subsample=(2, 2), border_mode=(1, 1))+conv_b4_0.dimshuffle('x', 0, 'x', 'x')
+        h4_1 = deconv(relu(h4_0), conv_w4_1, subsample=(1, 1), border_mode=(1, 1))+conv_b4_1.dimshuffle('x', 0, 'x', 'x')
 
         # deconv output (64x64x64=>64x64x3)
-        output = dnn_conv(relu(h4_1), conv_w5, subsample=(1, 1), border_mode=(1, 1))+conv_b5.dimshuffle('x', 0, 'x', 'x')
+        output = deconv(relu(h4_1), conv_w5, subsample=(1, 1), border_mode=(1, 1))+conv_b5.dimshuffle('x', 0, 'x', 'x')
         output = tanh(output)
         return [T.flatten(seed, 2),
                 T.flatten(h0_0, 2), T.flatten(h0_1, 2), T.flatten(h0_2, 2),
