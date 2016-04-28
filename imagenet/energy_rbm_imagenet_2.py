@@ -282,7 +282,6 @@ def set_energy_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -344,7 +343,6 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = sample_data + noise_data
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -577,7 +575,7 @@ if __name__=="__main__":
     expert_size_list = [1024]
     hidden_size_list = [100]
     num_filters_list = [128]
-    lr_list          = [1e-4]
+    lr_list          = [1e-3]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
@@ -597,9 +595,9 @@ if __name__=="__main__":
                                 # set updates
                                 energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                               regularizer=Regularizer(l2=lambda_eng))
-                                generator_optimizer = Adagrad(lr=sharedX(lr*10),
+                                generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
                                                               regularizer=Regularizer(l2=lambda_gen))
-                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*10),
+                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
                                                                  regularizer=Regularizer(l2=0.0))
                                 model_test_name = model_name \
                                                   + '_f{}'.format(int(num_filters)) \
