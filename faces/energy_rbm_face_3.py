@@ -344,7 +344,7 @@ def set_generator_update_function(feature_function,
     sample_energy = energy_function(sample_feature, is_train=True)
 
     # entropy cost
-    entropy_cost = get_entropy_cost(generator_bn_params)
+    entropy_cost = get_entropy_cost(generator_bn_params)*512
 
     # entropy weight
     entropy_weights = []
@@ -362,8 +362,8 @@ def set_generator_update_function(feature_function,
     generator_updates = generator_optimizer(generator_params,
                                             generator_updates_cost)
 
-    # generator_bn_updates = generator_bn_optimizer(generator_bn_params,
-    #                                               generator_updates_cost)
+    generator_bn_updates = generator_bn_optimizer(generator_bn_params,
+                                                  generator_updates_cost)
 
     # update function input
     update_function_inputs  = [input_data,
@@ -380,7 +380,7 @@ def set_generator_update_function(feature_function,
     # update function
     update_function = theano.function(inputs=update_function_inputs,
                                       outputs=update_function_outputs,
-                                      updates=generator_updates,#+generator_bn_updates,
+                                      updates=generator_updates+generator_bn_updates,
                                       on_unused_input='ignore')
     return update_function
 
@@ -555,7 +555,6 @@ def train_model(data_stream,
 
 
 if __name__=="__main__":
-
     model_config_dict = OrderedDict()
     model_config_dict['batch_size']          = 128
     model_config_dict['num_display']         = 16*16

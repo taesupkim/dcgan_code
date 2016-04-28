@@ -369,17 +369,6 @@ def train_model(data_stream,
                                             decoder_params=decoder_parameters,
                                             optimizer=model_optimizer)
     print '%.2f SEC '%(time()-t)
-    print 'COMPILING GENERATOR UPDATER'
-    t=time()
-    generator_updater = set_generator_update_function(feature_function=feature_function,
-                                                      energy_function=energy_function,
-                                                      generator_function=generator_function,
-                                                      generator_params=generator_params,
-                                                      generator_bn_params=generator_bn_params,
-                                                      generator_optimizer=generator_optimizer,
-                                                      generator_bn_optimizer=generator_bn_optimizer)
-    print '%.2f SEC '%(time()-t)
-
     print 'COMPILING SAMPLING FUNCTION'
     t=time()
     sampling_function = set_sampling_function(generator_function=generator_function)
