@@ -28,7 +28,7 @@ def inverse_transform(X):
 def get_entropy_cost(entropy_params_list):
     entropy_cost = 0.
     for entropy_params in entropy_params_list:
-        entropy_cost += T.sum(10.0*T.exp(-entropy_params))
+        entropy_cost += T.sum(T.exp(-2.0*entropy_params))
     return entropy_cost
 
 def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
