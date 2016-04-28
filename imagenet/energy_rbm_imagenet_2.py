@@ -28,7 +28,7 @@ def inverse_transform(X):
 def get_entropy_cost(entropy_params_list):
     entropy_cost = 0.
     for entropy_params in entropy_params_list:
-        entropy_cost += T.sum(T.exp(-0.01*entropy_params))
+        entropy_cost += T.sum(10.0*T.exp(-entropy_params))
     return entropy_cost
 
 def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
@@ -49,7 +49,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
             b_s = (1. - a)*1. + a*b_s
         X = (X - b_u) / T.sqrt(b_s + e)
         if g is not None and b is not None:
-            X = X*T.exp(0.05*g.dimshuffle('x', 0, 'x', 'x'))+b.dimshuffle('x', 0, 'x', 'x')
+            X = X*T.exp(g.dimshuffle('x', 0, 'x', 'x'))+b.dimshuffle('x', 0, 'x', 'x')
     elif X.ndim == 2:
         if u is None and s is None:
             u = T.mean(X, axis=0)
@@ -59,7 +59,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
             s = (1. - a)*1. + a*s
         X = (X - u) / T.sqrt(s + e)
         if g is not None and b is not None:
-            X = X*T.exp(0.05*g)+b
+            X = X*T.exp(g)+b
     else:
         raise NotImplementedError
     return X
@@ -583,9 +583,9 @@ if __name__=="__main__":
                                 # set updates
                                 energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                               regularizer=Regularizer(l2=lambda_eng))
-                                generator_optimizer = Adagrad(lr=sharedX(lr*1),
+                                generator_optimizer = Adagrad(lr=sharedX(lr*2),
                                                               regularizer=Regularizer(l2=lambda_gen))
-                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*1),
+                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*2),
                                                                  regularizer=Regularizer(l2=0.0))
                                 model_test_name = model_name \
                                                   + '_f{}'.format(int(num_filters)) \
