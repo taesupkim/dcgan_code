@@ -357,6 +357,14 @@ def set_generator_update_function(feature_function,
     # entropy cost
     entropy_cost = get_entropy_cost(generator_bn_params)
 
+    # entropy weight
+    entropy_weights = []
+    for param_tensor in generator_bn_params:
+        entropy_weights.append(param_tensor.reshape((1,-1)))
+    entropy_weights = T.concatenate(entropy_weights, axis=1)
+    entropy_weights = T.exp(entropy_weights)
+    entropy_weights = T.mean(entropy_weights)
+
     # get generator update cost
     negative_phase         = T.mean(sample_energy*annealing_scale)
     generator_updates_cost = negative_phase + entropy_cost
@@ -376,7 +384,8 @@ def set_generator_update_function(feature_function,
 
     # update function output
     update_function_outputs = [input_energy,
-                               sample_energy]
+                               sample_energy,
+                               entropy_weights]
 
     # update function
     update_function = theano.function(inputs=update_function_inputs,
@@ -505,6 +514,7 @@ def train_model(data_stream,
                               noise_data,
                               batch_count]
             updater_outputs = generator_updater(*updater_inputs)
+            entropy_weights = updater_outputs[-1]
             noise_data   = floatX(np_rng.normal(scale=0.01*(0.99**int(batch_count/100)),
                                                 size=(num_data, num_channels, input_shape, input_shape)))
             updater_inputs = [input_data,
@@ -531,6 +541,8 @@ def train_model(data_stream,
             print '     input energy     : ', input_energy_list[-1]
             print '----------------------------------------------------------------'
             print '     sample energy    : ', sample_energy_list[-1]
+            print '----------------------------------------------------------------'
+            print '     entropy weight   : ', entropy_weights
             print '================================================================'
 
             if batch_count%1000==0:
