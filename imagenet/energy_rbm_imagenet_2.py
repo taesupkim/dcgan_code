@@ -29,11 +29,11 @@ def get_entropy_cost(entropy_params_list):
     entropy_const = 0.5*(1.0+np.log(np.pi))
     entropy_const = entropy_const.astype(theano.config.floatX)
 
-    entropy_params_list= []
+    entropy_tensor_params= []
     for entropy_params in entropy_params_list:
-        entropy_params_list.append(entropy_params.reshape((1,-1)))
-    entropy_params_list = T.concatenate(entropy_params_list, axis=1)
-    entropy_cost = T.mean(-entropy_const-entropy_params_list)
+        entropy_tensor_params.append(entropy_params.reshape((1,-1)))
+    entropy_tensor_params = T.concatenate(entropy_tensor_params, axis=1)
+    entropy_cost = T.mean(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
 def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
