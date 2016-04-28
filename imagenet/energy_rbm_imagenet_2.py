@@ -21,6 +21,10 @@ def transform(X):
 def inverse_transform(X):
     X = (X+1.)/2.
     return X
+
+###################
+# SET INITIALIZER #
+###################
 def get_entropy_cost(entropy_params_list):
     entropy_cost = 0.
     for entropy_params in entropy_params_list:
