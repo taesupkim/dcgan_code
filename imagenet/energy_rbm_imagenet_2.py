@@ -356,7 +356,7 @@ def set_generator_update_function(feature_function,
     sample_energy = energy_function(sample_feature, is_train=True)
 
     # entropy cost
-    entropy_cost = get_entropy_cost(generator_bn_params)*1024
+    entropy_cost = get_entropy_cost(generator_bn_params)*100
 
     # entropy weight
     entropy_weights = []
@@ -602,9 +602,9 @@ if __name__=="__main__":
                                 # set updates
                                 energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                               regularizer=Regularizer(l2=lambda_eng))
-                                generator_optimizer = Adagrad(lr=sharedX(lr*1.0),
+                                generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
                                                               regularizer=Regularizer(l2=lambda_gen))
-                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*1.0),
+                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
                                                                  regularizer=Regularizer(l2=0.0))
                                 model_test_name = model_name \
                                                   + '_f{}'.format(int(num_filters)) \
