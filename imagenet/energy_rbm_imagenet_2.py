@@ -27,7 +27,7 @@ def inverse_transform(X):
 ###################
 def get_entropy_cost(entropy_params_list):
     entropy_const = 0.5*(1.0+np.log(np.pi))
-    entropy_const = entropy_const.astype(floatX)
+    entropy_const = entropy_const.astype(theano.config.floatX)
     entropy_cost = 0.
     for entropy_params in entropy_params_list:
         entropy_cost += T.sum(-entropy_const-entropy_params)
