@@ -351,7 +351,7 @@ def set_generator_update_function(feature_function,
 
     # get generator update cost
     negative_phase         = T.mean(sample_energy*annealing_scale)
-    generator_updates_cost = negative_phase + entropy_cost
+    generator_updates_cost = negative_phase# + entropy_cost
 
     # get generator updates
     generator_updates = generator_optimizer(generator_params,
