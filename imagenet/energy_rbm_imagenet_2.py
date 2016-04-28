@@ -356,7 +356,7 @@ def set_generator_update_function(feature_function,
     sample_energy = energy_function(sample_feature, is_train=True)
 
     # entropy cost
-    entropy_cost = get_entropy_cost(generator_bn_params)
+    entropy_cost = get_entropy_cost(generator_bn_params)*1024
 
     # entropy weight
     entropy_weights = []
