@@ -118,21 +118,12 @@ def set_generator_model(num_hiddens,
 
     # LAYER 0 (LINEAR W/ BN)
     linear_w0    = weight_init((num_hiddens,
-                                (num_gen_filters0*init_image_size*init_image_size)/4),
-                               'gen_linear_w0')
-    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size)/4,
-                              'gen_linear_bn_w0')
-    linear_bn_b0 = bias_zero((num_gen_filters0*init_image_size*init_image_size)/4,
-                             'gen_linear_bn_b0')
-
-    linear_w1    = weight_init(((num_gen_filters0*init_image_size*init_image_size)/4,
                                 (num_gen_filters0*init_image_size*init_image_size)),
-                               'gen_linear_w1')
-    linear_bn_w1 = scale_init((num_gen_filters0*init_image_size*init_image_size),
-                              'gen_linear_bn_w1')
-    linear_bn_b1 = bias_zero((num_gen_filters0*init_image_size*init_image_size),
-                             'gen_linear_bn_b1')
-
+                               'gen_linear_w0')
+    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size),
+                              'gen_linear_bn_w0')
+    linear_bn_b0 = bias_zero((num_gen_filters0*init_image_size*init_image_size),
+                             'gen_linear_bn_b0')
     # LAYER 1 (DECONV)
     conv_w1    = weight_init((num_gen_filters0, num_gen_filters1) + filter_shape,
                              'gen_conv_w1')
@@ -164,14 +155,12 @@ def set_generator_model(num_hiddens,
                         'gen_conv_b4')
 
     generator_params = [linear_w0, linear_bn_b0,
-                        linear_w1, linear_bn_b1,
                         conv_w1, conv_bn_b1,
                         conv_w2, conv_bn_b2,
                         conv_w3, conv_bn_b3,
                         conv_w4, conv_b4]
 
     generator_bn_params = [linear_bn_w0,
-                           linear_bn_w1,
                            conv_bn_w1,
                            conv_bn_w2,
                            conv_bn_w3]
@@ -179,7 +168,6 @@ def set_generator_model(num_hiddens,
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
         h0     = relu(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
-        h0     = relu(entropy_exp(X=T.dot(         h0, linear_w1), g=linear_bn_w1, b=linear_bn_b1))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
         h1     = relu(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
@@ -374,8 +362,8 @@ def set_generator_update_function(feature_function,
     generator_updates = generator_optimizer(generator_params,
                                             generator_updates_cost)
 
-    generator_bn_updates = generator_bn_optimizer(generator_bn_params,
-                                                  generator_updates_cost)
+    # generator_bn_updates = generator_bn_optimizer(generator_bn_params,
+    #                                               generator_updates_cost)
 
     # update function input
     update_function_inputs  = [input_data,
@@ -392,7 +380,7 @@ def set_generator_update_function(feature_function,
     # update function
     update_function = theano.function(inputs=update_function_inputs,
                                       outputs=update_function_outputs,
-                                      updates=generator_updates+generator_bn_updates,
+                                      updates=generator_updates,#+generator_bn_updates,
                                       on_unused_input='ignore')
     return update_function
 
