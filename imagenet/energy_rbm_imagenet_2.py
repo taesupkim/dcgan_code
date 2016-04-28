@@ -33,7 +33,7 @@ def get_entropy_cost(entropy_params_list):
     for entropy_params in entropy_params_list:
         entropy_tensor_params.append(entropy_params.reshape((1,-1)))
     entropy_tensor_params = T.concatenate(entropy_tensor_params, axis=1)
-    entropy_cost = T.mean(-entropy_const-entropy_tensor_params)
+    entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
 def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
@@ -350,7 +350,7 @@ def set_generator_update_function(feature_function,
     entropy_weights = T.mean(entropy_weights)
 
     # get generator update cost
-    negative_phase         = T.mean(sample_energy*annealing_scale)/1024.0
+    negative_phase         = T.mean(sample_energy*annealing_scale)
     generator_updates_cost = negative_phase + entropy_cost
 
     # get generator updates
