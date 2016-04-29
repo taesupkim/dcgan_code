@@ -64,7 +64,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_EXP_COST(SINGLE)'
+model_name  = 'ENERGY_RBM_IMAGENET_FULLEXP_COST(SINGLE)'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -179,7 +179,7 @@ def set_generator_model(num_hiddens,
                                 conv_bn_w1,
                                 conv_bn_w2,
                                 conv_bn_w3,
-                                conv_bn_b4]
+                                conv_bn_w4]
 
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
