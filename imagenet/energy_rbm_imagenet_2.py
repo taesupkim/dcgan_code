@@ -162,21 +162,24 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR CONV LAYER 5'
     conv_w4 = weight_init((num_gen_filters3, num_channels) + filter_shape,
                           'gen_conv_w4')
-    conv_b4 = bias_zero(num_channels,
-                        'gen_conv_b4')
+    conv_bn_w4 = scale_init(num_channels,
+                            'gen_conv_bn_w4')
+    conv_bn_b4 = bias_zero(num_channels,
+                           'gen_conv_bn_b4')
 
     generator_params = [linear_w0, linear_bn_b0,
                         # linear_w1, linear_bn_b1,
                         conv_w1, conv_bn_b1,
                         conv_w2, conv_bn_b2,
                         conv_w3, conv_bn_b3,
-                        conv_w4, conv_b4]
+                        conv_w4, conv_bn_b4]
 
     generator_entropy_params = [linear_bn_w0,
                                 # linear_bn_w1,
                                 conv_bn_w1,
                                 conv_bn_w2,
-                                conv_bn_w3]
+                                conv_bn_w3,
+                                conv_bn_b4]
 
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
@@ -191,7 +194,7 @@ def set_generator_model(num_hiddens,
         # layer 3 (deconv)
         h3     = relu(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
-        output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
+        output = tanh(entropy_exp(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w4, b=conv_bn_b4))
         return output
 
     return [generator_function, generator_params, generator_entropy_params]
