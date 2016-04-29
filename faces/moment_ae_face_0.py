@@ -379,8 +379,8 @@ def set_sampling_function(decoder_feature_function,
     decoder_blue    = decoder_blue_function(decoder_feature)
 
     num_samples = decoder_red.shape[0]
-    num_rows    = decoder_red.shape[1]
-    num_cols    = decoder_red.shape[2]
+    num_rows    = decoder_red.shape[2]
+    num_cols    = decoder_red.shape[3]
     num_pixels  = num_rows*num_cols
 
     # shape = (num_samples, num_intensity, num_pixels)
