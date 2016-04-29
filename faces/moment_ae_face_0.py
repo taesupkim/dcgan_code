@@ -490,7 +490,7 @@ def train_model(data_stream,
             # batch count up
             batch_count += 1
 
-            if batch_count%100==0:
+            if batch_count%1==0:
                 print '================================================================'
                 print 'BATCH ITER #{}'.format(batch_count), model_test_name
                 print '================================================================'
@@ -501,7 +501,7 @@ def train_model(data_stream,
                 print '     moment cost : ', moment_match_cost_list[-1]
                 print '================================================================'
 
-            if batch_count%1000==0:
+            if batch_count%100==0:
                 # sample data
                 sample_data = sampling_function(fixed_hidden_data)[0]
                 sample_data = floatX(sample_data)/255.0
