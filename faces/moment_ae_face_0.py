@@ -288,6 +288,7 @@ def set_updater_function(encoder_feature_function,
     positive_decoder_outputs = decoder_feature_function(positive_encoder_sample)
     positive_decoder_hiddens = positive_decoder_outputs[0]
     positive_decoder_feature = positive_decoder_outputs[1]
+    # shape = (num_samples, num_intensity, num_rows, num_cols)
     positive_decoder_red     = decoder_red_function(positive_decoder_feature)
     positive_decoder_green   = decoder_green_function(positive_decoder_feature)
     positive_decoder_blue    = decoder_blue_function(positive_decoder_feature)
@@ -319,8 +320,8 @@ def set_updater_function(encoder_feature_function,
     positive_recon_green_cost = T.nnet.categorical_crossentropy(positive_decoder_green, positive_target_green).reshape((num_samples,-1)).sum(axis=1)
     positive_recon_blue_cost  = T.nnet.categorical_crossentropy( positive_decoder_blue,  positive_target_blue).reshape((num_samples,-1)).sum(axis=1)
     positive_recon_cost = positive_recon_red_cost + positive_recon_green_cost + positive_recon_blue_cost
-    positive_kl_cost    = -0.5*T.sum((1.0+positive_encoder_log_var-T.sqr(positive_encoder_mean)-T.exp(positive_encoder_log_var)), axis=1)
-    positive_vae_cost   = positive_recon_cost + positive_kl_cost
+    # positive_kl_cost    = -0.5*T.sum((1.0+positive_encoder_log_var-T.sqr(positive_encoder_mean)-T.exp(positive_encoder_log_var)), axis=1)
+    positive_vae_cost   = positive_recon_cost #+ positive_kl_cost
 
     ##################
     # negative phase #
