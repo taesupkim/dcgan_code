@@ -308,9 +308,9 @@ def set_updater_function(encoder_feature_function,
     positive_decoder_green   = T.nnet.softmax(positive_decoder_green)
     positive_decoder_blue    = T.nnet.softmax(positive_decoder_blue)
     # positive target
-    positive_target_red      = T.flatten(T.cast(positive_visible_data[:,0,:,:],'int8'), 1)
-    positive_target_green    = T.flatten(T.cast(positive_visible_data[:,1,:,:],'int8'), 1)
-    positive_target_blue     = T.flatten(T.cast(positive_visible_data[:,2,:,:],'int8'), 1)
+    positive_target_red      = T.flatten(T.cast(positive_visible_data[:,0,:,:],'int64'), 1)
+    positive_target_green    = T.flatten(T.cast(positive_visible_data[:,1,:,:],'int64'), 1)
+    positive_target_blue     = T.flatten(T.cast(positive_visible_data[:,2,:,:],'int64'), 1)
 
 
 
