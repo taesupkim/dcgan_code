@@ -64,7 +64,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_FACE32_NORMAL_SINGLE_LINEAR'
+model_name  = 'ENERGY_RBM_FACE128_NORMAL_SINGLE_LINEAR'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -572,7 +572,7 @@ if __name__=="__main__":
 
     expert_size_list = [1024]
     hidden_size_list = [100]
-    num_filters_list = [32]
+    num_filters_list = [128]
     lr_list          = [1e-3]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
