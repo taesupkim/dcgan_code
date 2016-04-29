@@ -321,7 +321,7 @@ def set_updater_function(encoder_feature_function,
     positive_recon_blue_cost  = T.nnet.categorical_crossentropy( positive_decoder_blue,  positive_target_blue).reshape((num_samples,-1)).sum(axis=1)
     positive_recon_cost = positive_recon_red_cost + positive_recon_green_cost + positive_recon_blue_cost
     # positive_kl_cost    = -0.5*T.sum((1.0+positive_encoder_log_var-T.sqr(positive_encoder_mean)-T.exp(positive_encoder_log_var)), axis=1)
-    positive_vae_cost   = positive_recon_cost #+ positive_kl_cost
+    positive_vae_cost   = positive_recon_cost# + positive_kl_cost
 
     ##################
     # negative phase #
@@ -333,13 +333,13 @@ def set_updater_function(encoder_feature_function,
 
     # moment matching
     moment_match_cost = 0
-    for i in xrange(len(positive_decoder_hiddens)):
-        pos_feat = positive_decoder_hiddens[i]
-        neg_feat = negative_decoder_hiddens[i]
-        moment_match_cost += T.mean(T.sqr(T.mean(pos_feat, axis=0)-T.mean(neg_feat, axis=0)))
-        moment_match_cost += T.mean(T.sqr(T.mean(T.sqr(pos_feat), axis=0)-T.mean(T.sqr(neg_feat), axis=0)))
-    moment_match_cost += T.mean(T.sqr(T.mean(T.flatten(positive_decoder_feature, 2), axis=0)-T.mean(T.flatten(negative_decoder_feature, 2), axis=0)))
-    moment_match_cost += T.mean(T.sqr(T.mean(T.sqr(T.flatten(positive_decoder_feature, 2)), axis=0)-T.mean(T.sqr(T.flatten(negative_decoder_feature, 2)), axis=0)))
+    # for i in xrange(len(positive_decoder_hiddens)):
+    #     pos_feat = positive_decoder_hiddens[i]
+    #     neg_feat = negative_decoder_hiddens[i]
+    #     moment_match_cost += T.mean(T.sqr(T.mean(pos_feat, axis=0)-T.mean(neg_feat, axis=0)))
+    #     moment_match_cost += T.mean(T.sqr(T.mean(T.sqr(pos_feat), axis=0)-T.mean(T.sqr(neg_feat), axis=0)))
+    # moment_match_cost += T.mean(T.sqr(T.mean(T.flatten(positive_decoder_feature, 2), axis=0)-T.mean(T.flatten(negative_decoder_feature, 2), axis=0)))
+    # moment_match_cost += T.mean(T.sqr(T.mean(T.sqr(T.flatten(positive_decoder_feature, 2)), axis=0)-T.mean(T.sqr(T.flatten(negative_decoder_feature, 2)), axis=0)))
 
 
     model_updater_cost = T.mean(positive_vae_cost) + moment_cost_weight*T.mean(moment_match_cost)
