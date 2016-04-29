@@ -502,9 +502,10 @@ def train_model(data_stream,
                 print '     moment cost : ', moment_match_cost_list[-1]
                 print '================================================================'
 
-            if batch_count%100==0:
+            if batch_count%1==0:
                 # sample data
                 sample_data = sampling_function(fixed_hidden_data)[0]
+                print sample_data.shape
                 sample_data = floatX(sample_data)/255.0
                 save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
                 color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
