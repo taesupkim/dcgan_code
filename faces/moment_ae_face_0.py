@@ -332,7 +332,7 @@ def set_updater_function(encoder_feature_function,
     negative_decoder_feature = negative_decoder_outputs[1]
 
     # moment matching
-    moment_match_cost = 0
+    moment_match_cost = 0.0
     # for i in xrange(len(positive_decoder_hiddens)):
     #     pos_feat = positive_decoder_hiddens[i]
     #     neg_feat = negative_decoder_hiddens[i]
@@ -342,7 +342,7 @@ def set_updater_function(encoder_feature_function,
     # moment_match_cost += T.mean(T.sqr(T.mean(T.sqr(T.flatten(positive_decoder_feature, 2)), axis=0)-T.mean(T.sqr(T.flatten(negative_decoder_feature, 2)), axis=0)))
 
 
-    model_updater_cost = T.mean(positive_vae_cost) + moment_cost_weight*T.mean(moment_match_cost)
+    model_updater_cost = T.mean(positive_vae_cost) #+ moment_cost_weight*T.mean(moment_match_cost)
     model_updater_dict = optimizer(encoder_params+decoder_params,
                                    model_updater_cost)
 
