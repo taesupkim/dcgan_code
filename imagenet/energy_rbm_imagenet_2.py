@@ -604,6 +604,6 @@ if __name__=="__main__":
                                 train_model(data_stream=data_stream,
                                             energy_optimizer=energy_optimizer,
                                             generator_optimizer=generator_optimizer,
-                                            generator_bn_optimizer=generator_bn_optimizer,
+                                            generator_entropy_optimizer=generator_bn_optimizer,
                                             model_config_dict=model_config_dict,
                                             model_test_name=model_test_name)
