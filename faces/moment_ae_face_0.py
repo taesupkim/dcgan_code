@@ -475,7 +475,7 @@ def train_model(data_stream,
             positive_visible_data = floatX(batch_data[0])
             positive_hidden_data  = floatX(np_rng.normal(size=(positive_visible_data.shape[0], model_config_dict['hidden_size'])))
             negative_hidden_data  = floatX(np_rng.normal(size=(positive_visible_data.shape[0], model_config_dict['hidden_size'])))
-            moment_cost_weight    = 0.0
+            moment_cost_weight    = 1.0
 
             updater_inputs = [positive_visible_data,
                               positive_hidden_data,
@@ -502,7 +502,7 @@ def train_model(data_stream,
                 print '     moment cost : ', moment_match_cost_list[-1]
                 print '================================================================'
 
-            if batch_count%200==0:
+            if batch_count%1000==0:
                 # sample data
                 sample_data = sampling_function(fixed_hidden_data)[0]
                 print sample_data.shape
@@ -534,7 +534,7 @@ if __name__=="__main__":
 
     hidden_size_list = [100]
     num_filters_list = [64]
-    lr_list          = [1e-3]
+    lr_list          = [1e-2]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
