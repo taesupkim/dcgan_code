@@ -64,7 +64,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_ENTROPY_EXP_WEIGHT'
+model_name  = 'ENERGY_RBM_IMAGENET_EXP'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -85,6 +85,7 @@ filter_shape = (filter_size, filter_size)
 ##############################
 # SET ACTIVATIONS AND OTHERS #
 ##############################
+leak_relu = LeakyRectify()
 relu  = Rectify()
 tanh  = Tanh()
 softplus = Softplus()
@@ -180,15 +181,15 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = tanh(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
-        h0     = tanh(entropy_exp(X=T.dot(         h0, linear_w1), g=linear_bn_w1, b=linear_bn_b1))
+        h0     = leak_relu(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = leak_relu(entropy_exp(X=T.dot(         h0, linear_w1), g=linear_bn_w1, b=linear_bn_b1))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = tanh(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = leak_relu(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = tanh(entropy_exp(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = leak_relu(entropy_exp(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = tanh(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = leak_relu(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -232,15 +233,17 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FEATURE CONV LAYER 3'
     conv_w3   = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                             'feat_conv_w3')
-    conv_b3   = bias_const(num_eng_filters3,
-                           'feat_conv_b3')
+    conv_b3   = bias_zero(num_eng_filters3,
+                          'feat_conv_b3')
+    # conv_b3   = bias_const(num_eng_filters3,
+    #                        'feat_conv_b3')
 
-    print 'SET ENERGY FEATURE LINEAR LAYER 4'
-    linear_w4 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
-                             num_eng_filters3*(min_image_size*min_image_size)/4),
-                            'eng_linear_w4')
-    linear_b4 = bias_zero(num_eng_filters3*(min_image_size*min_image_size)/4,
-                          'eng_linear_b4')
+    # print 'SET ENERGY FEATURE LINEAR LAYER 4'
+    # linear_w4 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
+    #                          num_eng_filters3*(min_image_size*min_image_size)/4),
+    #                         'eng_linear_w4')
+    # linear_b4 = bias_zero(num_eng_filters3*(min_image_size*min_image_size)/4,
+    #                       'eng_linear_b4')
 
     print 'SET ENERGY FEATURE EXTRACTOR'
     def feature_function(input_data, is_train=True):
@@ -251,13 +254,15 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
-        feature = tanh(T.dot(T.flatten(h3, 2), linear_w4)+linear_b4)
+        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        feature = T.flatten(h3, 2)
+        # feature = tanh(T.dot(T.flatten(h3, 2), linear_w4)+linear_b4)
         return feature
 
     # ENERGY LAYER (LINEAR)
     print 'SET ENERGY FUNCTION LINEAR LAYER 5'
-    linear_w5 = weight_init((num_eng_filters3*(min_image_size*min_image_size)/4,
+    # linear_w5 = weight_init((num_eng_filters3*(min_image_size*min_image_size)/4,
+    linear_w5 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
                              num_experts),
                             'eng_linear_w5')
     linear_b5 = bias_zero(num_experts,
@@ -267,7 +272,7 @@ def set_energy_model(num_experts,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     linear_w4, linear_b4,
+                     # linear_w4, linear_b4,
                      linear_w5, linear_b5]
 
     def energy_function(feature_data, is_train=True):
@@ -569,7 +574,6 @@ if __name__=="__main__":
     hidden_size_list = [100]
     num_filters_list = [128]
     lr_list          = [1e-3]
-    dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
 
@@ -577,33 +581,31 @@ if __name__=="__main__":
         for num_filters in num_filters_list:
             for hidden_size in hidden_size_list:
                 for expert_size in expert_size_list:
-                    for dropout in dropout_list:
-                        for lambda_eng in lambda_eng_list:
-                            for lambda_gen in lambda_gen_list:
-                                model_config_dict['hidden_size']         = hidden_size
-                                model_config_dict['expert_size']         = expert_size
-                                model_config_dict['min_num_gen_filters'] = num_filters
-                                model_config_dict['min_num_eng_filters'] = num_filters
+                    for lambda_eng in lambda_eng_list:
+                        for lambda_gen in lambda_gen_list:
+                            model_config_dict['hidden_size']         = hidden_size
+                            model_config_dict['expert_size']         = expert_size
+                            model_config_dict['min_num_gen_filters'] = num_filters
+                            model_config_dict['min_num_eng_filters'] = num_filters
 
-                                # set updates
-                                energy_optimizer    = Adagrad(lr=sharedX(lr),
-                                                              regularizer=Regularizer(l2=lambda_eng))
-                                generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
-                                                              regularizer=Regularizer(l2=lambda_gen))
-                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
-                                                                 regularizer=Regularizer(l2=0.0))
-                                model_test_name = model_name \
-                                                  + '_f{}'.format(int(num_filters)) \
-                                                  + '_h{}'.format(int(hidden_size)) \
-                                                  + '_e{}'.format(int(expert_size)) \
-                                                  + '_d{}'.format(int(dropout)) \
-                                                  + '_re{}'.format(int(-np.log10(lambda_eng))) \
-                                                  + '_rg{}'.format(int(-np.log10(lambda_gen))) \
-                                                  + '_lr{}'.format(int(-np.log10(lr))) \
+                            # set updates
+                            energy_optimizer    = Adagrad(lr=sharedX(lr),
+                                                          regularizer=Regularizer(l2=lambda_eng))
+                            generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
+                                                          regularizer=Regularizer(l2=lambda_gen))
+                            generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
+                                                             regularizer=Regularizer(l2=0.0))
+                            model_test_name = model_name \
+                                              + '_f{}'.format(int(num_filters)) \
+                                              + '_h{}'.format(int(hidden_size)) \
+                                              + '_e{}'.format(int(expert_size)) \
+                                              + '_re{}'.format(int(-np.log10(lambda_eng))) \
+                                              + '_rg{}'.format(int(-np.log10(lambda_gen))) \
+                                              + '_lr{}'.format(int(-np.log10(lr))) \
 
-                                train_model(data_stream=data_stream,
-                                            energy_optimizer=energy_optimizer,
-                                            generator_optimizer=generator_optimizer,
-                                            generator_entropy_optimizer=generator_bn_optimizer,
-                                            model_config_dict=model_config_dict,
-                                            model_test_name=model_test_name)
+                            train_model(data_stream=data_stream,
+                                        energy_optimizer=energy_optimizer,
+                                        generator_optimizer=generator_optimizer,
+                                        generator_entropy_optimizer=generator_bn_optimizer,
+                                        model_config_dict=model_config_dict,
+                                        model_test_name=model_test_name)
