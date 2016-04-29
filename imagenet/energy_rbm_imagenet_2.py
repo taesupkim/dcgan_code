@@ -64,7 +64,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET_ENTROPY_EXP'
+model_name  = 'ENERGY_RBM_IMAGENET_NORMAL'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -570,8 +570,8 @@ if __name__=="__main__":
     num_filters_list = [128]
     lr_list          = [1e-3]
     dropout_list     = [False,]
-    lambda_eng_list  = [1e-10]
-    lambda_gen_list  = [1e-10]
+    lambda_eng_list  = [1e-5]
+    lambda_gen_list  = [1e-5]
 
     for lr in lr_list:
         for num_filters in num_filters_list:
