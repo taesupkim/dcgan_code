@@ -115,11 +115,11 @@ def set_generator_model(num_hiddens,
     # LAYER 0 (LINEAR W/ BN)
     print 'SET GENERATOR LINEAR LAYER 0'
     linear_w0    = weight_init((num_hiddens,
-                                (num_gen_filters0*init_image_size*init_image_size)/4),
+                                (num_gen_filters0*init_image_size*init_image_size)),
                                'gen_linear_w0')
-    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size)/4,
+    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size),
                               'gen_linear_bn_w0')
-    linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size)/4,
+    linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size),
                               'gen_linear_bn_b0')
 
     # print 'SET GENERATOR LINEAR LAYER 1'
