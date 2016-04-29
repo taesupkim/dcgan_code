@@ -93,7 +93,7 @@ softplus = Softplus()
 # SET INITIALIZER #
 ###################
 weight_init = Normal(scale=0.01)
-scale_init  = Constant(c=0.0)
+scale_init  = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
 bias_const  = Constant(c=0.1)
 
@@ -112,6 +112,7 @@ def set_generator_model(num_hiddens,
     num_gen_filters3 = min_num_gen_filters*1
 
     # LAYER 0 (LINEAR W/ BN)
+    print 'SET GENERATOR LINEAR LAYER 0'
     linear_w0    = weight_init((num_hiddens,
                                 (num_gen_filters0*init_image_size*init_image_size)/4),
                                'gen_linear_w0')
@@ -120,6 +121,7 @@ def set_generator_model(num_hiddens,
     linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size)/4,
                               'gen_linear_bn_b0')
 
+    print 'SET GENERATOR LINEAR LAYER 1'
     linear_w1    = weight_init(((num_gen_filters0*init_image_size*init_image_size)/4,
                                 (num_gen_filters0*init_image_size*init_image_size)),
                                'gen_linear_w1')
@@ -129,6 +131,7 @@ def set_generator_model(num_hiddens,
                               'gen_linear_bn_b1')
 
     # LAYER 1 (DECONV)
+    print 'SET GENERATOR CONV LAYER 2'
     conv_w1    = weight_init((num_gen_filters0, num_gen_filters1) + filter_shape,
                              'gen_conv_w1')
     conv_bn_w1 = scale_init(num_gen_filters1,
@@ -137,6 +140,7 @@ def set_generator_model(num_hiddens,
                             'gen_conv_bn_b1')
 
     # LAYER 2 (DECONV)
+    print 'SET GENERATOR CONV LAYER 3'
     conv_w2    = weight_init((num_gen_filters1, num_gen_filters2) + filter_shape,
                              'gen_conv_w2')
     conv_bn_w2 = scale_init(num_gen_filters2,
@@ -145,6 +149,7 @@ def set_generator_model(num_hiddens,
                             'gen_conv_bn_b2')
 
     # LAYER 2 (DECONV)
+    print 'SET GENERATOR CONV LAYER 4'
     conv_w3    = weight_init((num_gen_filters2, num_gen_filters3) + filter_shape,
                              'gen_conv_w3')
     conv_bn_w3 = scale_init(num_gen_filters3,
@@ -153,6 +158,7 @@ def set_generator_model(num_hiddens,
                             'gen_conv_bn_b3')
 
     # LAYER 3 (DECONV)
+    print 'SET GENERATOR CONV LAYER 5'
     conv_w4 = weight_init((num_gen_filters3, num_channels) + filter_shape,
                           'gen_conv_w4')
     conv_b4 = bias_zero(num_channels,
@@ -173,15 +179,15 @@ def set_generator_model(num_hiddens,
 
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = relu(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
-        h0     = relu(entropy_exp(X=T.dot(         h0, linear_w1), g=linear_bn_w1, b=linear_bn_b1))
+        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = relu(batchnorm(X=T.dot(         h0, linear_w1), g=linear_bn_w1, b=linear_bn_b1))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = relu(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = relu(entropy_exp(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = relu(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
