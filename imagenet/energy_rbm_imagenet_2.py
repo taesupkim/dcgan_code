@@ -113,12 +113,21 @@ def set_generator_model(num_hiddens,
 
     # LAYER 0 (LINEAR W/ BN)
     linear_w0    = weight_init((num_hiddens,
-                                (num_gen_filters0*init_image_size*init_image_size)),
+                                (num_gen_filters0*init_image_size*init_image_size)/4),
                                'gen_linear_w0')
-    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size),
+    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size)/4,
                               'gen_linear_bn_w0')
-    linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size),
+    linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size)/4,
                               'gen_linear_bn_b0')
+
+    linear_w1    = weight_init(((num_gen_filters0*init_image_size*init_image_size)/4,
+                                (num_gen_filters0*init_image_size*init_image_size)),
+                               'gen_linear_w1')
+    linear_bn_w1 = scale_init((num_gen_filters0*init_image_size*init_image_size),
+                              'gen_linear_bn_w1')
+    linear_bn_b1 = bias_const((num_gen_filters0*init_image_size*init_image_size),
+                              'gen_linear_bn_b1')
+
     # LAYER 1 (DECONV)
     conv_w1    = weight_init((num_gen_filters0, num_gen_filters1) + filter_shape,
                              'gen_conv_w1')
@@ -150,12 +159,14 @@ def set_generator_model(num_hiddens,
                         'gen_conv_b4')
 
     generator_params = [linear_w0, linear_bn_b0,
+                        linear_w1, linear_bn_b1,
                         conv_w1, conv_bn_b1,
                         conv_w2, conv_bn_b2,
                         conv_w3, conv_bn_b3,
                         conv_w4, conv_b4]
 
     generator_bn_params = [linear_bn_w0,
+                           linear_bn_w1,
                            conv_bn_w1,
                            conv_bn_w2,
                            conv_bn_w3]
@@ -163,6 +174,7 @@ def set_generator_model(num_hiddens,
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
         h0     = relu(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = relu(entropy_exp(X=T.dot(         h0, linear_w1), g=linear_bn_w1, b=linear_bn_b1))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
         h1     = relu(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
@@ -565,7 +577,7 @@ if __name__=="__main__":
     expert_size_list = [1024]
     hidden_size_list = [100]
     num_filters_list = [128]
-    lr_list          = [1e-5]
+    lr_list          = [1e-4]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
