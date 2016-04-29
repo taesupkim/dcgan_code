@@ -479,7 +479,7 @@ def train_model(data_stream,
             # batch count up
             batch_count += 1
 
-            if batch_count%100==0:
+            if batch_count%1==0:
                 print '================================================================'
                 print 'BATCH ITER #{}'.format(batch_count), model_test_name
                 print '================================================================'
