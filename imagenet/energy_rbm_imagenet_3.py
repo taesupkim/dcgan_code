@@ -180,15 +180,15 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = relu(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
-        h0     = relu(entropy_exp(X=T.dot(         h0, linear_w1), g=linear_bn_w1, b=linear_bn_b1))
+        h0     = tanh(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = tanh(entropy_exp(X=T.dot(         h0, linear_w1), g=linear_bn_w1, b=linear_bn_b1))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = relu(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = tanh(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = relu(entropy_exp(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = tanh(entropy_exp(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = relu(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = tanh(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -588,9 +588,9 @@ if __name__=="__main__":
                                 # set updates
                                 energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                               regularizer=Regularizer(l2=lambda_eng))
-                                generator_optimizer = Adagrad(lr=sharedX(lr*10.0),
+                                generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
                                                               regularizer=Regularizer(l2=lambda_gen))
-                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*10.0),
+                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
                                                                  regularizer=Regularizer(l2=0.0))
                                 model_test_name = model_name \
                                                   + '_f{}'.format(int(num_filters)) \
