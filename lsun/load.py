@@ -10,6 +10,7 @@ from lib.config import data_dir
 
 LSUN_BEDROOM_PATH = '/data/lisatmp4/taesup/data/lsun/lsun_bedroom_train_64x64.hdf5',
 def bedroom(batch_size=128):
+    print LSUN_BEDROOM_PATH
     tr_data = H5PYDataset(LSUN_BEDROOM_PATH, which_sets=('train',))
 
     tr_scheme = ShuffledScheme(examples=tr_data.num_examples, batch_size=batch_size)
