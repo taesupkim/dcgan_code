@@ -332,7 +332,7 @@ def set_updater_function(encoder_feature_function,
     negative_decoder_feature = negative_decoder_outputs[1]
 
     # moment matching
-    moment_match_cost = 0.0
+    moment_match_cost = positive_recon_cost#0.0
     # for i in xrange(len(positive_decoder_hiddens)):
     #     pos_feat = positive_decoder_hiddens[i]
     #     neg_feat = negative_decoder_hiddens[i]
