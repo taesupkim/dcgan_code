@@ -22,7 +22,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'MOMENT_AE_FACE_NO_MOMENT'
+model_name  = 'MOMENT_VAE_FACE_BASELINE'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -67,7 +67,7 @@ def set_decoder_model(num_hiddens,
     num_gen_filters0 = min_num_gen_filters*8
     num_gen_filters1 = min_num_gen_filters*4
     num_gen_filters2 = min_num_gen_filters*2
-    num_gen_filters3 = min_num_gen_filters*2
+    num_gen_filters3 = min_num_gen_filters*1
 
     # LAYER 0 (LINEAR W/ BN)
     linear_w0 = weight_init((num_hiddens,
@@ -88,36 +88,26 @@ def set_decoder_model(num_hiddens,
     conv_b2 = bias_zero(num_gen_filters2,
                         'dec_conv_b2')
 
-    # LAYER 2 (DECONV)
+    # LAYER 3 (DECONV)
     conv_w3 = weight_init((num_gen_filters2, num_gen_filters3) + filter_shape,
                           'dec_conv_w3')
     conv_b3 = bias_zero(num_gen_filters3,
                         'dec_conv_b3')
 
-    # MEAN (DECONV)
-    red_w = weight_init((num_gen_filters3, 256) + filter_shape,
-                        'dec_red_w')
-    red_b = bias_zero(256,
-                      'dec_red_b')
-    green_w = weight_init((num_gen_filters3, 256) + filter_shape,
-                          'dec_green_w')
-    green_b = bias_zero(256,
-                        'dec_green_b')
-    blue_w = weight_init((num_gen_filters3, 256) + filter_shape,
-                         'dec_blue_w')
-    blue_b = bias_zero(256,
-                       'dec_blue_b')
+    # LAYER OUTPUT (DECONV)
+    conv_w4 = weight_init((num_gen_filters3, num_channels) + filter_shape,
+                          'dec_conv_w4')
+    conv_b4 = bias_zero(num_channels,
+                        'dec_conv_b4')
 
     decoder_params = [linear_w0, linear_b0,
                       conv_w1, conv_b1,
                       conv_w2, conv_b2,
                       conv_w3, conv_b3,
-                      red_w, red_b,
-                      green_w, green_b,
-                      blue_w, blue_b]
+                      conv_w4, conv_b4]
 
 
-    def decoder_feature_function(hidden_data):
+    def decoder_function(hidden_data):
         # layer 0 (linear)
         h0 = T.dot(hidden_data, linear_w0) + linear_b0
         h0 = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
@@ -127,28 +117,18 @@ def set_decoder_model(num_hiddens,
         h2 = deconv(relu(h1), conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x')
         # layer 3 (deconv)
         h3 = deconv(relu(h2), conv_w3, subsample=(2, 2), border_mode=(2, 2)) + conv_b3.dimshuffle('x', 0, 'x', 'x')
-        # feature
-        feature = relu(h3)
+        # layer_output (deconv)
+        h4 = deconv(relu(h3), conv_w4, subsample=(2, 2), border_mode=(2, 2)) + conv_b4.dimshuffle('x', 0, 'x', 'x')
+        output = tanh(h3)
         return [[T.flatten(h0,2),
                  T.flatten(h1,2),
                  T.flatten(h2,2),
-                 T.flatten(h3,2)],
-                feature]
+                 T.flatten(h3,2),
+                 T.flatten(h4,2)],
+                output]
 
-    def decoder_red_function(feature_data):
-        decoder_red = deconv(feature_data, red_w, subsample=(2, 2), border_mode=(2, 2)) + red_b.dimshuffle('x', 0, 'x', 'x')
-        return decoder_red
-    def decoder_green_function(feature_data):
-        decoder_green = deconv(feature_data, green_w, subsample=(2, 2), border_mode=(2, 2)) + green_b.dimshuffle('x', 0, 'x', 'x')
-        return decoder_green
-    def decoder_blue_function(feature_data):
-        decoder_blue = deconv(feature_data, blue_w, subsample=(2, 2), border_mode=(2, 2)) + blue_b.dimshuffle('x', 0, 'x', 'x')
-        return decoder_blue
 
-    return [decoder_feature_function,
-            decoder_red_function,
-            decoder_green_function,
-            decoder_blue_function,
+    return [decoder_function,
             decoder_params]
 
 #######################
@@ -169,23 +149,31 @@ def set_encoder_model(num_hiddens,
     # FEATURE LAYER 0 (CONV)
     conv_w0 = weight_init((num_eng_filters0, num_channels) + filter_shape,
                           'enc_conv_w0')
-    conv_b0 = bias_zero(num_eng_filters0,
-                        'enc_conv_b0')
+    bn_w0   = scale_init(num_eng_filters0,
+                         'enc_bn_w0')
+    bn_b0   = bias_zero(num_eng_filters0,
+                        'enc_bn_b0')
     # FEATURE LAYER 1 (CONV)
     conv_w1 = weight_init((num_eng_filters1, num_eng_filters0) + filter_shape,
                           'enc_conv_w1')
-    conv_b1 = bias_zero(num_eng_filters1,
-                        'enc_conv_b1')
+    bn_w1   = scale_init(num_eng_filters1,
+                         'enc_bn_w1')
+    bn_b1   = bias_zero(num_eng_filters1,
+                        'enc_bn_b1')
     # FEATURE LAYER 2 (CONV)
     conv_w2 = weight_init((num_eng_filters2, num_eng_filters1) + filter_shape,
                           'enc_conv_w2')
-    conv_b2 = bias_zero(num_eng_filters2,
-                        'enc_conv_b2')
+    bn_w2   = scale_init(num_eng_filters2,
+                         'enc_bn_w2')
+    bn_b2   = bias_zero(num_eng_filters2,
+                        'enc_bn_b2')
     # FEATURE LAYER 3 (CONV)
     conv_w3 = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                           'enc_conv_w3')
-    conv_b3 = bias_zero(num_eng_filters3,
-                        'enc_conv_b3')
+    bn_w3   = scale_init(num_eng_filters3,
+                         'enc_bn_w3')
+    bn_b3   = bias_zero(num_eng_filters3,
+                        'enc_bn_b3')
 
     # encoder mean
     mean_w = weight_init((num_eng_filters3*(min_image_size*min_image_size),
@@ -201,30 +189,29 @@ def set_encoder_model(num_hiddens,
     var_b = bias_zero(num_hiddens,
                       'enc_mean_b')
 
-    encoder_params = [conv_w0, conv_b0,
-                      conv_w1, conv_b1,
-                      conv_w2, conv_b2,
-                      conv_w3, conv_b3,
+    encoder_params = [conv_w0, bn_w0, bn_b0,
+                      conv_w1, bn_w1, bn_b1,
+                      conv_w2, bn_w2, bn_b2,
+                      conv_w3, bn_w3, bn_b3,
                       mean_w, mean_b,
                       var_w,  var_b]
 
     def encoder_feature_function(input_data):
         # layer 0 (conv)
-        h0 = dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x')
+        h0 = dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))
+        h0 = relu(batchnorm(h0, g=bn_w0, b=bn_b0))
         # layer 1 (conv)
-        h1 = dnn_conv(  relu(h0), conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x')
+        h1 = dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))
+        h1 = relu(batchnorm(h1, g=bn_w1, b=bn_b1))
         # layer 2 (conv)
-        h2 = dnn_conv(  relu(h1), conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x')
+        h2 = dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))
+        h2 = relu(batchnorm(h2, g=bn_w2, b=bn_b2))
         # layer 3 (conv)
-        h3 = dnn_conv(  relu(h2), conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x')
+        h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
+        h3 = relu(batchnorm(h3, g=bn_w3, b=bn_b3))
         # feature
-        feature = relu(h3)
-        feature = T.flatten(feature, 2)
-        return [[T.flatten(h0, 2),
-                 T.flatten(h1, 2),
-                 T.flatten(h2, 2),
-                 T.flatten(h3, 2)],
-                 feature]
+        feature = h3
+        return feature
 
     def encoder_mean_function(feature_data):
         encoder_mean = T.dot(feature_data, mean_w)+mean_b
@@ -246,10 +233,7 @@ def set_encoder_model(num_hiddens,
 def set_updater_function(encoder_feature_function,
                          encoder_mean_function,
                          encoder_var_function,
-                         decoder_feature_function,
-                         decoder_red_function,
-                         decoder_green_function,
-                         decoder_blue_function,
+                         decoder_function,
                          encoder_params,
                          decoder_params,
                          optimizer):
@@ -257,7 +241,6 @@ def set_updater_function(encoder_feature_function,
     # positive visible data
     positive_visible_data = T.tensor4(name='positive_visible_data',
                                       dtype=theano.config.floatX)
-
     # positive hidden data
     positive_hidden_data = T.matrix(name='positive_hidden_data',
                                     dtype=theano.config.floatX)
@@ -268,58 +251,22 @@ def set_updater_function(encoder_feature_function,
     moment_cost_weight = T.scalar(name='moment_cost_weight',
                                   dtype=theano.config.floatX)
 
-    # num of samples
-    num_samples = positive_visible_data.shape[0]
-    num_rows    = positive_visible_data.shape[2]
-    num_cols    = positive_visible_data.shape[3]
-    num_pixels  = num_rows*num_cols
-
     ##################
     # positive phase #
     ##################
     # positive encoder
-    positive_encoder_outputs = encoder_feature_function(positive_visible_data/127.5 - 1.)
-    positive_encoder_feature = positive_encoder_outputs[1]
+    positive_encoder_feature = encoder_feature_function(positive_visible_data)
     positive_encoder_mean    = encoder_mean_function(positive_encoder_feature)
     positive_encoder_log_var = encoder_var_function(positive_encoder_feature)
     positive_encoder_std     = T.sqrt(T.exp(positive_encoder_log_var))
     positive_encoder_sample  = positive_encoder_mean + positive_encoder_std*positive_hidden_data
     # positive decoder
-    positive_decoder_outputs = decoder_feature_function(positive_encoder_sample)
+    positive_decoder_outputs = decoder_function(positive_encoder_sample)
     positive_decoder_hiddens = positive_decoder_outputs[0]
-    positive_decoder_feature = positive_decoder_outputs[1]
-    # shape = (num_samples, num_intensity, num_rows, num_cols)
-    positive_decoder_red     = decoder_red_function(positive_decoder_feature)
-    positive_decoder_green   = decoder_green_function(positive_decoder_feature)
-    positive_decoder_blue    = decoder_blue_function(positive_decoder_feature)
-    # shape = (num_samples, num_intensity, num_pixels)
-    positive_decoder_red     = T.flatten(positive_decoder_red, 3)
-    positive_decoder_green   = T.flatten(positive_decoder_green, 3)
-    positive_decoder_blue    = T.flatten(positive_decoder_blue, 3)
-    # shape = (num_samples, num_pixels, num_intensity)
-    positive_decoder_red     = T.swapaxes(positive_decoder_red, axis1=1, axis2=2)
-    positive_decoder_green   = T.swapaxes(positive_decoder_green, axis1=1, axis2=2)
-    positive_decoder_blue    = T.swapaxes(positive_decoder_blue, axis1=1, axis2=2)
-    # shape = (num_samples*num_pixels, num_intensity)
-    positive_decoder_red     = positive_decoder_red.reshape((num_samples*num_pixels, -1))
-    positive_decoder_green   = positive_decoder_green.reshape((num_samples*num_pixels, -1))
-    positive_decoder_blue    = positive_decoder_blue.reshape((num_samples*num_pixels, -1))
-    # softmax
-    positive_decoder_red     = T.nnet.softmax(positive_decoder_red)
-    positive_decoder_green   = T.nnet.softmax(positive_decoder_green)
-    positive_decoder_blue    = T.nnet.softmax(positive_decoder_blue)
-    # positive target
-    positive_target_red      = T.flatten(T.cast(positive_visible_data[:,0,:,:],'int64'), 1)
-    positive_target_green    = T.flatten(T.cast(positive_visible_data[:,1,:,:],'int64'), 1)
-    positive_target_blue     = T.flatten(T.cast(positive_visible_data[:,2,:,:],'int64'), 1)
-
-
+    positive_decoder_samples = positive_decoder_outputs[1]
 
     # positive lower bound cost
-    positive_recon_red_cost   = T.nnet.categorical_crossentropy(  positive_decoder_red,   positive_target_red).reshape((num_samples,-1)).sum(axis=1)
-    positive_recon_green_cost = T.nnet.categorical_crossentropy(positive_decoder_green, positive_target_green).reshape((num_samples,-1)).sum(axis=1)
-    positive_recon_blue_cost  = T.nnet.categorical_crossentropy( positive_decoder_blue,  positive_target_blue).reshape((num_samples,-1)).sum(axis=1)
-    positive_recon_cost = positive_recon_red_cost + positive_recon_green_cost + positive_recon_blue_cost
+    positive_recon_cost = T.sum(T.sqr(positive_visible_data-positive_decoder_samples), axis=(1,2,3))
     positive_kl_cost    = -0.5*T.sum((1.0+positive_encoder_log_var-T.sqr(positive_encoder_mean)-T.exp(positive_encoder_log_var)), axis=1)
     positive_vae_cost   = positive_recon_cost + positive_kl_cost
 
@@ -327,9 +274,8 @@ def set_updater_function(encoder_feature_function,
     # negative phase #
     ##################
     # negative decoder
-    negative_decoder_outputs = decoder_feature_function(negative_hidden_data)
+    negative_decoder_outputs = decoder_function(negative_hidden_data)
     negative_decoder_hiddens = negative_decoder_outputs[0]
-    negative_decoder_feature = negative_decoder_outputs[1]
 
     # moment matching
     moment_match_cost = 0
@@ -338,9 +284,6 @@ def set_updater_function(encoder_feature_function,
         neg_feat = negative_decoder_hiddens[i]
         moment_match_cost += T.mean(T.sqr(T.mean(pos_feat, axis=0)-T.mean(neg_feat, axis=0)))
         moment_match_cost += T.mean(T.sqr(T.mean(T.sqr(pos_feat), axis=0)-T.mean(T.sqr(neg_feat), axis=0)))
-    moment_match_cost += T.mean(T.sqr(T.mean(T.flatten(positive_decoder_feature, 2), axis=0)-T.mean(T.flatten(negative_decoder_feature, 2), axis=0)))
-    moment_match_cost += T.mean(T.sqr(T.mean(T.sqr(T.flatten(positive_decoder_feature, 2)), axis=0)-T.mean(T.sqr(T.flatten(negative_decoder_feature, 2)), axis=0)))
-
 
     model_updater_cost = T.mean(positive_vae_cost) + moment_cost_weight*T.mean(moment_match_cost)
     model_updater_dict = optimizer(encoder_params+decoder_params,
@@ -351,8 +294,11 @@ def set_updater_function(encoder_feature_function,
                             negative_hidden_data,
                             moment_cost_weight]
     model_updater_outputs = [positive_vae_cost,
+                             positive_recon_cost,
+                             positive_kl_cost,
                              moment_match_cost,
-                             model_updater_cost]
+                             model_updater_cost,
+                             positive_decoder_samples]
 
     model_updater_function = theano.function(inputs=model_updater_inputs,
                                              outputs=model_updater_outputs,
@@ -363,51 +309,17 @@ def set_updater_function(encoder_feature_function,
 ###########
 # SAMPLER #
 ###########
-def set_sampling_function(decoder_feature_function,
-                          decoder_red_function,
-                          decoder_green_function,
-                          decoder_blue_function):
+def set_sampling_function(decoder_function):
 
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
 
     # decoder
-    decoder_outputs = decoder_feature_function(hidden_data)
-    decoder_feature = decoder_outputs[1]
-    decoder_red     = decoder_red_function(decoder_feature)
-    decoder_green   = decoder_green_function(decoder_feature)
-    decoder_blue    = decoder_blue_function(decoder_feature)
-
-    num_samples = decoder_red.shape[0]
-    num_rows    = decoder_red.shape[2]
-    num_cols    = decoder_red.shape[3]
-    num_pixels  = num_rows*num_cols
-
-    # shape = (num_samples, num_intensity, num_pixels)
-    decoder_red   = T.flatten(decoder_red, 3)
-    decoder_green = T.flatten(decoder_green, 3)
-    decoder_blue  = T.flatten(decoder_blue, 3)
-    # shape = (num_samples, num_pixels, num_intensity)
-    decoder_red   = T.swapaxes(decoder_red, axis1=1, axis2=2)
-    decoder_green = T.swapaxes(decoder_green, axis1=1, axis2=2)
-    decoder_blue  = T.swapaxes(decoder_blue, axis1=1, axis2=2)
-    # shape = (num_samples*num_pixels, num_intensity)
-    decoder_red   = decoder_red.reshape((num_samples*num_pixels, -1))
-    decoder_green = decoder_green.reshape((num_samples*num_pixels, -1))
-    decoder_blue  = decoder_blue.reshape((num_samples*num_pixels, -1))
-    # softmax
-    decoder_red   = T.argmax(T.nnet.softmax(decoder_red),axis=1)
-    decoder_green = T.argmax(T.nnet.softmax(decoder_green),axis=1)
-    decoder_blue  = T.argmax(T.nnet.softmax(decoder_blue),axis=1)
-
-    decoder_red   = decoder_red.reshape((num_samples, 1, num_rows, num_cols))
-    decoder_green = decoder_green.reshape((num_samples, 1, num_rows, num_cols))
-    decoder_blue  = decoder_blue.reshape((num_samples, 1, num_rows, num_cols))
-
-    decoder_image = T.concatenate([decoder_red, decoder_green, decoder_blue], axis=1)
+    decoder_outputs = decoder_function(hidden_data)
+    decoder_samples = decoder_outputs[1]
 
     function_inputs = [hidden_data,]
-    function_outputs = [decoder_image,]
+    function_outputs = [decoder_samples,]
 
     function = theano.function(inputs=function_inputs,
                                outputs=function_outputs,
@@ -430,11 +342,8 @@ def train_model(data_stream,
     encoder_parameters       = encoder_model[3]
     decoder_model = set_decoder_model(model_config_dict['hidden_size'],
                                       model_config_dict['min_num_eng_filters'])
-    decoder_feature_function = decoder_model[0]
-    decoder_red_function     = decoder_model[1]
-    decoder_green_function   = decoder_model[2]
-    decoder_blue_function    = decoder_model[3]
-    decoder_parameters       = decoder_model[4]
+    decoder_function   = decoder_model[0]
+    decoder_parameters = decoder_model[1]
 
     # compile functions
     print 'COMPILING UPDATER FUNCTION'
@@ -442,20 +351,14 @@ def train_model(data_stream,
     updater_function = set_updater_function(encoder_feature_function=encoder_feature_function,
                                             encoder_mean_function=encoder_mean_function,
                                             encoder_var_function=encoder_var_function,
-                                            decoder_feature_function=decoder_feature_function,
-                                            decoder_red_function=decoder_red_function,
-                                            decoder_green_function=decoder_green_function,
-                                            decoder_blue_function=decoder_blue_function,
+                                            decoder_function=decoder_function,
                                             encoder_params=encoder_parameters,
                                             decoder_params=decoder_parameters,
                                             optimizer=model_optimizer)
     print '%.2f SEC '%(time()-t)
     print 'COMPILING SAMPLING FUNCTION'
     t=time()
-    sampling_function = set_sampling_function(decoder_feature_function=decoder_feature_function,
-                                              decoder_red_function=decoder_red_function,
-                                              decoder_green_function=decoder_green_function,
-                                              decoder_blue_function=decoder_blue_function)
+    sampling_function = set_sampling_function(decoder_function=decoder_function)
     print '%.2f SEC '%(time()-t)
 
     # set fixed hidden data for sampling
@@ -464,6 +367,8 @@ def train_model(data_stream,
     print 'START TRAINING'
     # for each epoch
     vae_cost_list          = []
+    recon_cost_list        = []
+    kl_cost_list           = []
     moment_match_cost_list = []
     batch_count = 0
     for e in xrange(model_config_dict['epochs']):
@@ -472,7 +377,7 @@ def train_model(data_stream,
         # for each batch
         for b, batch_data in enumerate(batch_iters):
             # set update function inputs
-            positive_visible_data = floatX(batch_data[0])
+            positive_visible_data = transform(batch_data[0])
             positive_hidden_data  = floatX(np_rng.normal(size=(positive_visible_data.shape[0], model_config_dict['hidden_size'])))
             negative_hidden_data  = floatX(np_rng.normal(size=(positive_visible_data.shape[0], model_config_dict['hidden_size'])))
             moment_cost_weight    = 0.0
@@ -484,9 +389,14 @@ def train_model(data_stream,
             updater_outputs = updater_function(*updater_inputs)
 
             vae_cost          = updater_outputs[0].mean()
-            moment_match_cost = updater_outputs[1].mean()
+            recon_cost        = updater_outputs[1].mean()
+            kl_cost           = updater_outputs[2].mean()
+            moment_match_cost = updater_outputs[3].mean()
+            recon_samples     = updater_outputs[4].mean()
 
             vae_cost_list.append(vae_cost)
+            recon_cost_list.append(recon_cost)
+            kl_cost_list.append(kl_cost)
             moment_match_cost_list.append(moment_match_cost)
             # batch count up
             batch_count += 1
@@ -499,18 +409,30 @@ def train_model(data_stream,
                 print '================================================================'
                 print '     vae    cost : ', vae_cost_list[-1]
                 print '----------------------------------------------------------------'
+                print '     recon  cost : ', recon_cost_list[-1]
+                print '----------------------------------------------------------------'
+                print '     kl     cost : ', kl_cost_list[-1]
+                print '----------------------------------------------------------------'
                 print '     moment cost : ', moment_match_cost_list[-1]
                 print '================================================================'
 
             if batch_count%100==0:
                 # sample data
                 sample_data = sampling_function(fixed_hidden_data)[0]
-                print sample_data.shape
-                sample_data = floatX(sample_data)/255.0
-                save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
-                color_grid_vis(sample_data.transpose([0,2,3,1]), (16, 16), save_as)
+                save_as = samples_dir + '/' + model_test_name + '_SAMPLES(NEGATIVE){}.png'.format(batch_count)
+                color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
+                # recon data
+                save_as = samples_dir + '/' + model_test_name + '_ORIGINALS(POSITIVE){}.png'.format(batch_count)
+                color_grid_vis(inverse_transform(positive_visible_data).transpose([0,2,3,1]), (12, 12), save_as)
+                save_as = samples_dir + '/' + model_test_name + '_RECONSTRUCTIONS(POSITIVE){}.png'.format(batch_count)
+                color_grid_vis(inverse_transform(recon_samples).transpose([0,2,3,1]), (12, 12), save_as)
+                # save costs
                 np.save(file=samples_dir + '/' + model_test_name +'_vae_cost',
                         arr=np.asarray(vae_cost_list))
+                np.save(file=samples_dir + '/' + model_test_name +'_recon_cost',
+                        arr=np.asarray(recon_cost_list))
+                np.save(file=samples_dir + '/' + model_test_name +'_kl_cost',
+                        arr=np.asarray(kl_cost_list))
                 np.save(file=samples_dir + '/' + model_test_name +'_moment_cost',
                         arr=np.asarray(moment_match_cost_list))
 
