@@ -502,7 +502,7 @@ def train_model(data_stream,
                 print '     moment cost : ', moment_match_cost_list[-1]
                 print '================================================================'
 
-            if batch_count%1000==0:
+            if batch_count%100==0:
                 # sample data
                 sample_data = sampling_function(fixed_hidden_data)[0]
                 print sample_data.shape
@@ -515,6 +515,7 @@ def train_model(data_stream,
                         arr=np.asarray(moment_match_cost_list))
 
                 save_as = samples_dir + '/' + model_test_name + '_MODEL.pkl'
+            if batch_count%1000==0:
                 save_model(tensor_params_list=decoder_parameters,
                            save_to=save_as)
 
