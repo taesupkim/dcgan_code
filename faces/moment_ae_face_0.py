@@ -491,7 +491,7 @@ def train_model(data_stream,
             # batch count up
             batch_count += 1
 
-            if batch_count%10==0:
+            if batch_count%1==0:
                 print '================================================================'
                 print 'BATCH ITER #{}'.format(batch_count), model_test_name
                 print '================================================================'
@@ -508,7 +508,7 @@ def train_model(data_stream,
                 print sample_data.shape
                 sample_data = floatX(sample_data)/255.0
                 save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
-                color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
+                color_grid_vis(sample_data.transpose([0,2,3,1]), (16, 16), save_as)
                 np.save(file=samples_dir + '/' + model_test_name +'_vae_cost',
                         arr=np.asarray(vae_cost_list))
                 np.save(file=samples_dir + '/' + model_test_name +'_moment_cost',
