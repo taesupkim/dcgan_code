@@ -67,7 +67,7 @@ def set_decoder_model(num_hiddens,
     num_gen_filters0 = min_num_gen_filters*8
     num_gen_filters1 = min_num_gen_filters*4
     num_gen_filters2 = min_num_gen_filters*2
-    # num_gen_filters3 = min_num_gen_filters*1
+    num_gen_filters3 = min_num_gen_filters*2
 
     # LAYER 0 (LINEAR W/ BN)
     linear_w0 = weight_init((num_hiddens,
@@ -89,21 +89,21 @@ def set_decoder_model(num_hiddens,
                         'dec_conv_b2')
 
     # LAYER 2 (DECONV)
-    # conv_w3 = weight_init((num_gen_filters2, num_gen_filters3) + filter_shape,
-    #                       'dec_conv_w3')
-    # conv_b3 = bias_zero(num_gen_filters3,
-    #                     'dec_conv_b3')
+    conv_w3 = weight_init((num_gen_filters2, num_gen_filters3) + filter_shape,
+                          'dec_conv_w3')
+    conv_b3 = bias_zero(num_gen_filters3,
+                        'dec_conv_b3')
 
     # MEAN (DECONV)
-    red_w = weight_init((num_gen_filters2, 256) + filter_shape,
+    red_w = weight_init((num_gen_filters3, 256) + filter_shape,
                         'dec_red_w')
     red_b = bias_zero(256,
                       'dec_red_b')
-    green_w = weight_init((num_gen_filters2, 256) + filter_shape,
+    green_w = weight_init((num_gen_filters3, 256) + filter_shape,
                           'dec_green_w')
     green_b = bias_zero(256,
                         'dec_green_b')
-    blue_w = weight_init((num_gen_filters2, 256) + filter_shape,
+    blue_w = weight_init((num_gen_filters3, 256) + filter_shape,
                          'dec_blue_w')
     blue_b = bias_zero(256,
                        'dec_blue_b')
@@ -111,7 +111,7 @@ def set_decoder_model(num_hiddens,
     decoder_params = [linear_w0, linear_b0,
                       conv_w1, conv_b1,
                       conv_w2, conv_b2,
-                      # conv_w3, conv_b3,
+                      conv_w3, conv_b3,
                       red_w, red_b,
                       green_w, green_b,
                       blue_w, blue_b]
@@ -126,13 +126,13 @@ def set_decoder_model(num_hiddens,
         # layer 2 (deconv)
         h2 = deconv(relu(h1), conv_w2, subsample=(2, 2), border_mode=(2, 2)) + conv_b2.dimshuffle('x', 0, 'x', 'x')
         # layer 3 (deconv)
-        # h3 = deconv(relu(h2), conv_w3, subsample=(2, 2), border_mode=(2, 2)) + conv_b3.dimshuffle('x', 0, 'x', 'x')
+        h3 = deconv(relu(h2), conv_w3, subsample=(2, 2), border_mode=(2, 2)) + conv_b3.dimshuffle('x', 0, 'x', 'x')
         # feature
-        feature = relu(h2)
+        feature = relu(h3)
         return [[T.flatten(h0,2),
                  T.flatten(h1,2),
-                 T.flatten(h2,2)],
-                 # T.flatten(h3,2)],
+                 T.flatten(h2,2),
+                 T.flatten(h3,2)],
                 feature]
 
     def decoder_red_function(feature_data):
