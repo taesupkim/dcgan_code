@@ -185,9 +185,9 @@ def set_encoder_model(num_hiddens,
     # encoder variance
     var_w = weight_init((num_eng_filters3*(min_image_size*min_image_size),
                          num_hiddens),
-                        'enc_mean_w')
+                        'enc_var_w')
     var_b = bias_zero(num_hiddens,
-                      'enc_mean_b')
+                      'enc_var_b')
 
     encoder_params = [conv_w0, bn_w0, bn_b0,
                       conv_w1, bn_w1, bn_b1,
@@ -218,7 +218,6 @@ def set_encoder_model(num_hiddens,
         return encoder_mean
 
     def encoder_var_function(feature_data):
-        # energy hidden-feature
         encoder_var = T.dot(feature_data, var_w)+var_b
         return encoder_var
 
