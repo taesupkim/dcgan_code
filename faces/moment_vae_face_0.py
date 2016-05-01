@@ -296,7 +296,6 @@ def set_updater_function(encoder_feature_function,
                              positive_recon_cost,
                              positive_kl_cost,
                              moment_match_cost,
-                             model_updater_cost,
                              positive_decoder_samples]
 
     model_updater_function = theano.function(inputs=model_updater_inputs,
