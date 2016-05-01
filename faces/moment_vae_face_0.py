@@ -210,7 +210,7 @@ def set_encoder_model(num_hiddens,
         h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
         h3 = relu(batchnorm(h3, g=bn_w3, b=bn_b3))
         # feature
-        feature = h3
+        feature = T.flatten(h3, 2)
         return feature
 
     def encoder_mean_function(feature_data):
