@@ -119,7 +119,7 @@ def set_decoder_model(num_hiddens,
         h3 = deconv(relu(h2), conv_w3, subsample=(2, 2), border_mode=(2, 2)) + conv_b3.dimshuffle('x', 0, 'x', 'x')
         # layer_output (deconv)
         h4 = deconv(relu(h3), conv_w4, subsample=(2, 2), border_mode=(2, 2)) + conv_b4.dimshuffle('x', 0, 'x', 'x')
-        output = tanh(h3)
+        output = tanh(h4)
         return [[T.flatten(h0,2),
                  T.flatten(h1,2),
                  T.flatten(h2,2),
