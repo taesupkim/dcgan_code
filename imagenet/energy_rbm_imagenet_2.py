@@ -541,7 +541,7 @@ def train_model(data_stream,
             print '     entropy cost     : ', entropy_cost
             print '================================================================'
 
-            if batch_count%1==0:
+            if batch_count%100==0:
                 # sample data
                 sample_data = sampling_function(fixed_hidden_data)[0]
                 sample_data = np.asarray(sample_data)
