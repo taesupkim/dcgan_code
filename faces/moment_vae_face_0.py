@@ -265,7 +265,7 @@ def set_updater_function(encoder_feature_function,
     positive_decoder_samples = positive_decoder_outputs[1]
 
     # positive lower bound cost
-    positive_recon_cost = T.mean(T.sqr(positive_visible_data-positive_decoder_samples), axis=(1,2,3))
+    positive_recon_cost = T.sum(T.sqr(positive_visible_data-positive_decoder_samples), axis=(1,2,3))
     positive_kl_cost    = -0.5*T.sum((1.0+positive_encoder_log_var-T.sqr(positive_encoder_mean)-T.exp(positive_encoder_log_var)), axis=1)
     positive_vae_cost   = positive_recon_cost + positive_kl_cost
 
@@ -456,7 +456,7 @@ if __name__=="__main__":
 
     hidden_size_list = [100]
     num_filters_list = [128]
-    lr_list          = [1e-4]
+    lr_list          = [1e-3]
     dropout_list     = [False,]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
