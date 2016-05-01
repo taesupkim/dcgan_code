@@ -391,7 +391,7 @@ def train_model(data_stream,
             recon_cost        = updater_outputs[1].mean()
             kl_cost           = updater_outputs[2].mean()
             moment_match_cost = updater_outputs[3].mean()
-            recon_samples     = updater_outputs[4].mean()
+            recon_samples     = updater_outputs[4]
 
             vae_cost_list.append(vae_cost)
             recon_cost_list.append(recon_cost)
