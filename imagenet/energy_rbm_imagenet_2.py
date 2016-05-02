@@ -325,8 +325,8 @@ def set_generator_update_function(feature_function,
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
     # set noise data
-    noise_data  = T.matrix(name='noise_data',
-                           dtype=theano.config.floatX)
+    noise_data  = T.tensor4(name='noise_data',
+                            dtype=theano.config.floatX)
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
     sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
