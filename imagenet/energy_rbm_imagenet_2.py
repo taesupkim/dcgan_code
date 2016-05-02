@@ -64,7 +64,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_IMAGENET256_EXP_ALL_ENTROPY'
+model_name  = 'ENERGY_RBM_IMAGENET128_EXP_ALL_ENTROPY'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -557,7 +557,7 @@ if __name__=="__main__":
 
     expert_size_list = [8192]
     hidden_size_list = [1000]
-    num_filters_list = [256]
+    num_filters_list = [128]
     lr_list          = [1e-3]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
