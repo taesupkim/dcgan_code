@@ -320,12 +320,16 @@ def set_generator_update_function(feature_function,
                                   generator_optimizer,
                                   generator_entropy_optimizer):
 
-    # set hidden data
+    # set hidden data, noise data
     hidden_data = T.matrix(name='hidden_data',
+                           dtype=theano.config.floatX)
+
+    noise_data  = T.matrix(name='noise_data',
                            dtype=theano.config.floatX)
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
+    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
     sample_feature = feature_function(sample_data, is_train=True)
@@ -356,7 +360,8 @@ def set_generator_update_function(feature_function,
                                                             generator_updates_cost)
 
     # update function input
-    update_function_inputs  = [hidden_data,]
+    update_function_inputs  = [hidden_data,
+                               noise_data]
 
     # update function output
     update_function_outputs = [sample_energy,
@@ -485,12 +490,15 @@ def train_model(data_stream,
             # set update function inputs
             input_data   = transform(batch_data[0])
             num_data     = input_data.shape[0]
+            shape_data   = input_data.shape
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
+            noise_data   = floatX(np_rng.normal(scale=0.01,
+                                                size=shape_data))
 
             # generator update
-            generator_updates = generator_updater(hidden_data)
+            generator_updates = generator_updater(hidden_data, noise_data)
             entropy_cost      = generator_updates[-2]
             entropy_weights   = generator_updates[-1]
             energy_updates    = energy_updater(input_data, hidden_data)
@@ -550,7 +558,7 @@ if __name__=="__main__":
 
     expert_size_list = [1024]
     hidden_size_list = [100]
-    num_filters_list = [63]
+    num_filters_list = [64]
     lr_list          = [1e-3]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
