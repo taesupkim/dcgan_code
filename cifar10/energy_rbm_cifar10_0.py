@@ -167,7 +167,7 @@ def set_generator_model(num_hiddens,
                                 conv_bn_w1,
                                 conv_bn_w2,
                                 conv_bn_w3,
-                                conv_bn_b4]
+                                conv_bn_w4]
 
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
