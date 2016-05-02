@@ -22,7 +22,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'MOMENT_VAE_FACE_BASELINE'
+model_name  = 'MOMENT_VAE_FACE_WEIGHT_1_0'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -378,7 +378,7 @@ def train_model(data_stream,
             positive_visible_data = transform(batch_data[0])
             positive_hidden_data  = floatX(np_rng.normal(size=(positive_visible_data.shape[0], model_config_dict['hidden_size'])))
             negative_hidden_data  = floatX(np_rng.normal(size=(positive_visible_data.shape[0], model_config_dict['hidden_size'])))
-            moment_cost_weight    = 0.0
+            moment_cost_weight    = 1.0
 
             updater_inputs = [positive_visible_data,
                               positive_hidden_data,
