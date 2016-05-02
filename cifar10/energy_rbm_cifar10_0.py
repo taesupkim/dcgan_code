@@ -554,7 +554,7 @@ if __name__=="__main__":
     #################
     # LOAD DATA SET #
     #################
-    _ , data_stream = cifar10(batch_size=model_config_dict['batch_size'])
+    tr_data, te_data, data_stream, te_stream = cifar10(batch_size=model_config_dict['batch_size'])
 
     expert_size_list = [1024]
     hidden_size_list = [100]
