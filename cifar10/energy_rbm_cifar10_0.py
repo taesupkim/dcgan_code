@@ -32,7 +32,8 @@ def get_entropy_cost(entropy_params_list):
     entropy_tensor_params= []
     for entropy_params in entropy_params_list:
         entropy_tensor_params.append(entropy_params.reshape((1,-1)))
-    entropy_tensor_params = T.concatenate(T.sqr(entropy_tensor_params), axis=1)
+    entropy_tensor_params = T.concatenate(entropy_tensor_params, axis=1)
+    entropy_tensor_params = 0.5*T.log(T.sqr(entropy_tensor_params))
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
