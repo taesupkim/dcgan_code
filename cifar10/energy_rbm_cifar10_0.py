@@ -64,7 +64,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_CIFAR10_ALL_ENTROPY'
+model_name  = 'ENERGY_RBM_CIFAR10_EXP_ENTROPY'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -153,21 +153,18 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR CONV LAYER 4'
     conv_w4    = weight_init((num_gen_filters3, num_channels) + filter_shape,
                              'gen_conv_w4')
-    conv_bn_w4 = scale_init(num_channels,
-                            'gen_conv_bn_w4')
-    conv_bn_b4 = bias_zero(num_channels,
-                           'gen_conv_bn_b4')
+    conv_b4    = bias_zero(num_channels,
+                           'gen_conv_b4')
     generator_params = [linear_w0, linear_bn_b0,
                         conv_w1, conv_bn_b1,
                         conv_w2, conv_bn_b2,
                         conv_w3, conv_bn_b3,
-                        conv_w4, conv_bn_b4]
+                        conv_w4, conv_b4]
 
     generator_entropy_params = [linear_bn_w0,
                                 conv_bn_w1,
                                 conv_bn_w2,
-                                conv_bn_w3,
-                                conv_bn_w4]
+                                conv_bn_w3]
 
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
@@ -181,7 +178,7 @@ def set_generator_model(num_hiddens,
         # layer 3 (deconv)
         h3     = relu(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
-        output = tanh(entropy_exp(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w4, b=conv_bn_b4))
+        output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
 
     return [generator_function, generator_params, generator_entropy_params]
@@ -329,7 +326,7 @@ def set_generator_update_function(feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
+    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
     sample_feature = feature_function(sample_data, is_train=True)
@@ -559,7 +556,7 @@ if __name__=="__main__":
     expert_size_list = [1024]
     hidden_size_list = [100]
     num_filters_list = [64]
-    lr_list          = [1e-4]
+    lr_list          = [1e-3]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
 
@@ -577,9 +574,9 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
+                            generator_optimizer = Adagrad(lr=sharedX(lr*1.0),
                                                           regularizer=Regularizer(l2=lambda_gen))
-                            generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
+                            generator_bn_optimizer = Adagrad(lr=sharedX(lr*1.0),
                                                              regularizer=Regularizer(l2=0.0))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
