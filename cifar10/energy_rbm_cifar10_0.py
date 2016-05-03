@@ -32,7 +32,7 @@ def get_entropy_cost(entropy_params_list):
     entropy_tensor_params= []
     for entropy_params in entropy_params_list:
         entropy_tensor_params.append(entropy_params.reshape((1,-1)))
-    entropy_tensor_params = T.concatenate(entropy_tensor_params, axis=1)
+    entropy_tensor_params = T.concatenate(T.sqr(entropy_tensor_params), axis=1)
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
@@ -319,7 +319,7 @@ def set_generator_update_function(feature_function,
     for param_tensor in generator_entropy_params:
         entropy_weights.append(param_tensor.reshape((1,-1)))
     entropy_weights = T.concatenate(entropy_weights, axis=1)
-    entropy_weights = T.exp(entropy_weights)
+    entropy_weights = T.abs_(entropy_weights)
     entropy_weights = T.mean(entropy_weights)
 
     # get generator update cost
