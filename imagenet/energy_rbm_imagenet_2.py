@@ -525,14 +525,14 @@ def train_model(data_stream,
 
             if batch_count%100==0:
                 # sample data
-                sample_data = sampling_function(fixed_hidden_data)[0]
-                sample_data = np.asarray(sample_data)
-                save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
-                color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
-                np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
-                        arr=np.asarray(input_energy_list))
-                np.save(file=samples_dir + '/' + model_test_name +'_sample_energy',
-                        arr=np.asarray(sample_energy_list))
+                # sample_data = sampling_function(fixed_hidden_data)[0]
+                # sample_data = np.asarray(sample_data)
+                # save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
+                # color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
+                # np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
+                #         arr=np.asarray(input_energy_list))
+                # np.save(file=samples_dir + '/' + model_test_name +'_sample_energy',
+                #         arr=np.asarray(sample_energy_list))
 
                 save_as = samples_dir + '/' + model_test_name + '_MODEL.pkl'
                 save_model(tensor_params_list=generator_params + generator_entropy_params+ energy_params,
