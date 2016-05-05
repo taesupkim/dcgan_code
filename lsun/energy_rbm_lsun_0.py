@@ -524,10 +524,10 @@ def train_model(data_stream,
 
             if batch_count%1000==0:
                 # sample data
-                [sample_data_t, ] = sampling_function(fixed_hidden_data)
-                sample_data_t = np.asarray(sample_data_t)
-                save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
-                color_grid_vis(inverse_transform(sample_data_t).transpose([0,2,3,1]), (16, 16), save_as)
+                # [sample_data_t, ] = sampling_function(fixed_hidden_data)
+                # sample_data_t = np.asarray(sample_data_t)
+                # save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
+                # color_grid_vis(inverse_transform(sample_data_t).transpose([0,2,3,1]), (16, 16), save_as)
                 np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
                         arr=np.asarray(input_energy_list))
                 np.save(file=samples_dir + '/' + model_test_name +'_sample_energy',
@@ -556,8 +556,8 @@ if __name__=="__main__":
     hidden_size_list = [100]
     num_filters_list = [128]
     lr_list          = [1e-3]
-    lambda_eng_list  = [1e-5]
-    lambda_gen_list  = [1e-5]
+    lambda_eng_list  = [1e-10]
+    lambda_gen_list  = [1e-10]
 
     for lr in lr_list:
         for num_filters in num_filters_list:

@@ -508,10 +508,10 @@ def train_model(data_stream,
                 # sample_data_t = np.asarray(sample_data_t)
                 # save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
                 # color_grid_vis(inverse_transform(sample_data_t).transpose([0,2,3,1]), (16, 16), save_as)
-                # np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
-                #         arr=np.asarray(input_energy_list))
-                # np.save(file=samples_dir + '/' + model_test_name +'_sample_energy',
-                #         arr=np.asarray(sample_energy_list))
+                np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
+                        arr=np.asarray(input_energy_list))
+                np.save(file=samples_dir + '/' + model_test_name +'_sample_energy',
+                        arr=np.asarray(sample_energy_list))
 
                 save_as = samples_dir + '/' + model_test_name + '_MODEL.pkl'
                 save_model(tensor_params_list=generator_params + generator_entropy_params+ energy_params,
