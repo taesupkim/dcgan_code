@@ -576,19 +576,20 @@ def train_model(data_stream,
             # batch count up
             batch_count += 1
 
-            print '================================================================'
-            print 'BATCH ITER #{}'.format(batch_count), model_test_name
-            print '================================================================'
-            print '   TRAIN RESULTS'
-            print '================================================================'
-            print '     input energy     : ', input_energy_list[-1]
-            print '----------------------------------------------------------------'
-            print '     sample energy    : ', sample_energy_list[-1]
-            print '----------------------------------------------------------------'
-            print '     entropy weight   : ', entropy_weights
-            print '----------------------------------------------------------------'
-            print '     entropy cost     : ', entropy_cost
-            print '================================================================'
+            if batch_count%10==0:
+                print '================================================================'
+                print 'BATCH ITER #{}'.format(batch_count), model_test_name
+                print '================================================================'
+                print '   TRAIN RESULTS'
+                print '================================================================'
+                print '     input energy     : ', input_energy_list[-1]
+                print '----------------------------------------------------------------'
+                print '     sample energy    : ', sample_energy_list[-1]
+                print '----------------------------------------------------------------'
+                print '     entropy weight   : ', entropy_weights
+                print '----------------------------------------------------------------'
+                print '     entropy cost     : ', entropy_cost
+                print '================================================================'
 
             if batch_count%100==0:
                 # sample data
