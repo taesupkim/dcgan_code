@@ -65,7 +65,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_CIFAR10_EXP_ENTROPY'
+model_name  = 'ENERGY_RBM_CIFAR10_EXP_ENTROPY_ALL_TANH'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -159,12 +159,12 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = tanh(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = tanh(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = tanh(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
         output = tanh(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -504,10 +504,10 @@ def train_model(data_stream,
 
             if batch_count%1000==0:
                 # sample data
-                # [sample_data_t, ] = sampling_function(fixed_hidden_data)
-                # sample_data_t = np.asarray(sample_data_t)
-                # save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
-                # color_grid_vis(inverse_transform(sample_data_t).transpose([0,2,3,1]), (16, 16), save_as)
+                [sample_data_t, ] = sampling_function(fixed_hidden_data)
+                sample_data_t = np.asarray(sample_data_t)
+                save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
+                color_grid_vis(inverse_transform(sample_data_t).transpose([0,2,3,1]), (16, 16), save_as)
                 np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
                         arr=np.asarray(input_energy_list))
                 np.save(file=samples_dir + '/' + model_test_name +'_sample_energy',
