@@ -13,7 +13,7 @@ from lib.rng import py_rng, np_rng
 from lib.ops import batchnorm, entropykeep, deconv, dropout, l2normalize
 from lib.theano_utils import floatX, sharedX
 from load import imagenet
-from lib.save_utils import save_model
+from lib.save_utils import save_model, unpickle
 
 def transform(X):
     return floatX(X)/127.5 - 1.
@@ -608,8 +608,10 @@ def train_model(data_stream,
 # TESTER #
 ##########
 def test_model(model_config_dict, model_test_name):
+    import glob
+    model_list = glob.glob('*.pkl')
     # load parameters
-    model_param_dicts = []
+    model_param_dicts = unpickle(model_list[0])
 
     # load generator
     generator_models = load_generator_model(min_num_gen_filters=model_config_dict['min_num_gen_filters'],

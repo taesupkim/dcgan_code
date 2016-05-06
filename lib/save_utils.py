@@ -56,3 +56,9 @@ def secure_pickle_dump(object_, path):
         if "temp" in locals():
             os.remove(temp.name)
         raise
+
+def unpickle(path):
+    f = open(path, 'rb')
+    object_ = cPickle.load(f)
+    f.close()
+    return object_
