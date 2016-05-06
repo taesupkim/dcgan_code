@@ -420,7 +420,7 @@ if __name__=="__main__":
                         model_config_dict['min_num_eng_filters'] = num_filters
 
                         # set updates
-                        model_optimizer = Adagrad(lr=sharedX(lr),
+                        model_optimizer = RMSprop(lr=sharedX(lr),
                                                   regularizer=Regularizer(l2=lambda_eng))
                         model_test_name = model_name \
                                           + '_f{}'.format(int(num_filters)) \
