@@ -184,6 +184,73 @@ def set_generator_model(num_hiddens,
 
     return [generator_function, generator_params, generator_entropy_params]
 
+##################
+# LOAD GENERATOR #
+##################
+def load_generator_model(min_num_gen_filters,
+                         model_params_dict):
+    # initial square image size
+    init_image_size  = 4
+
+    # set num of filters for each layer
+    num_gen_filters0 = min_num_gen_filters*8
+
+    # LAYER 0 (LINEAR W/ BN)
+    print 'LOAD GENERATOR LINEAR LAYER 0'
+    linear_w0    = sharedX(model_params_dict[   'gen_linear_w0'], name='gen_linear_w0')
+    linear_bn_w0 = sharedX(model_params_dict['gen_linear_bn_w0'], name='gen_linear_bn_w0')
+    linear_bn_b0 = sharedX(model_params_dict['gen_linear_bn_b0'], name='gen_linear_bn_b0')
+
+    # LAYER 1 (DECONV)
+    print 'SET GENERATOR CONV LAYER 1'
+    conv_w1    = sharedX(model_params_dict[   'gen_conv_w1'], name='gen_conv_w1')
+    conv_bn_w1 = sharedX(model_params_dict['gen_conv_bn_w1'], name='gen_conv_bn_w1')
+    conv_bn_b1 = sharedX(model_params_dict['gen_conv_bn_b1'], name='gen_conv_bn_b1')
+
+    # LAYER 2 (DECONV)
+    print 'SET GENERATOR CONV LAYER 2'
+    conv_w2    = sharedX(model_params_dict[   'gen_conv_w2'], name='gen_conv_w2')
+    conv_bn_w2 = sharedX(model_params_dict['gen_conv_bn_w2'], name='gen_conv_bn_w2')
+    conv_bn_b2 = sharedX(model_params_dict['gen_conv_bn_b2'], name='gen_conv_bn_b2')
+
+    # LAYER 2 (DECONV)
+    print 'SET GENERATOR CONV LAYER 3'
+    conv_w3    = sharedX(model_params_dict[   'gen_conv_w3'], name='gen_conv_w3')
+    conv_bn_w3 = sharedX(model_params_dict['gen_conv_bn_w3'], name='gen_conv_bn_w3')
+    conv_bn_b3 = sharedX(model_params_dict['gen_conv_bn_b3'], name='gen_conv_bn_b3')
+
+    # LAYER 3 (DECONV)
+    print 'SET GENERATOR CONV LAYER 4'
+    conv_w4 = sharedX(model_params_dict[   'gen_conv_w4'], name='gen_conv_w4')
+    conv_b4 = sharedX(model_params_dict[   'gen_conv_b4'], name='gen_conv_b4')
+
+    generator_params = [linear_w0, linear_bn_b0,
+                        conv_w1, conv_bn_b1,
+                        conv_w2, conv_bn_b2,
+                        conv_w3, conv_bn_b3,
+                        conv_w4, conv_b4]
+
+    generator_entropy_params = [linear_bn_w0,
+                                conv_bn_w1,
+                                conv_bn_w2,
+                                conv_bn_w3]
+
+    print 'SET GENERATOR FUNCTION'
+    def generator_function(hidden_data, is_train=True):
+        # layer 0 (linear)
+        h0     = relu(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
+        # layer 1 (deconv)
+        h1     = relu(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        # layer 2 (deconv)
+        h2     = relu(entropy_exp(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        # layer 3 (deconv)
+        h3     = relu(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        # layer 4 (deconv)
+        output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
+        return output
+
+    return [generator_function, generator_params, generator_entropy_params]
 ######################################
 # BUILD ENERGY MODEL (FEATURE_MODEL) #
 ######################################
@@ -537,7 +604,32 @@ def train_model(data_stream,
                 save_as = samples_dir + '/' + model_test_name + '_MODEL.pkl'
                 save_model(tensor_params_list=generator_params + generator_entropy_params+ energy_params,
                            save_to=save_as)
+##########
+# TESTER #
+##########
+def test_model(model_config_dict, model_test_name):
+    # load parameters
+    model_param_dicts = []
 
+    # load generator
+    generator_models = load_generator_model(min_num_gen_filters=model_config_dict['min_num_gen_filters'],
+                                            model_params_dict=model_param_dicts)
+    generator_function = generator_models[0]
+
+    print 'COMPILING SAMPLING FUNCTION'
+    t=time()
+    sampling_function = set_sampling_function(generator_function=generator_function)
+    print '%.2f SEC '%(time()-t)
+
+    print 'START SAMPLING'
+    for s in xrange(model_config_dict['num_sampling']):
+        hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
+                                             high=model_config_dict['hidden_distribution'],
+                                             size=(model_config_dict['num_display'], model_config_dict['hidden_size'])))
+        sample_data = sampling_function(hidden_data)[0]
+        sample_data = inverse_transform(np.asarray(sample_data)).transpose([0,2,3,1])
+        save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(s+1)
+        color_grid_vis(sample_data, (np.sqrt(model_config_dict['num_display']),)*2, save_as)
 
 if __name__=="__main__":
 
@@ -547,47 +639,57 @@ if __name__=="__main__":
     model_config_dict['hidden_distribution'] = 1.
     model_config_dict['epochs']              = 200
 
-    #################
-    # LOAD DATA SET #
-    #################
-    _ , data_stream = imagenet(batch_size=model_config_dict['batch_size'])
+    is_training = False
+    if is_training is True:
+        #################
+        # LOAD DATA SET #
+        #################
+        _ , data_stream = imagenet(batch_size=model_config_dict['batch_size'])
 
-    expert_size_list = [8192]
-    hidden_size_list = [1000]
-    num_filters_list = [128]
-    lr_list          = [1e-3]
-    lambda_eng_list  = [1e-5]
-    lambda_gen_list  = [1e-5]
+        expert_size_list = [8192]
+        hidden_size_list = [1000]
+        num_filters_list = [128]
+        lr_list          = [1e-3]
+        lambda_eng_list  = [1e-5]
+        lambda_gen_list  = [1e-5]
 
-    for lr in lr_list:
-        for num_filters in num_filters_list:
-            for hidden_size in hidden_size_list:
-                for expert_size in expert_size_list:
-                    for lambda_eng in lambda_eng_list:
-                        for lambda_gen in lambda_gen_list:
-                            model_config_dict['hidden_size']         = hidden_size
-                            model_config_dict['expert_size']         = expert_size
-                            model_config_dict['min_num_gen_filters'] = num_filters
-                            model_config_dict['min_num_eng_filters'] = num_filters
+        for lr in lr_list:
+            for num_filters in num_filters_list:
+                for hidden_size in hidden_size_list:
+                    for expert_size in expert_size_list:
+                        for lambda_eng in lambda_eng_list:
+                            for lambda_gen in lambda_gen_list:
+                                model_config_dict['hidden_size']         = hidden_size
+                                model_config_dict['expert_size']         = expert_size
+                                model_config_dict['min_num_gen_filters'] = num_filters
+                                model_config_dict['min_num_eng_filters'] = num_filters
 
-                            # set updates
-                            energy_optimizer    = Adagrad(lr=sharedX(lr),
-                                                          regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
-                                                          regularizer=Regularizer(l2=lambda_gen))
-                            generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
-                                                             regularizer=Regularizer(l2=0.0))
-                            model_test_name = model_name \
-                                              + '_f{}'.format(int(num_filters)) \
-                                              + '_h{}'.format(int(hidden_size)) \
-                                              + '_e{}'.format(int(expert_size)) \
-                                              + '_re{}'.format(int(-np.log10(lambda_eng))) \
-                                              + '_rg{}'.format(int(-np.log10(lambda_gen))) \
-                                              + '_lr{}'.format(int(-np.log10(lr))) \
+                                # set updates
+                                energy_optimizer    = Adagrad(lr=sharedX(lr),
+                                                              regularizer=Regularizer(l2=lambda_eng))
+                                generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
+                                                              regularizer=Regularizer(l2=lambda_gen))
+                                generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
+                                                                 regularizer=Regularizer(l2=0.0))
+                                model_test_name = model_name \
+                                                  + '_f{}'.format(int(num_filters)) \
+                                                  + '_h{}'.format(int(hidden_size)) \
+                                                  + '_e{}'.format(int(expert_size)) \
+                                                  + '_re{}'.format(int(-np.log10(lambda_eng))) \
+                                                  + '_rg{}'.format(int(-np.log10(lambda_gen))) \
+                                                  + '_lr{}'.format(int(-np.log10(lr))) \
 
-                            train_model(data_stream=data_stream,
-                                        energy_optimizer=energy_optimizer,
-                                        generator_optimizer=generator_optimizer,
-                                        generator_entropy_optimizer=generator_bn_optimizer,
-                                        model_config_dict=model_config_dict,
-                                        model_test_name=model_test_name)
+                                train_model(data_stream=data_stream,
+                                            energy_optimizer=energy_optimizer,
+                                            generator_optimizer=generator_optimizer,
+                                            generator_entropy_optimizer=generator_bn_optimizer,
+                                            model_config_dict=model_config_dict,
+                                            model_test_name=model_test_name)
+    else:
+        model_test_name = model_name +'_TEST'
+        model_config_dict['hidden_size']         = 1000
+        model_config_dict['expert_size']         = 8192
+        model_config_dict['min_num_gen_filters'] = 128
+        model_config_dict['min_num_eng_filters'] = 128
+        test_model(model_config_dict=model_config_dict,
+                   model_test_name=model_test_name)
