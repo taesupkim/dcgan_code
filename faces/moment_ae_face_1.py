@@ -306,7 +306,7 @@ def train_model(data_stream,
     encoder_model = set_encoder_model(model_config_dict['hidden_size'],
                                       model_config_dict['min_num_gen_filters'])
     encoder_function   = encoder_model[0]
-    encoder_parameters = encoder_model[3]
+    encoder_parameters = encoder_model[1]
     decoder_model = set_decoder_model(model_config_dict['hidden_size'],
                                       model_config_dict['min_num_eng_filters'])
     decoder_function   = decoder_model[0]
