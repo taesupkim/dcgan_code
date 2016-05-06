@@ -625,6 +625,7 @@ def test_model(model_config_dict, model_test_name):
 
     print 'START SAMPLING'
     for s in xrange(model_config_dict['num_sampling']):
+        print '{} sampling'.format(s)
         hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                              high=model_config_dict['hidden_distribution'],
                                              size=(model_config_dict['num_display'], model_config_dict['hidden_size'])))
@@ -693,5 +694,6 @@ if __name__=="__main__":
         model_config_dict['expert_size']         = 8192
         model_config_dict['min_num_gen_filters'] = 128
         model_config_dict['min_num_eng_filters'] = 128
+        model_config_dict['num_sampling']        = 100
         test_model(model_config_dict=model_config_dict,
                    model_test_name=model_test_name)
