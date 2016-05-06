@@ -53,6 +53,7 @@ softplus = Softplus()
 ###################
 weight_init = Normal(scale=0.01)
 scale_init  = Constant(c=1.0)
+bias_const  = Constant(c=0.01)
 bias_zero   = Constant(c=0.0)
 
 #################
@@ -73,26 +74,26 @@ def set_decoder_model(num_hiddens,
     linear_w0 = weight_init((num_hiddens,
                              (num_gen_filters0*init_image_size*init_image_size)),
                             'dec_linear_w0')
-    linear_b0 = bias_zero((num_gen_filters0*init_image_size*init_image_size),
-                          'dec_linear_b0')
+    linear_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size),
+                           'dec_linear_b0')
 
     # LAYER 1 (DECONV)
     conv_w1 = weight_init((num_gen_filters0, num_gen_filters1) + filter_shape,
                           'dec_conv_w1')
-    conv_b1 = bias_zero(num_gen_filters1,
-                        'dec_conv_b1')
+    conv_b1 = bias_const(num_gen_filters1,
+                         'dec_conv_b1')
 
     # LAYER 2 (DECONV)
     conv_w2 = weight_init((num_gen_filters1, num_gen_filters2) + filter_shape,
                           'dec_conv_w2')
-    conv_b2 = bias_zero(num_gen_filters2,
-                        'dec_conv_b2')
+    conv_b2 = bias_const(num_gen_filters2,
+                         'dec_conv_b2')
 
     # LAYER 3 (DECONV)
     conv_w3 = weight_init((num_gen_filters2, num_gen_filters3) + filter_shape,
                           'dec_conv_w3')
-    conv_b3 = bias_zero(num_gen_filters3,
-                        'dec_conv_b3')
+    conv_b3 = bias_const(num_gen_filters3,
+                         'dec_conv_b3')
 
     # LAYER OUTPUT (DECONV)
     conv_w4 = weight_init((num_gen_filters3, num_channels) + filter_shape,
@@ -152,29 +153,29 @@ def set_encoder_model(num_hiddens,
                           'enc_conv_w0')
     bn_w0   = scale_init(num_eng_filters0,
                          'enc_bn_w0')
-    bn_b0   = bias_zero(num_eng_filters0,
-                        'enc_bn_b0')
+    bn_b0   = bias_const(num_eng_filters0,
+                         'enc_bn_b0')
     # FEATURE LAYER 1 (CONV)
     conv_w1 = weight_init((num_eng_filters1, num_eng_filters0) + filter_shape,
                           'enc_conv_w1')
     bn_w1   = scale_init(num_eng_filters1,
                          'enc_bn_w1')
-    bn_b1   = bias_zero(num_eng_filters1,
-                        'enc_bn_b1')
+    bn_b1   = bias_const(num_eng_filters1,
+                         'enc_bn_b1')
     # FEATURE LAYER 2 (CONV)
     conv_w2 = weight_init((num_eng_filters2, num_eng_filters1) + filter_shape,
                           'enc_conv_w2')
     bn_w2   = scale_init(num_eng_filters2,
                          'enc_bn_w2')
-    bn_b2   = bias_zero(num_eng_filters2,
-                        'enc_bn_b2')
+    bn_b2   = bias_const(num_eng_filters2,
+                         'enc_bn_b2')
     # FEATURE LAYER 3 (CONV)
     conv_w3 = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                           'enc_conv_w3')
     bn_w3   = scale_init(num_eng_filters3,
                          'enc_bn_w3')
-    bn_b3   = bias_zero(num_eng_filters3,
-                        'enc_bn_b3')
+    bn_b3   = bias_const(num_eng_filters3,
+                         'enc_bn_b3')
 
     # ENCODER HIDDEN
     hidden_w = weight_init((num_eng_filters3*(min_image_size*min_image_size),
@@ -244,7 +245,6 @@ def set_updater_function(encoder_function,
     # negative decoder
     negative_decoder_outputs = decoder_function(negative_hidden_data)
     negative_decoder_hiddens = negative_decoder_outputs[0]
-    negative_decoder_output  = negative_decoder_outputs[1]
 
     # positive reconstruction cost
     positive_recon_cost = T.sum(T.sqr(positive_visible_data-positive_decoder_output), axis=(1,2,3))
@@ -267,7 +267,6 @@ def set_updater_function(encoder_function,
     model_updater_outputs = [positive_recon_cost,
                              moment_match_cost,
                              model_updater_cost]
-
 
     model_updater_function = theano.function(inputs=model_updater_inputs,
                                              outputs=model_updater_outputs,
@@ -404,7 +403,7 @@ if __name__=="__main__":
     #################
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [100]
+    hidden_size_list = [1024]
     num_filters_list = [128]
     lr_list          = [1e-3]
     dropout_list     = [False,]
