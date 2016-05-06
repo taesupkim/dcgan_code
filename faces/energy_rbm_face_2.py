@@ -12,7 +12,7 @@ from lib.vis import color_grid_vis
 from lib.rng import py_rng, np_rng
 from lib.ops import batchnorm, entropykeep, deconv, dropout, l2normalize
 from lib.theano_utils import floatX, sharedX
-from load import imagenet
+from load import faces
 from lib.save_utils import save_model, unpickle
 
 def transform(X):
@@ -648,7 +648,7 @@ if __name__=="__main__":
         #################
         # LOAD DATA SET #
         #################
-        _ , data_stream = imagenet(batch_size=model_config_dict['batch_size'])
+        _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
         expert_size_list = [1024]
         hidden_size_list = [100]
