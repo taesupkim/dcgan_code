@@ -609,7 +609,7 @@ def train_model(data_stream,
 ##########
 def test_model(model_config_dict, model_test_name):
     import glob
-    model_list = glob.glob('*.pkl')
+    model_list = glob.glob(samples_dir +'/*.pkl')
     # load parameters
     model_param_dicts = unpickle(model_list[0])
 
