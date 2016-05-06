@@ -393,7 +393,7 @@ def train_model(data_stream,
             kl_cost           = updater_outputs[2].mean()
             moment_match_cost = updater_outputs[3].mean()
             recon_samples     = updater_outputs[4]
-            print recon_samples.shape
+
             vae_cost_list.append(vae_cost)
             recon_cost_list.append(recon_cost)
             kl_cost_list.append(kl_cost)
@@ -401,7 +401,7 @@ def train_model(data_stream,
             # batch count up
             batch_count += 1
 
-            if batch_count%1==0:
+            if batch_count%10==0:
                 print '================================================================'
                 print 'BATCH ITER #{}'.format(batch_count), model_test_name
                 print '================================================================'
@@ -416,7 +416,7 @@ def train_model(data_stream,
                 print '     moment cost : ', moment_match_cost_list[-1]
                 print '================================================================'
 
-            if batch_count%100==0:
+            if batch_count%500==0:
                 # sample data
                 sample_data = sampling_function(fixed_hidden_data)[0]
                 save_as = samples_dir + '/' + model_test_name + '_SAMPLES(NEGATIVE){}.png'.format(batch_count)
