@@ -632,8 +632,6 @@ def test_model(model_config_dict, model_test_name):
         sample_data = sampling_function(hidden_data)[0]
         sample_data = inverse_transform(np.asarray(sample_data)).transpose([0,2,3,1])
         save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(s+1)
-        print (np.sqrt(model_config_dict['num_display']),)*2
-        print sample_data.shape
         color_grid_vis(sample_data, (16, 16), save_as)
 
 if __name__=="__main__":
