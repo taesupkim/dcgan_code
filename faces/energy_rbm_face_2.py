@@ -33,6 +33,7 @@ def get_entropy_cost(entropy_params_list):
     for entropy_params in entropy_params_list:
         entropy_tensor_params.append(entropy_params.reshape((1,-1)))
     entropy_tensor_params = T.concatenate(entropy_tensor_params, axis=1)
+    entropy_tensor_params = 0.5*T.log(T.sqr(entropy_tensor_params))
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
@@ -64,7 +65,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_FACE128_EXP_ENTROPY_ALL_TANH'
+model_name  = 'ENERGY_RBM_FACE128_06_MAY'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -94,7 +95,7 @@ softplus = Softplus()
 # SET INITIALIZER #
 ###################
 weight_init = Normal(scale=0.01)
-scale_init  = Constant(c=0.0)
+scale_init  = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
 bias_const  = Constant(c=0.1)
 
@@ -160,24 +161,25 @@ def set_generator_model(num_hiddens,
                         conv_w1, conv_bn_b1,
                         conv_w2, conv_bn_b2,
                         conv_w3, conv_bn_b3,
-                        conv_w4, conv_b4]
+                        conv_b4]
 
     generator_entropy_params = [linear_bn_w0,
                                 conv_bn_w1,
                                 conv_bn_w2,
-                                conv_bn_w3]
+                                conv_bn_w3,
+                                conv_w4]
 
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = tanh(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = tanh(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = tanh(entropy_exp(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = tanh(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3)
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -228,24 +230,25 @@ def load_generator_model(min_num_gen_filters,
                         conv_w1, conv_bn_b1,
                         conv_w2, conv_bn_b2,
                         conv_w3, conv_bn_b3,
-                        conv_w4, conv_b4]
+                        conv_b4]
 
     generator_entropy_params = [linear_bn_w0,
                                 conv_bn_w1,
                                 conv_bn_w2,
-                                conv_bn_w3]
+                                conv_bn_w3,
+                                conv_w4]
 
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = relu(entropy_exp(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = relu(entropy_exp(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = relu(entropy_exp(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = relu(entropy_exp(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3)
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -409,7 +412,7 @@ def set_generator_update_function(feature_function,
     for param_tensor in generator_entropy_params:
         entropy_weights.append(param_tensor.reshape((1,-1)))
     entropy_weights = T.concatenate(entropy_weights, axis=1)
-    entropy_weights = T.exp(entropy_weights)
+    entropy_weights = T.abs_(entropy_weights)
     entropy_weights = T.mean(entropy_weights)
 
     # get generator update cost
