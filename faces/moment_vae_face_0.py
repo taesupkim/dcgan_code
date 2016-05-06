@@ -22,7 +22,7 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-model_name  = 'MOMENT_VAE_FACE_WEIGHT_1_0'
+model_name  = 'MOMENT_VAE_FACE_WEIGHT_1_RMSPROP'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -53,6 +53,7 @@ softplus = Softplus()
 ###################
 weight_init = Normal(scale=0.01)
 scale_init  = Constant(c=1.0)
+bias_const  = Constant(c=0.01)
 bias_zero   = Constant(c=0.0)
 
 #################
@@ -73,26 +74,26 @@ def set_decoder_model(num_hiddens,
     linear_w0 = weight_init((num_hiddens,
                              (num_gen_filters0*init_image_size*init_image_size)),
                             'dec_linear_w0')
-    linear_b0 = bias_zero((num_gen_filters0*init_image_size*init_image_size),
-                          'dec_linear_b0')
+    linear_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size),
+                           'dec_linear_b0')
 
     # LAYER 1 (DECONV)
     conv_w1 = weight_init((num_gen_filters0, num_gen_filters1) + filter_shape,
                           'dec_conv_w1')
-    conv_b1 = bias_zero(num_gen_filters1,
-                        'dec_conv_b1')
+    conv_b1 = bias_const(num_gen_filters1,
+                         'dec_conv_b1')
 
     # LAYER 2 (DECONV)
     conv_w2 = weight_init((num_gen_filters1, num_gen_filters2) + filter_shape,
                           'dec_conv_w2')
-    conv_b2 = bias_zero(num_gen_filters2,
-                        'dec_conv_b2')
+    conv_b2 = bias_const(num_gen_filters2,
+                         'dec_conv_b2')
 
     # LAYER 3 (DECONV)
     conv_w3 = weight_init((num_gen_filters2, num_gen_filters3) + filter_shape,
                           'dec_conv_w3')
-    conv_b3 = bias_zero(num_gen_filters3,
-                        'dec_conv_b3')
+    conv_b3 = bias_const(num_gen_filters3,
+                         'dec_conv_b3')
 
     # LAYER OUTPUT (DECONV)
     conv_w4 = weight_init((num_gen_filters3, num_channels) + filter_shape,
@@ -120,7 +121,8 @@ def set_decoder_model(num_hiddens,
         # layer_output (deconv)
         h4 = deconv(relu(h3), conv_w4, subsample=(2, 2), border_mode=(2, 2)) + conv_b4.dimshuffle('x', 0, 'x', 'x')
         output = tanh(h4)
-        return [[T.flatten(h0,2),
+        return [[hidden_data,
+                 T.flatten(h0,2),
                  T.flatten(h1,2),
                  T.flatten(h2,2),
                  T.flatten(h3,2),
@@ -151,29 +153,29 @@ def set_encoder_model(num_hiddens,
                           'enc_conv_w0')
     bn_w0   = scale_init(num_eng_filters0,
                          'enc_bn_w0')
-    bn_b0   = bias_zero(num_eng_filters0,
-                        'enc_bn_b0')
+    bn_b0   = bias_const(num_eng_filters0,
+                         'enc_bn_b0')
     # FEATURE LAYER 1 (CONV)
     conv_w1 = weight_init((num_eng_filters1, num_eng_filters0) + filter_shape,
                           'enc_conv_w1')
     bn_w1   = scale_init(num_eng_filters1,
                          'enc_bn_w1')
-    bn_b1   = bias_zero(num_eng_filters1,
-                        'enc_bn_b1')
+    bn_b1   = bias_const(num_eng_filters1,
+                         'enc_bn_b1')
     # FEATURE LAYER 2 (CONV)
     conv_w2 = weight_init((num_eng_filters2, num_eng_filters1) + filter_shape,
                           'enc_conv_w2')
     bn_w2   = scale_init(num_eng_filters2,
                          'enc_bn_w2')
-    bn_b2   = bias_zero(num_eng_filters2,
-                        'enc_bn_b2')
+    bn_b2   = bias_const(num_eng_filters2,
+                         'enc_bn_b2')
     # FEATURE LAYER 3 (CONV)
     conv_w3 = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                           'enc_conv_w3')
     bn_w3   = scale_init(num_eng_filters3,
                          'enc_bn_w3')
-    bn_b3   = bias_zero(num_eng_filters3,
-                        'enc_bn_b3')
+    bn_b3   = bias_const(num_eng_filters3,
+                         'enc_bn_b3')
 
     # encoder mean
     mean_w = weight_init((num_eng_filters3*(min_image_size*min_image_size),
@@ -453,7 +455,7 @@ if __name__=="__main__":
     #################
     _ , data_stream = faces(batch_size=model_config_dict['batch_size'])
 
-    hidden_size_list = [100]
+    hidden_size_list = [1024]
     num_filters_list = [128]
     lr_list          = [1e-3]
     dropout_list     = [False,]
@@ -470,7 +472,7 @@ if __name__=="__main__":
                         model_config_dict['min_num_eng_filters'] = num_filters
 
                         # set updates
-                        model_optimizer = Adagrad(lr=sharedX(lr),
+                        model_optimizer = RMSprop(lr=sharedX(lr),
                                                   regularizer=Regularizer(l2=lambda_eng))
                         model_test_name = model_name \
                                           + '_f{}'.format(int(num_filters)) \
