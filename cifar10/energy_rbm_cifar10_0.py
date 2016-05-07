@@ -65,7 +65,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_CIFAR10_EXP_ENTROPY_ALL_TANH'
+model_name  = 'ENERGY_RBM_CIFAR10_LOGISTIC'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -159,12 +159,12 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = tanh(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = tanh(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = tanh(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
         output = tanh(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -211,7 +211,7 @@ def set_energy_model(num_experts,
         # layer 1 (conv)
         h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
         # layer 2 (conv)
-        h2 = tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        h2 = dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x')
         feature = T.flatten(h2, 2)
         return feature
 
@@ -229,8 +229,8 @@ def set_energy_model(num_experts,
                      linear_w3, linear_b3]
 
     def energy_function(feature_data, is_train=True):
-        e = softplus(T.dot(feature_data, linear_w3)+linear_b3)
-        e = T.sum(-e, axis=1)
+        e = softplus(-T.dot(feature_data, linear_w3)-linear_b3)
+        e = T.sum(e, axis=1)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -554,7 +554,7 @@ if __name__=="__main__":
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
                             generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
-                                                          regularizer=Regularizer(l2=lambda_gen))
+                                                          regularizer=Regularizer(l2=0.0))
                             generator_bn_optimizer = Adagrad(lr=sharedX(lr*2.0),
                                                              regularizer=Regularizer(l2=0.0))
                             model_test_name = model_name \
