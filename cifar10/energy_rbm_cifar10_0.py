@@ -439,12 +439,12 @@ def train_model(data_stream,
     # compile functions
     print 'COMPILING ENERGY UPDATER'
     t=time()
-    energy_updater = set_energy_update_function(feature_function=feature_function,
-                                                energy_function=energy_function,
-                                                generator_function=generator_function,
-                                                energy_params=energy_params,
-                                                energy_optimizer_reg_on=energy_optimizer_reg_on,
-                                                energy_optimizer_reg_off=energy_optimizer_reg_off)
+    # energy_updater = set_energy_update_function(feature_function=feature_function,
+    #                                             energy_function=energy_function,
+    #                                             generator_function=generator_function,
+    #                                             energy_params=energy_params,
+    #                                             energy_optimizer_reg_on=energy_optimizer_reg_on,
+    #                                             energy_optimizer_reg_off=energy_optimizer_reg_off)
     print '%.2f SEC '%(time()-t)
     print 'COMPILING GENERATOR UPDATER'
     t=time()
