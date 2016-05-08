@@ -248,7 +248,7 @@ def set_model_update_function(energy_feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
+    # sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
     input_feature  = energy_feature_function(input_data, is_train=True)
