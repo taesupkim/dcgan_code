@@ -426,7 +426,7 @@ if __name__=="__main__":
     expert_size_list = [2048]
     hidden_size_list = [100]
     num_filters_list = [256]
-    lr_list          = [1e-4]
+    lr_list          = [1e-3]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
 
