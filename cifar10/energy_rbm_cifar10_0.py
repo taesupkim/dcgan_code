@@ -239,10 +239,10 @@ def set_energy_model(num_experts,
 
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, expert_w)+expert_b)
-        e = T.sum(-e, axis=1)
-        b = T.dot(feature_data, bias_w)
-        p = T.dot(T.sqr(feature_data), T.nnet.softplus(prior_w))
-        return [e, b, p]
+        e = T.sum(-e, axis=1, keepdims=True)
+        e += T.dot(feature_data, bias_w)
+        e += T.dot(T.sqr(feature_data), T.nnet.softplus(prior_w))
+        return e
 
     return [feature_function, energy_function, energy_params]
 
@@ -336,7 +336,7 @@ def set_generator_update_function(feature_function,
     entropy_weights = T.mean(entropy_weights)
 
     # get generator update cost
-    negative_phase         = T.mean(sample_energy[0])+T.mean(sample_energy[1])+T.mean(sample_energy[2])
+    negative_phase         = T.mean(sample_energy)
     generator_updates_cost = negative_phase + entropy_cost
 
     # get generator updates
@@ -351,11 +351,9 @@ def set_generator_update_function(feature_function,
                                noise_data]
 
     # update function output
-    update_function_outputs = [sample_energy[0],
+    update_function_outputs = [sample_energy,
                                entropy_cost,
-                               entropy_weights,
-                               sample_energy[1],
-                               sample_energy[2]]
+                               entropy_weights]
 
     # update function
     update_function = theano.function(inputs=update_function_inputs,
@@ -439,12 +437,12 @@ def train_model(data_stream,
     # compile functions
     print 'COMPILING ENERGY UPDATER'
     t=time()
-    # energy_updater = set_energy_update_function(feature_function=feature_function,
-    #                                             energy_function=energy_function,
-    #                                             generator_function=generator_function,
-    #                                             energy_params=energy_params,
-    #                                             energy_optimizer_reg_on=energy_optimizer_reg_on,
-    #                                             energy_optimizer_reg_off=energy_optimizer_reg_off)
+    energy_updater = set_energy_update_function(feature_function=feature_function,
+                                                energy_function=energy_function,
+                                                generator_function=generator_function,
+                                                energy_params=energy_params,
+                                                energy_optimizer_reg_on=energy_optimizer_reg_on,
+                                                energy_optimizer_reg_off=energy_optimizer_reg_off)
     print '%.2f SEC '%(time()-t)
     print 'COMPILING GENERATOR UPDATER'
     t=time()
@@ -488,14 +486,9 @@ def train_model(data_stream,
 
             # generator update
             generator_updates = generator_updater(hidden_data, noise_data)
-            entropy_cost      = generator_updates[1]
-            entropy_weights   = generator_updates[2]
-            print generator_updates[0].shape
-            print generator_updates[3].shape
-            print generator_updates[4].shape
-            raw_input()
-            energy_updates    = generator_updates
-            # energy_updates    = energy_updater(input_data, hidden_data)
+            entropy_cost      = generator_updates[-2]
+            entropy_weights   = generator_updates[-1]
+            energy_updates    = energy_updater(input_data, hidden_data)
 
             # get output values
             input_energy  = energy_updates[0].mean()
