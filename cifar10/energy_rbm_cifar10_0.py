@@ -219,9 +219,9 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FUNCTION LINEAR LAYER 3'
     expert_w = weight_init((num_eng_filters2*(min_image_size*min_image_size),
                             num_experts),
-                           'eng_expert_w3')
+                           'eng_expert_w')
     expert_b = bias_zero(num_experts,
-                         'eng_expert_b3')
+                         'eng_expert_b')
 
     bias_w  = weight_init((num_eng_filters2*(min_image_size*min_image_size),
                            1),
@@ -240,9 +240,9 @@ def set_energy_model(num_experts,
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, expert_w)+expert_b)
         e = T.sum(-e, axis=1)
-        e += T.dot(feature_data, bias_w)
-        e += T.dot(T.sqr(feature_data), T.nnet.softplus(prior_w))
-        return e
+        b = T.dot(feature_data, bias_w)
+        p = T.dot(T.sqr(feature_data), T.nnet.softplus(prior_w))
+        return [e, b, p]
 
     return [feature_function, energy_function, energy_params]
 
@@ -336,7 +336,7 @@ def set_generator_update_function(feature_function,
     entropy_weights = T.mean(entropy_weights)
 
     # get generator update cost
-    negative_phase         = T.mean(sample_energy)
+    negative_phase         = T.mean(sample_energy[0])+T.mean(sample_energy[1])+T.mean(sample_energy[2])
     generator_updates_cost = negative_phase + entropy_cost
 
     # get generator updates
@@ -351,9 +351,11 @@ def set_generator_update_function(feature_function,
                                noise_data]
 
     # update function output
-    update_function_outputs = [sample_energy,
+    update_function_outputs = [sample_energy[0],
                                entropy_cost,
-                               entropy_weights]
+                               entropy_weights,
+                               sample_energy[1],
+                               sample_energy[2]]
 
     # update function
     update_function = theano.function(inputs=update_function_inputs,
@@ -486,9 +488,14 @@ def train_model(data_stream,
 
             # generator update
             generator_updates = generator_updater(hidden_data, noise_data)
-            entropy_cost      = generator_updates[-2]
-            entropy_weights   = generator_updates[-1]
-            energy_updates    = energy_updater(input_data, hidden_data)
+            entropy_cost      = generator_updates[1]
+            entropy_weights   = generator_updates[2]
+            print generator_updates[0].shape
+            print generator_updates[1].shape
+            print generator_updates[2].shape
+            raw_input()
+            energy_updates    = generator_updates
+            # energy_updates    = energy_updater(input_data, hidden_data)
 
             # get output values
             input_energy  = energy_updates[0].mean()
