@@ -256,7 +256,7 @@ def set_model_update_function(energy_feature_function,
 
     # normalize feature data
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = batchnorm(full_feature, a=0.9)
+    full_feature   = batchnorm(full_feature)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 

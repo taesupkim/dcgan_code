@@ -234,7 +234,7 @@ def set_update_function(feature_function,
     input_feature  = feature_function(input_data, is_train=True)
     sample_feature = feature_function(sample_data, is_train=True)
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = batchnorm(full_feature, a=0.9)
+    full_feature   = batchnorm(full_feature)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 
