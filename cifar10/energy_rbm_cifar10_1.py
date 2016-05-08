@@ -37,34 +37,6 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
-def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
-    if X.ndim == 4:
-        if u is not None and s is not None:
-            b_u = u.dimshuffle('x', 0, 'x', 'x')
-            b_s = s.dimshuffle('x', 0, 'x', 'x')
-        else:
-            b_u = T.mean(X, axis=[0, 2, 3]).dimshuffle('x', 0, 'x', 'x')
-            b_s = T.mean(T.sqr(X - b_u), axis=[0, 2, 3]).dimshuffle('x', 0, 'x', 'x')
-        if a != 1:
-            b_u = (1. - a)*0. + a*b_u
-            b_s = (1. - a)*1. + a*b_s
-        X = (X - b_u) / T.sqrt(b_s + e)
-        if g is not None and b is not None:
-            X = X*T.exp(g.dimshuffle('x', 0, 'x', 'x'))+b.dimshuffle('x', 0, 'x', 'x')
-    elif X.ndim == 2:
-        if u is None and s is None:
-            u = T.mean(X, axis=0)
-            s = T.mean(T.sqr(X - u), axis=0)
-        if a != 1:
-            u = (1. - a)*0. + a*u
-            s = (1. - a)*1. + a*s
-        X = (X - u) / T.sqrt(s + e)
-        if g is not None and b is not None:
-            X = X*T.exp(g)+b
-    else:
-        raise NotImplementedError
-    return X
-
 model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_NORMED'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
@@ -213,7 +185,6 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x')
         feature = T.flatten(h2, 2)
-        feature = batchnorm(feature)
         return feature
 
     # ENERGY LAYER (LINEAR)
@@ -246,8 +217,7 @@ def set_update_function(feature_function,
                         energy_params,
                         generator_params,
                         energy_optimizer,
-                        generator_optimizer_reg_off,
-                        generator_optimizer_reg_on):
+                        generator_optimizer):
 
     # set input data, hidden data, noise data,  annealing rate
     input_data  = T.tensor4(name='input_data',
@@ -261,18 +231,20 @@ def set_update_function(feature_function,
     sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
-    full_data      = T.concatenate([input_data, sample_data], axis=0)
-    full_feature   = feature_function(full_data, is_train=True)
-    input_feature  = full_feature[:input_data.shape[0]]
-    sample_feature = full_feature[input_data.shape[0]:]
+    input_feature  = feature_function(input_data, is_train=True)
+    sample_feature = feature_function(sample_data, is_train=True)
+    full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
+    full_feature   = batchnorm(full_feature)
+    input_feature  = full_feature[:input_feature.shape[0]]
+    sample_feature = full_feature[input_feature.shape[0]:]
 
     # get energy value
     input_energy  = energy_function(input_feature, is_train=True)
     sample_energy = energy_function(sample_feature, is_train=True)
 
     # get phase cost (positive, negative)
-    positive_phase      = T.mean(input_energy)
-    negative_phase      = T.mean(sample_energy)
+    positive_phase = T.mean(input_energy)
+    negative_phase = T.mean(sample_energy)
 
     # get energy update cost
     energy_updates_cost = positive_phase - negative_phase
@@ -284,6 +256,7 @@ def set_update_function(feature_function,
     entropy_weights = T.concatenate(entropy_weights, axis=1)
     entropy_weights = T.abs_(entropy_weights)
     entropy_weights = T.mean(entropy_weights)
+
     entropy_cost = get_entropy_cost(generator_params[1])
     generator_updates_cost = negative_phase + entropy_cost
 
@@ -291,10 +264,8 @@ def set_update_function(feature_function,
     energy_updates  = energy_optimizer(energy_params,
                                        energy_updates_cost)
     # get generator updates
-    generator_updates_reg_off = generator_optimizer_reg_off(generator_params[1],
-                                                            generator_updates_cost)
-    generator_updates_reg_on  = generator_optimizer_reg_on(generator_params[0],
-                                                           generator_updates_cost)
+    generator_updates = generator_optimizer(generator_params[0]+generator_params[1],
+                                            generator_updates_cost)
     # update function input
     update_function_inputs  = [input_data,
                                hidden_data,
@@ -309,7 +280,7 @@ def set_update_function(feature_function,
     # update function
     update_function = theano.function(inputs=update_function_inputs,
                                       outputs=update_function_outputs,
-                                      updates=energy_updates+generator_updates_reg_off+generator_updates_reg_on,
+                                      updates=energy_updates+generator_updates,
                                       on_unused_input='ignore')
     return update_function
 
@@ -336,8 +307,7 @@ def set_sampling_function(generator_function):
 ###########
 def train_model(data_stream,
                 energy_optimizer,
-                generator_optimizer_reg_off,
-                generator_optimizer_reg_on,
+                generator_optimizer,
                 model_config_dict,
                 model_test_name):
 
@@ -360,8 +330,7 @@ def train_model(data_stream,
                                         energy_params=energy_params,
                                         generator_params=generator_params,
                                         energy_optimizer=energy_optimizer,
-                                        generator_optimizer_reg_off=generator_optimizer_reg_off,
-                                        generator_optimizer_reg_on=generator_optimizer_reg_on)
+                                        generator_optimizer=generator_optimizer)
     print '%.2f SEC '%(time()-t)
 
     print 'COMPILING SAMPLING FUNCTION'
@@ -481,12 +450,10 @@ if __name__=="__main__":
                             # generator_optimizer_reg_off = Adam(lr=sharedX(lr),
                             #                                    b1=0.1, b2=0.1,
                             #                                    regularizer=Regularizer(l2=0.0))
-                            energy_optimizer_reg_on  = Adagrad(lr=sharedX(lr),
-                                                               regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer_reg_on  = Adagrad(lr=sharedX(2*lr),
-                                                                  regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer_reg_off = Adagrad(lr=sharedX(2*lr),
-                                                                  regularizer=Regularizer(l2=0.0))
+                            energy_optimizer    = Adagrad(lr=sharedX(lr),
+                                                          regularizer=Regularizer(l2=lambda_eng))
+                            generator_optimizer = Adagrad(lr=sharedX(2*lr),
+                                                          regularizer=Regularizer(l2=0.0))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
                                               + '_h{}'.format(int(hidden_size)) \
@@ -496,8 +463,7 @@ if __name__=="__main__":
                                               + '_lr{}'.format(int(-np.log10(lr))) \
 
                             train_model(data_stream=data_stream,
-                                        energy_optimizer=energy_optimizer_reg_on,
-                                        generator_optimizer_reg_on=generator_optimizer_reg_on,
-                                        generator_optimizer_reg_off=generator_optimizer_reg_off,
+                                        energy_optimizer=energy_optimizer,
+                                        generator_optimizer=generator_optimizer,
                                         model_config_dict=model_config_dict,
                                         model_test_name=model_test_name)
