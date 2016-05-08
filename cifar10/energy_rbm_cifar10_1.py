@@ -65,7 +65,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAM'
+model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_NORMED'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
