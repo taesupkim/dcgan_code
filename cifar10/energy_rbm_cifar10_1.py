@@ -26,7 +26,7 @@ def inverse_transform(X):
 # SET INITIALIZER #
 ###################
 def get_entropy_cost(entropy_params_list):
-    entropy_const = 0.5*(1.0+np.log(np.pi))
+    entropy_const = 0.5*(1.0+np.log(2*np.pi))
     entropy_const = entropy_const.astype(theano.config.floatX)
 
     entropy_tensor_params= []
@@ -228,13 +228,12 @@ def set_update_function(feature_function,
                            dtype=theano.config.floatX)
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
     sample_feature = feature_function(sample_data, is_train=True)
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = batchnorm(full_feature)
+    full_feature   = batchnorm(full_feature, a=0.5)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 
@@ -452,7 +451,7 @@ if __name__=="__main__":
                             #                                    regularizer=Regularizer(l2=0.0))
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(10*lr),
+                            generator_optimizer = Adagrad(lr=sharedX(2*lr),
                                                           regularizer=Regularizer(l2=0.0))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
