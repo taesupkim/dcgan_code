@@ -36,7 +36,7 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
-model_name  = 'ENERGY_RBM_BEDROOM128_EXP_COST'
+model_name  = 'ENERGY_RBM_BEDROOM128_ADAGRAD_NORMED'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -225,7 +225,7 @@ def set_energy_model(num_experts,
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, linear_w4)+linear_b4)
         e = T.sum(-e, axis=1, keepdims=True)
-        e+= T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+        # e+= T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -574,19 +574,20 @@ def train_model(data_stream,
             # batch count up
             batch_count += 1
 
-            print '================================================================'
-            print 'BATCH ITER #{}'.format(batch_count), model_test_name
-            print '================================================================'
-            print '   TRAIN RESULTS'
-            print '================================================================'
-            print '     input energy     : ', input_energy_list[-1]
-            print '----------------------------------------------------------------'
-            print '     sample energy    : ', sample_energy_list[-1]
-            print '----------------------------------------------------------------'
-            print '     entropy weight   : ', entropy_weights
-            print '----------------------------------------------------------------'
-            print '     entropy cost     : ', entropy_cost
-            print '================================================================'
+            if batch_count%10==0:
+                print '================================================================'
+                print 'BATCH ITER #{}'.format(batch_count), model_test_name
+                print '================================================================'
+                print '   TRAIN RESULTS'
+                print '================================================================'
+                print '     input energy     : ', input_energy_list[-1]
+                print '----------------------------------------------------------------'
+                print '     sample energy    : ', sample_energy_list[-1]
+                print '----------------------------------------------------------------'
+                print '     entropy weight   : ', entropy_weights
+                print '----------------------------------------------------------------'
+                print '     entropy cost     : ', entropy_cost
+                print '================================================================'
 
             if batch_count%1000==0:
                 # sample data

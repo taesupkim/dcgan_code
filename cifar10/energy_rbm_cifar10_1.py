@@ -37,7 +37,7 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
-model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_NORMED'
+model_name  = 'ENERGY_RBM_CIFAR10_ADAGRAD_NORMED'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -203,7 +203,7 @@ def set_energy_model(num_experts,
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, expert_w)+expert_b)
         e = T.sum(-e, axis=1, keepdims=True)
-        e += T.sum(T.sqr(feature_data), axis=1, keepdims=True)*0.5
+        # e += T.sum(T.sqr(feature_data), axis=1, keepdims=True)*0.5
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -228,12 +228,13 @@ def set_update_function(feature_function,
                            dtype=theano.config.floatX)
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
+    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
     sample_feature = feature_function(sample_data, is_train=True)
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = batchnorm(full_feature, a=0.5)
+    full_feature   = batchnorm(full_feature, a=0.9)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 
