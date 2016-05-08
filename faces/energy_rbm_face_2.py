@@ -37,7 +37,7 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
-model_name  = 'ENERGY_RBM_FACE128_06_MAY'
+model_name  = 'ENERGY_RBM_FACE128_ADAGRAD_NORMED'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -262,8 +262,6 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FEATURE CONV LAYER 3'
     conv_w3   = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                             'feat_conv_w3')
-    conv_b3   = bias_zero(num_eng_filters3,
-                          'feat_conv_b3')
 
     print 'SET ENERGY FEATURE EXTRACTOR'
     def feature_function(input_data, is_train=True):
@@ -274,7 +272,7 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
         feature = T.flatten(h3, 2)
         return feature
 
@@ -289,7 +287,7 @@ def set_energy_model(num_experts,
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
-                     conv_w3, conv_b3,
+                     conv_w3,
                      linear_w4, linear_b4]
 
     def energy_function(feature_data, is_train=True):
@@ -325,7 +323,7 @@ def set_model_update_function(energy_feature_function,
 
     # normalize feature data
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = batchnorm(full_feature, a=0.9)
+    full_feature   = batchnorm(full_feature)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 
@@ -721,7 +719,7 @@ if __name__=="__main__":
         expert_size_list = [1024]
         hidden_size_list = [100]
         num_filters_list = [128]
-        lr_list          = [1e-3]
+        lr_list          = [1e-5]
         lambda_eng_list  = [1e-5]
 
         for lr in lr_list:
@@ -737,7 +735,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
+                            generator_optimizer = Adagrad(lr=sharedX(lr*10.0),
                                                           regularizer=Regularizer(l2=0.0))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
