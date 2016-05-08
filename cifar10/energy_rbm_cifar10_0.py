@@ -65,7 +65,7 @@ def entropy_exp(X, g=None, b=None, u=None, s=None, a=1., e=1e-8):
         raise NotImplementedError
     return X
 
-model_name  = 'ENERGY_RBM_CIFAR10_ADAM'
+model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAM'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -223,25 +223,25 @@ def set_energy_model(num_experts,
     expert_b = bias_zero(num_experts,
                          'eng_expert_b3')
 
-    # bias_w  = weight_init((num_eng_filters2*(min_image_size*min_image_size),
-    #                        1),
-    #                       'eng_bias_w')
-    # prior_w = bias_one((num_eng_filters2*(min_image_size*min_image_size),
-    #                     1),
-    #                    'eng_prior_w')
+    bias_w  = weight_init((num_eng_filters2*(min_image_size*min_image_size),
+                           1),
+                          'eng_bias_w')
+    prior_w = bias_one((num_eng_filters2*(min_image_size*min_image_size),
+                        1),
+                       'eng_prior_w')
 
     energy_params = [[conv_w0, conv_b0,
                       conv_w1, conv_b1,
                       conv_w2, conv_b2,
-                      expert_w, expert_b],]
-                      # bias_w],
-                      # [prior_w,]]
+                      expert_w, expert_b,
+                      bias_w],
+                      [prior_w,]]
 
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, expert_w)+expert_b)
         e = T.sum(-e, axis=1)
-        # e += T.dot(feature_data, bias_w)
-        # e += T.dot(T.sqr(feature_data), T.nnet.softplus(prior_w))
+        e += T.dot(feature_data, bias_w)
+        e += T.dot(T.sqr(feature_data), T.nnet.softplus(prior_w))
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -280,8 +280,8 @@ def set_energy_update_function(feature_function,
     # get energy updates
     energy_updates_reg_on  = energy_optimizer_reg_on(energy_params[0],
                                                      energy_updates_cost)
-    # energy_updates_reg_off = energy_optimizer_reg_off(energy_params[1],
-    #                                                   energy_updates_cost)
+    energy_updates_reg_off = energy_optimizer_reg_off(energy_params[1],
+                                                      energy_updates_cost)
     # update function input
     update_function_inputs  = [input_data,
                                hidden_data]
@@ -293,7 +293,7 @@ def set_energy_update_function(feature_function,
     # update function
     update_function = theano.function(inputs=update_function_inputs,
                                       outputs=update_function_outputs,
-                                      updates=energy_updates_reg_on,#+energy_updates_reg_off,
+                                      updates=energy_updates_reg_on+energy_updates_reg_off,
                                       on_unused_input='ignore')
     return update_function
 
