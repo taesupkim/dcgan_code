@@ -423,7 +423,7 @@ if __name__=="__main__":
     #################
     tr_data, te_data, data_stream, te_stream = cifar10(batch_size=model_config_dict['batch_size'])
 
-    expert_size_list = [1024]
+    expert_size_list = [2048]
     hidden_size_list = [100]
     num_filters_list = [128]
     lr_list          = [1e-3]
