@@ -437,7 +437,7 @@ def train_model(data_stream,
                         arr=np.asarray(sample_energy_list))
 
                 save_as = samples_dir + '/' + model_test_name + '_MODEL.pkl'
-                save_model(tensor_params_list=generator_params[0]+generator_params[1]+energy_params[0]+energy_params[1],
+                save_model(tensor_params_list=generator_params[0]+generator_params[1]+energy_params,
                            save_to=save_as)
 
 
