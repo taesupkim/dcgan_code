@@ -491,8 +491,8 @@ def train_model(data_stream,
             entropy_cost      = generator_updates[1]
             entropy_weights   = generator_updates[2]
             print generator_updates[0].shape
-            print generator_updates[1].shape
-            print generator_updates[2].shape
+            print generator_updates[3].shape
+            print generator_updates[4].shape
             raw_input()
             energy_updates    = generator_updates
             # energy_updates    = energy_updater(input_data, hidden_data)
