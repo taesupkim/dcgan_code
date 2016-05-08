@@ -173,8 +173,8 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FEATURE CONV LAYER 2'
     conv_w2   = weight_init((num_eng_filters2, num_eng_filters1) + filter_shape,
                             'feat_conv_w2')
-    conv_b2   = bias_zero(num_eng_filters2,
-                          'feat_conv_b2')
+    # conv_b2   = bias_zero(num_eng_filters2,
+    #                       'feat_conv_b2')
 
     print 'SET ENERGY FEATURE EXTRACTOR'
     def feature_function(input_data, is_train=True):
@@ -183,7 +183,7 @@ def set_energy_model(num_experts,
         # layer 1 (conv)
         h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
         # layer 2 (conv)
-        h2 = dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x')
+        h2 = dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))
         feature = T.flatten(h2, 2)
         return feature
 
@@ -197,7 +197,7 @@ def set_energy_model(num_experts,
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
-                     conv_w2, conv_b2,
+                     conv_w2,
                      expert_w, expert_b]
 
     def energy_function(feature_data, is_train=True):
