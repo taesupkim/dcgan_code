@@ -37,7 +37,7 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
-model_name  = 'ENERGY_RBM_FACE128_ADAGRAD_NORMED_SEP'
+model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_SEP'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -150,7 +150,7 @@ def set_generator_model(num_hiddens,
         # layer 2 (deconv)
         h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3)
+        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -296,13 +296,13 @@ def set_energy_model(num_experts,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3,
-                     # feature_bn_w, feature_bn_b,
+                     feature_bn_w, feature_bn_b,
                      expert_w, expert_b]
 
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, expert_w)+expert_b)
         e = T.sum(-e, axis=1, keepdims=True)
-        # e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+        e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
     return [feature_function, normalize_function, energy_function, energy_params]
@@ -325,7 +325,7 @@ def set_model_update_function(energy_feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1., 1.)
+    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
     input_feature  = energy_feature_function(input_data, is_train=True)
@@ -403,7 +403,7 @@ def set_sep_model_update_function(energy_feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1., 1.)
+    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
     input_feature  = energy_feature_function(input_data, is_train=True)
@@ -411,7 +411,7 @@ def set_sep_model_update_function(energy_feature_function,
 
     # normalize feature data
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = batchnorm(full_feature)
+    full_feature   = energy_norm_function(full_feature, is_train=True)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 
@@ -826,7 +826,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(10.0*lr),
+                            generator_optimizer = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=0.0))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
