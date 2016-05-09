@@ -276,25 +276,36 @@ def set_energy_model(num_experts,
 
     # ENERGY LAYER (LINEAR)
     print 'SET ENERGY FUNCTION LINEAR LAYER 4'
-    linear_w4 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
-                             num_experts),
-                            'eng_linear_w4')
-    linear_b4 = bias_zero(num_experts,
-                          'eng_linear_b4')
+
+    feature_bn_w = scale_ones(num_eng_filters3*(min_image_size*min_image_size),
+                            'gen_feat_bn_w')
+    feature_bn_b = bias_zero(num_eng_filters3*(min_image_size*min_image_size),
+                            'gen_feat_bn_b')
+
+
+    def normalize_function(input_data, is_train=True):
+        return batchnorm(input_data, g=feature_bn_w, b=feature_bn_b)
+
+    expert_w = weight_init((num_eng_filters3*(min_image_size*min_image_size),
+                            num_experts),
+                            'eng_expert_w')
+    expert_b = bias_zero(num_experts,
+                         'eng_expert_b')
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3,
-                     linear_w4, linear_b4]
+                     feature_bn_w, feature_bn_b,
+                     expert_w, expert_b]
 
     def energy_function(feature_data, is_train=True):
-        e = softplus(T.dot(feature_data, linear_w4)+linear_b4)
+        e = softplus(T.dot(feature_data, expert_w)+expert_b)
         e = T.sum(-e, axis=1, keepdims=True)
-        e += 0.5*T.mean(T.sqr(feature_data), axis=1, keepdims=True)
+        e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
-    return [feature_function, energy_function, energy_params]
+    return [feature_function, normalize_function, energy_function, energy_params]
 
 def set_model_update_function(energy_feature_function,
                               energy_function,
@@ -374,6 +385,7 @@ def set_model_update_function(energy_feature_function,
     return update_function
 
 def set_sep_model_update_function(energy_feature_function,
+                                  energy_norm_function,
                                   energy_function,
                                   generator_function,
                                   energy_params,
@@ -399,7 +411,7 @@ def set_sep_model_update_function(energy_feature_function,
 
     # normalize feature data
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = batchnorm(full_feature)
+    full_feature   = energy_norm_function(full_feature, is_train=True)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 
@@ -636,13 +648,15 @@ def train_model(data_stream,
     energy_models = set_energy_model(num_experts=model_config_dict['expert_size'],
                                      min_num_eng_filters=model_config_dict['min_num_eng_filters'])
     feature_function = energy_models[0]
-    energy_function  = energy_models[1]
-    energy_params    = energy_models[2]
+    norm_function    = energy_models[1]
+    energy_function  = energy_models[2]
+    energy_params    = energy_models[3]
 
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
     model_updater = set_sep_model_update_function(energy_feature_function=feature_function,
+                                                  energy_norm_function=norm_function,
                                                   energy_function=energy_function,
                                                   generator_function=generator_function,
                                                   energy_params=energy_params,
