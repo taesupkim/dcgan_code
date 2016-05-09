@@ -256,7 +256,8 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FEATURE CONV LAYER 3'
     conv_w3   = weight_init((num_eng_filters3, num_eng_filters2) + filter_shape,
                             'feat_conv_w3')
-
+    conv_b3   = bias_zeros(num_eng_filters3,
+                           'feat_conv_b3')
     print 'SET ENERGY FEATURE EXTRACTOR'
     def feature_function(input_data, is_train=True):
         # layer 0 (conv)
@@ -266,7 +267,8 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
+        h3 =      dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x')
+        # output feature
         feature = T.flatten(h3, 2)
         return feature
 
@@ -275,8 +277,8 @@ def set_energy_model(num_experts,
 
     feature_bn_w = scale_ones(num_eng_filters3*(min_image_size*min_image_size),
                             'gen_feat_bn_w')
-    feature_bn_b = bias_zero(num_eng_filters3*(min_image_size*min_image_size),
-                            'gen_feat_bn_b')
+    feature_bn_b = bias_zeros(num_eng_filters3*(min_image_size*min_image_size),
+                             'gen_feat_bn_b')
 
 
     def normalize_function(input_data, is_train=True):
@@ -285,13 +287,13 @@ def set_energy_model(num_experts,
     expert_w = weight_init((num_eng_filters3*(min_image_size*min_image_size),
                             num_experts),
                             'eng_expert_w')
-    expert_b = bias_zero(num_experts,
-                         'eng_expert_b')
+    expert_b = bias_zeros(num_experts,
+                          'eng_expert_b')
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
-                     conv_w3,
+                     conv_w3, conv_b3,
                     # feature_bn_w, feature_bn_b,
                      expert_w, expert_b]
 
