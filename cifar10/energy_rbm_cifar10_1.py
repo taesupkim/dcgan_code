@@ -310,7 +310,7 @@ def set_two_update_function(feature_function,
                            dtype=theano.config.floatX)
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
+    sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
