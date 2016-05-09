@@ -291,7 +291,7 @@ def set_energy_model(num_experts,
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, linear_w4)+linear_b4)
         e = T.sum(-e, axis=1, keepdims=True)
-        # e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+        e += 0.5*T.mean(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -796,7 +796,7 @@ if __name__=="__main__":
         expert_size_list = [1024]
         hidden_size_list = [100]
         num_filters_list = [128]
-        lr_list          = [1e-3]
+        lr_list          = [1e-]
         lambda_eng_list  = [1e-5]
 
         for lr in lr_list:
