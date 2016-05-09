@@ -276,12 +276,12 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FUNCTION FEATURE NORM LAYER'
     norm_w = scale_ones(input_size,
                         'gen_norm_w')
-    norm_b = bias_zeros(input_size,
-                        'gen_norm_b')
+    # norm_b = bias_zeros(input_size,
+    #                     'gen_norm_b')
 
     def energy_normalize_function(input_data, is_train=True):
         input_data = T.flatten(input_data, 2)
-        return batchnorm(input_data, g=norm_w, b=norm_b)
+        return batchnorm(input_data, g=norm_w)#, b=norm_b)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
@@ -305,7 +305,7 @@ def set_energy_model(num_experts,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     norm_w, norm_b,
+                     norm_w, #norm_b,
                      expert_w, expert_b]
 
     return [energy_feature_function,
