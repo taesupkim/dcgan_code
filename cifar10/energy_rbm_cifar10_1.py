@@ -15,6 +15,11 @@ from lib.theano_utils import floatX, sharedX
 from load import cifar10
 from lib.save_utils import save_model
 
+model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_NORMED_ONE_SHOT'
+samples_dir = 'samples/%s'%model_name
+if not os.path.exists(samples_dir):
+    os.makedirs(samples_dir)
+
 def transform(X):
     return floatX(X)/127.5 - 1.
 
@@ -22,9 +27,6 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-###################
-# SET INITIALIZER #
-###################
 def get_entropy_cost(entropy_params_list):
     entropy_const = 0.5*(1.0+np.log(2.0*np.pi))
     entropy_const = entropy_const.astype(theano.config.floatX)
@@ -36,11 +38,6 @@ def get_entropy_cost(entropy_params_list):
     entropy_tensor_params = 0.5*T.log(T.sqr(entropy_tensor_params))
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
-
-model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_NORMED_SEP'
-samples_dir = 'samples/%s'%model_name
-if not os.path.exists(samples_dir):
-    os.makedirs(samples_dir)
 
 ###############
 # DATA PARAMS #
@@ -68,9 +65,7 @@ softplus = Softplus()
 ###################
 weight_init = Normal(scale=0.01)
 scale_ones  = Constant(c=1.0)
-scale_init  = Constant(c=1.0)
-bias_one    = Constant(c=1.0)
-bias_zero   = Constant(c=0.0)
+bias_zeros  = Constant(c=0.0)
 bias_const  = Constant(c=0.1)
 
 ###################
@@ -118,8 +113,8 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR CONV LAYER 3'
     conv_w3    = weight_init((num_gen_filters2, num_channels) + filter_shape,
                              'gen_conv_w3')
-    conv_b3    = bias_zero(num_channels,
-                           'gen_conv_b3')
+    conv_b3    = bias_zeros(num_channels,
+                            'gen_conv_b3')
 
     generator_params = [[linear_w0, linear_bn_b0,
                          conv_w1, conv_bn_b1,
@@ -176,6 +171,7 @@ def set_energy_model(num_experts,
                             'feat_conv_w2')
     conv_b2   = bias_const(num_eng_filters2,
                            'feat_conv_b2')
+
     print 'SET ENERGY FEATURE EXTRACTOR'
     def energy_feature_function(input_data, is_train=True):
         # layer 0 (conv)
@@ -190,16 +186,18 @@ def set_energy_model(num_experts,
     # ENERGY LAYER (LINEAR)
     print 'SET ENERGY FUNCTION LINEAR LAYER 3'
 
-    norm_w = scale_ones(num_eng_filters2*(min_image_size*min_image_size),
+    norm_w = scale_ones(input_size,
                         'gen_norm_w')
-
-    def energy_normalize_function(feature_data, is_train=True):
-        return batchnorm(feature_data, g=norm_w)
+    norm_b = bias_zeros(input_size,
+                        'gen_norm_b')
+    def energy_normalize_function(input_data, is_train=True):
+        input_data = T.flatten(input_data, 2)
+        return batchnorm(input_data, g=norm_w, b=norm_b)
 
     expert_w = weight_init((num_eng_filters2*(min_image_size*min_image_size),
                             num_experts),
                            'eng_expert_w')
-    expert_b = bias_zero(num_experts,
+    expert_b = bias_zeros(num_experts,
                          'eng_expert_b')
 
     def energy_expert_function(feature_data, is_train=True):
@@ -207,14 +205,14 @@ def set_energy_model(num_experts,
         e = T.sum(-e, axis=1, keepdims=True)
         return e
 
-    def energy_prior_function(feature_data, is_train=True):
-        e = T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+    def energy_prior_function(input_data, is_train=True):
+        e = T.sum(T.sqr(input_data), axis=1, keepdims=True)
         return e
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
-                     norm_w,
+                     norm_w, norm_b,
                      expert_w, expert_b]
 
     return [energy_feature_function,
@@ -256,14 +254,12 @@ def set_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = energy_norm_function(full_feature)
-    input_feature  = full_feature[:input_feature.shape[0]]
-    sample_feature = full_feature[input_feature.shape[0]:]
+    full_data      = T.concatenate([input_data, sample_data], axis=0)
+    full_data      = energy_norm_function(full_data)
 
     # get prior value
-    input_prior  = energy_prior_function(input_feature, is_train=True)
-    sample_prior = energy_prior_function(sample_feature, is_train=True)
+    input_prior  = energy_prior_function(full_data[:input_data.shape[0]], is_train=True)
+    sample_prior = energy_prior_function(full_data[input_data.shape[0]:], is_train=True)
 
     input_energy  = input_expert  + input_prior
     sample_energy = sample_expert + sample_prior
@@ -339,14 +335,12 @@ def set_two_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = energy_norm_function(full_feature)
-    input_feature  = full_feature[:input_feature.shape[0]]
-    sample_feature = full_feature[input_feature.shape[0]:]
+    full_data      = T.concatenate([input_data, sample_data], axis=0)
+    full_data      = energy_norm_function(full_data)
 
     # get prior value
-    input_prior  = energy_prior_function(input_feature, is_train=True)
-    sample_prior = energy_prior_function(sample_feature, is_train=True)
+    input_prior  = energy_prior_function(full_data[:input_data.shape[0]], is_train=True)
+    sample_prior = energy_prior_function(full_data[input_data.shape[0]:], is_train=True)
 
     input_energy  = input_expert  + input_prior
     sample_energy = sample_expert + sample_prior
@@ -439,18 +433,18 @@ def train_model(data_stream,
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
-    model_updater = set_two_update_function(energy_feature_function=feature_function,
-                                            energy_norm_function=norm_function,
-                                            energy_expert_function=expert_function,
-                                            energy_prior_function=prior_function,
-                                            generator_function=generator_function,
-                                            energy_params=energy_params,
-                                            generator_params=generator_params,
-                                            energy_optimizer=energy_optimizer,
-                                            generator_optimizer=generator_optimizer)
+    model_updater = set_update_function(energy_feature_function=feature_function,
+                                        energy_norm_function=norm_function,
+                                        energy_expert_function=expert_function,
+                                        energy_prior_function=prior_function,
+                                        generator_function=generator_function,
+                                        energy_params=energy_params,
+                                        generator_params=generator_params,
+                                        energy_optimizer=energy_optimizer,
+                                        generator_optimizer=generator_optimizer)
 
-    generator_updater = model_updater[0]
-    energy_updater    = model_updater[1]
+    # generator_updater = model_updater[0]
+    # energy_updater    = model_updater[1]
     print '%.2f SEC '%(time()-t)
 
     print 'COMPILING SAMPLING FUNCTION'
@@ -485,10 +479,7 @@ def train_model(data_stream,
 
             # generator update
             update_input  = [input_data, hidden_data, noise_data]
-            if batch_count%2==0:
-                update_output = generator_updater(*update_input)
-            else:
-                update_output = energy_updater(*update_input)
+            update_output = model_updater(*update_input)
 
             # get output values
             input_energy    = update_output[0].mean()
@@ -546,8 +537,8 @@ if __name__=="__main__":
     #################
     tr_data, te_data, data_stream, te_stream = cifar10(batch_size=model_config_dict['batch_size'])
 
-    expert_size_list = [2048]
-    hidden_size_list = [100]
+    expert_size_list = [8192]
+    hidden_size_list = [1024]
     num_filters_list = [256]
     lr_list          = [1e-4]
     lambda_eng_list  = [1e-5]
