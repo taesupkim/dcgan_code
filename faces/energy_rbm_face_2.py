@@ -37,7 +37,7 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
-model_name  = 'ENERGY_RBM_FACE128_ADAGRAD_NORMED_SEP'
+model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_SEP'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
