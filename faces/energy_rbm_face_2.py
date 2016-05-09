@@ -267,18 +267,21 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         # output feature
         feature = T.flatten(h3, 2)
         return feature
 
     # ENERGY FEATURE NORM LAYER (BN)
     print 'SET ENERGY FUNCTION FEATURE NORM LAYER'
-    norm_w = scale_ones(num_eng_filters3*(min_image_size*min_image_size),
+    norm_w = scale_ones(input_size,
                         'gen_norm_w')
+    norm_b = bias_zeros(input_size,
+                        'gen_norm_b')
 
     def energy_normalize_function(input_data, is_train=True):
-        return batchnorm(input_data, g=norm_w)
+        input_data = T.flatten(input_data, 2)
+        return batchnorm(input_data, g=norm_w, b=norm_b)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
@@ -294,15 +297,15 @@ def set_energy_model(num_experts,
         e = T.sum(-e, axis=1, keepdims=True)
         return e
 
-    def energy_prior_function(feature_data, is_train=True):
-        e = T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+    def energy_prior_function(input_data, is_train=True):
+        e = T.sum(T.sqr(input_data), axis=1, keepdims=True)
         return e
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     norm_w,
+                     norm_w, norm_b,
                      expert_w, expert_b]
 
     return [energy_feature_function,
@@ -342,14 +345,12 @@ def set_model_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = energy_norm_function(full_feature)
-    input_feature  = full_feature[:input_feature.shape[0]]
-    sample_feature = full_feature[input_feature.shape[0]:]
+    full_data      = T.concatenate([input_data, sample_data], axis=0)
+    full_data      = energy_norm_function(full_data)
 
     # get prior value
-    input_prior  = energy_prior_function(input_feature, is_train=True)
-    sample_prior = energy_prior_function(sample_feature, is_train=True)
+    input_prior  = energy_prior_function(full_data[:input_data.shape[0]], is_train=True)
+    sample_prior = energy_prior_function(full_data[input_data.shape[0]:], is_train=True)
 
     input_energy  = input_expert  + input_prior
     sample_energy = sample_expert + sample_prior
