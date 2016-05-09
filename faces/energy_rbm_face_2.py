@@ -280,7 +280,7 @@ def set_energy_model(num_experts,
                         'gen_norm_b')
 
     def normalize_function(input_data, is_train=True):
-        return batchnorm(input_data)#, g=norm_w, b=norm_b)
+        return batchnorm(input_data, g=norm_w, b=norm_b)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
@@ -301,7 +301,7 @@ def set_energy_model(num_experts,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     #norm_w, norm_b,
+                     norm_w, norm_b,
                      expert_w, expert_b]
 
     return [feature_function, normalize_function, energy_function, energy_params]
