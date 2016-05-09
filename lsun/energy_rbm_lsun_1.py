@@ -658,16 +658,16 @@ def train_model(data_stream,
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
-    model_updater = set_sep_model_update_function(energy_feature_function=feature_function,
-                                                  energy_norm_function=norm_function,
-                                                  energy_expert_function=expert_function,
-                                                  generator_function=generator_function,
-                                                  energy_params=energy_params,
-                                                  generator_params=generator_params,
-                                                  energy_optimizer=energy_optimizer,
-                                                  generator_optimizer=generator_optimizer)
-    generator_updater = model_updater[0]
-    energy_updater    = model_updater[1]
+    model_updater = set_model_update_function(energy_feature_function=feature_function,
+                                              energy_norm_function=norm_function,
+                                              energy_expert_function=expert_function,
+                                              generator_function=generator_function,
+                                              energy_params=energy_params,
+                                              generator_params=generator_params,
+                                              energy_optimizer=energy_optimizer,
+                                              generator_optimizer=generator_optimizer)
+    # generator_updater = model_updater[0]
+    # energy_updater    = model_updater[1]
     print '%.2f SEC '%(time()-t)
     # print 'COMPILING ENERGY UPDATER'
     # t=time()
@@ -719,10 +719,11 @@ def train_model(data_stream,
 
 
             update_input  = [input_data, hidden_data, noise_data]
-            if batch_count%2==0:
-                update_output = generator_updater(*update_input)
-            else:
-                update_output = energy_updater(*update_input)
+            update_output = model_updater(*update_input)
+            # if batch_count%2==0:
+            #     update_output = generator_updater(*update_input)
+            # else:
+            #     update_output = energy_updater(*update_input)
 
 
             input_energy    = update_output[0].mean()
