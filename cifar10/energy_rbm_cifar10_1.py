@@ -174,28 +174,27 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FEATURE CONV LAYER 2'
     conv_w2   = weight_init((num_eng_filters2, num_eng_filters1) + filter_shape,
                             'feat_conv_w2')
-
+    conv_b2   = bias_const(num_eng_filters2,
+                           'feat_conv_b2')
     print 'SET ENERGY FEATURE EXTRACTOR'
-    def feature_function(input_data, is_train=True):
+    def energy_feature_function(input_data, is_train=True):
         # layer 0 (conv)
         h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
         # layer 1 (conv)
         h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
         # layer 2 (conv)
-        h2 = dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))
+        h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         feature = T.flatten(h2, 2)
         return feature
 
     # ENERGY LAYER (LINEAR)
     print 'SET ENERGY FUNCTION LINEAR LAYER 3'
 
-    feature_bn_w = scale_ones(num_eng_filters2*(min_image_size*min_image_size),
-                            'gen_feat_bn_w')
-    feature_bn_b = bias_zero(num_eng_filters2*(min_image_size*min_image_size),
-                            'gen_feat_bn_b')
+    norm_w = scale_ones(num_eng_filters2*(min_image_size*min_image_size),
+                        'gen_norm_w')
 
-    def normalize_function(input_data, is_train=True):
-        return batchnorm(input_data, g=feature_bn_w, b=feature_bn_b)
+    def energy_normalize_function(feature_data, is_train=True):
+        return batchnorm(feature_data, g=norm_w)
 
     expert_w = weight_init((num_eng_filters2*(min_image_size*min_image_size),
                             num_experts),
@@ -203,24 +202,34 @@ def set_energy_model(num_experts,
     expert_b = bias_zero(num_experts,
                          'eng_expert_b')
 
-    energy_params = [conv_w0, conv_b0,
-                     conv_w1, conv_b1,
-                     conv_w2,
-                     expert_w, expert_b]
-
-    def energy_function(feature_data, is_train=True):
+    def energy_expert_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, expert_w)+expert_b)
         e = T.sum(-e, axis=1, keepdims=True)
-        e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
-    return [feature_function, normalize_function, energy_function, energy_params]
+    def energy_prior_function(feature_data, is_train=True):
+        e = T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+        return e
+
+    energy_params = [conv_w0, conv_b0,
+                     conv_w1, conv_b1,
+                     conv_w2, conv_b2,
+                     norm_w,
+                     expert_w, expert_b]
+
+    return [energy_feature_function,
+            energy_normalize_function,
+            energy_expert_function,
+            energy_prior_function,
+            energy_params]
 
 ########################
 # WHOLE MODEL UPDATER #
 ########################
-def set_update_function(feature_function,
-                        energy_function,
+def set_update_function(energy_feature_function,
+                        energy_norm_function,
+                        energy_expert_function,
+                        energy_prior_function,
                         generator_function,
                         energy_params,
                         generator_params,
@@ -236,20 +245,28 @@ def set_update_function(feature_function,
                            dtype=theano.config.floatX)
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
+    sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
-    input_feature  = feature_function(input_data, is_train=True)
-    sample_feature = feature_function(sample_data, is_train=True)
+    input_feature  = energy_feature_function(input_data, is_train=True)
+    sample_feature = energy_feature_function(sample_data, is_train=True)
+
+    # get expert value
+    input_expert  = energy_expert_function(input_feature, is_train=True)
+    sample_expert = energy_expert_function(sample_feature, is_train=True)
+
+    # normalize feature data
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = batchnorm(full_feature)
+    full_feature   = energy_norm_function(full_feature)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 
-    # get energy value
-    input_energy  = energy_function(input_feature, is_train=True)
-    sample_energy = energy_function(sample_feature, is_train=True)
+    # get prior value
+    input_prior  = energy_prior_function(input_feature, is_train=True)
+    sample_prior = energy_prior_function(sample_feature, is_train=True)
 
+    input_energy  = input_expert  + input_prior
+    sample_energy = sample_expert + sample_prior
     # get phase cost (positive, negative)
     positive_phase = T.mean(input_energy)
     negative_phase = T.mean(sample_energy)
@@ -292,9 +309,10 @@ def set_update_function(feature_function,
                                       on_unused_input='ignore')
     return update_function
 
-def set_two_update_function(feature_function,
-                            norm_function,
-                            energy_function,
+def set_two_update_function(energy_feature_function,
+                            energy_norm_function,
+                            energy_expert_function,
+                            energy_prior_function,
                             generator_function,
                             energy_params,
                             generator_params,
@@ -313,16 +331,25 @@ def set_two_update_function(feature_function,
     sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
-    input_feature  = feature_function(input_data, is_train=True)
-    sample_feature = feature_function(sample_data, is_train=True)
+    input_feature  = energy_feature_function(input_data, is_train=True)
+    sample_feature = energy_feature_function(sample_data, is_train=True)
+
+    # get expert value
+    input_expert  = energy_expert_function(input_feature, is_train=True)
+    sample_expert = energy_expert_function(sample_feature, is_train=True)
+
+    # normalize feature data
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = norm_function(full_feature)
+    full_feature   = energy_norm_function(full_feature)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 
-    # get energy value
-    input_energy  = energy_function(input_feature, is_train=True)
-    sample_energy = energy_function(sample_feature, is_train=True)
+    # get prior value
+    input_prior  = energy_prior_function(input_feature, is_train=True)
+    sample_prior = energy_prior_function(sample_feature, is_train=True)
+
+    input_energy  = input_expert  + input_prior
+    sample_energy = sample_expert + sample_prior
 
     # get phase cost (positive, negative)
     positive_phase = T.mean(input_energy)
@@ -405,15 +432,17 @@ def train_model(data_stream,
                                      min_num_eng_filters=model_config_dict['min_num_eng_filters'])
     feature_function = energy_models[0]
     norm_function    = energy_models[1]
-    energy_function  = energy_models[2]
-    energy_params    = energy_models[3]
+    expert_function  = energy_models[2]
+    prior_function   = energy_models[3]
+    energy_params    = energy_models[4]
 
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
-    model_updater = set_two_update_function(feature_function=feature_function,
-                                            norm_function=norm_function,
-                                            energy_function=energy_function,
+    model_updater = set_two_update_function(energy_feature_function=feature_function,
+                                            energy_norm_function=norm_function,
+                                            energy_expert_function=expert_function,
+                                            energy_prior_function=prior_function,
                                             generator_function=generator_function,
                                             energy_params=energy_params,
                                             generator_params=generator_params,
@@ -544,8 +573,7 @@ if __name__=="__main__":
                         #                                    regularizer=Regularizer(l2=0.0))
                         energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                       regularizer=Regularizer(l2=lambda_eng))
-                        generator_optimizer = Adagrad(lr=sharedX(lr),
-                                                      regularizer=Regularizer(l2=0.0))
+                        generator_optimizer = Adagrad(lr=sharedX(lr))
                         model_test_name = model_name \
                                           + '_f{}'.format(int(num_filters)) \
                                           + '_h{}'.format(int(hidden_size)) \

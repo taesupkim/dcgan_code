@@ -277,8 +277,8 @@ def set_energy_model(num_experts,
     norm_w = scale_ones(num_eng_filters3*(min_image_size*min_image_size),
                         'gen_norm_w')
 
-    def energy_normalize_function(input_data, is_train=True):
-        return batchnorm(input_data, g=norm_w)
+    def energy_normalize_function(feature_data, is_train=True):
+        return batchnorm(feature_data, g=norm_w)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
