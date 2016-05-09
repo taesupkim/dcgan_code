@@ -37,7 +37,7 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
-model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_SEP'
+model_name  = 'ENERGY_RBM_FACE128_ADAGRAD_NORMED_SEP'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -291,7 +291,7 @@ def set_energy_model(num_experts,
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, linear_w4)+linear_b4)
         e = T.sum(-e, axis=1, keepdims=True)
-        e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+        # e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -796,7 +796,7 @@ if __name__=="__main__":
         expert_size_list = [1024]
         hidden_size_list = [100]
         num_filters_list = [128]
-        lr_list          = [1e-2]
+        lr_list          = [1e-3]
         lambda_eng_list  = [1e-5]
 
         for lr in lr_list:
