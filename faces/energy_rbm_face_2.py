@@ -296,7 +296,7 @@ def set_energy_model(num_experts,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3,
-                     feature_bn_w, feature_bn_b,
+                    # feature_bn_w, feature_bn_b,
                      expert_w, expert_b]
 
     def energy_function(feature_data, is_train=True):
@@ -403,7 +403,7 @@ def set_sep_model_update_function(energy_feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
+    sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
     input_feature  = energy_feature_function(input_data, is_train=True)
@@ -411,7 +411,7 @@ def set_sep_model_update_function(energy_feature_function,
 
     # normalize feature data
     full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = energy_norm_function(full_feature, is_train=True)
+    full_feature   = batchnorm(full_feature)#energy_norm_function(full_feature, is_train=True)
     input_feature  = full_feature[:input_feature.shape[0]]
     sample_feature = full_feature[input_feature.shape[0]:]
 
@@ -826,7 +826,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(10*lr),
+                            generator_optimizer = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=0.0))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
