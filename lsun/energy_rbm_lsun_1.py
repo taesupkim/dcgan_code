@@ -621,8 +621,8 @@ if __name__=="__main__":
     hidden_size_list = [100]
     num_filters_list = [128]
     lr_list          = [1e-4]
-    lambda_eng_list  = [1e-10]
-    lambda_gen_list  = [1e-10]
+    lambda_eng_list  = [1e-5]
+    lambda_gen_list  = [1e-5]
 
     for lr in lr_list:
         for num_filters in num_filters_list:
