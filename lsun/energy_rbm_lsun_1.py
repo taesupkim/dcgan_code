@@ -13,7 +13,7 @@ from lib.rng import py_rng, np_rng
 from lib.ops import batchnorm, entropykeep, deconv, dropout, l2normalize
 from lib.theano_utils import floatX, sharedX
 from load import bedroom
-from lib.save_utils import save_model
+from lib.save_utils import save_model, unpickle
 
 def transform(X):
     return floatX(X)/127.5 - 1.
@@ -37,7 +37,7 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
-model_name  = 'ENERGY_RBM_BEDROOM128_BIAS_ADAGRAD_NORMED'
+model_name  = 'ENERGY_RBM_BEDROOM_BIAS_ADAGRAD_NORMED_SEP'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -150,13 +150,79 @@ def set_generator_model(num_hiddens,
         # layer 2 (deconv)
         h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3)
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
 
     return [generator_function, generator_params]
 
+##################
+# LOAD GENERATOR #
+##################
+def load_generator_model(min_num_gen_filters,
+                         model_params_dict):
+    # initial square image size
+    init_image_size  = 4
+
+    # set num of filters for each layer
+    num_gen_filters0 = min_num_gen_filters*8
+
+    # LAYER 0 (LINEAR W/ BN)
+    print 'LOAD GENERATOR LINEAR LAYER 0'
+    linear_w0    = sharedX(model_params_dict[   'gen_linear_w0'], name='gen_linear_w0')
+    linear_bn_w0 = sharedX(model_params_dict['gen_linear_bn_w0'], name='gen_linear_bn_w0')
+    linear_bn_b0 = sharedX(model_params_dict['gen_linear_bn_b0'], name='gen_linear_bn_b0')
+
+    # LAYER 1 (DECONV)
+    print 'SET GENERATOR CONV LAYER 1'
+    conv_w1    = sharedX(model_params_dict[   'gen_conv_w1'], name='gen_conv_w1')
+    conv_bn_w1 = sharedX(model_params_dict['gen_conv_bn_w1'], name='gen_conv_bn_w1')
+    conv_bn_b1 = sharedX(model_params_dict['gen_conv_bn_b1'], name='gen_conv_bn_b1')
+
+    # LAYER 2 (DECONV)
+    print 'SET GENERATOR CONV LAYER 2'
+    conv_w2    = sharedX(model_params_dict[   'gen_conv_w2'], name='gen_conv_w2')
+    conv_bn_w2 = sharedX(model_params_dict['gen_conv_bn_w2'], name='gen_conv_bn_w2')
+    conv_bn_b2 = sharedX(model_params_dict['gen_conv_bn_b2'], name='gen_conv_bn_b2')
+
+    # LAYER 2 (DECONV)
+    print 'SET GENERATOR CONV LAYER 3'
+    conv_w3    = sharedX(model_params_dict[   'gen_conv_w3'], name='gen_conv_w3')
+    conv_bn_w3 = sharedX(model_params_dict['gen_conv_bn_w3'], name='gen_conv_bn_w3')
+    conv_bn_b3 = sharedX(model_params_dict['gen_conv_bn_b3'], name='gen_conv_bn_b3')
+
+    # LAYER 3 (DECONV)
+    print 'SET GENERATOR CONV LAYER 4'
+    conv_w4 = sharedX(model_params_dict[   'gen_conv_w4'], name='gen_conv_w4')
+    conv_b4 = sharedX(model_params_dict[   'gen_conv_b4'], name='gen_conv_b4')
+
+    generator_params = [[linear_w0, linear_bn_b0,
+                         conv_w1, conv_bn_b1,
+                         conv_w2, conv_bn_b2,
+                         conv_w3, conv_bn_b3,
+                         conv_w4, conv_b4],
+                        [linear_bn_w0,
+                         conv_bn_w1,
+                         conv_bn_w2,
+                         conv_bn_w3]]
+
+    print 'SET GENERATOR FUNCTION'
+    def generator_function(hidden_data, is_train=True):
+        # layer 0 (linear)
+        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
+        # layer 1 (deconv)
+        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        # layer 2 (deconv)
+        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        # layer 3 (deconv)
+        h3     = batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3)
+        # layer 4 (deconv)
+        output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
+        return output
+
+    return [generator_function, generator_params]
 ######################################
 # BUILD ENERGY MODEL (FEATURE_MODEL) #
 ######################################
@@ -210,25 +276,36 @@ def set_energy_model(num_experts,
 
     # ENERGY LAYER (LINEAR)
     print 'SET ENERGY FUNCTION LINEAR LAYER 4'
-    linear_w4 = weight_init((num_eng_filters3*(min_image_size*min_image_size),
-                             num_experts),
-                            'eng_linear_w4')
-    linear_b4 = bias_zero(num_experts,
-                          'eng_linear_b4')
+
+    feature_bn_w = scale_ones(num_eng_filters3*(min_image_size*min_image_size),
+                            'gen_feat_bn_w')
+    feature_bn_b = bias_zero(num_eng_filters3*(min_image_size*min_image_size),
+                            'gen_feat_bn_b')
+
+
+    def normalize_function(input_data, is_train=True):
+        return batchnorm(input_data, g=feature_bn_w, b=feature_bn_b)
+
+    expert_w = weight_init((num_eng_filters3*(min_image_size*min_image_size),
+                            num_experts),
+                            'eng_expert_w')
+    expert_b = bias_zero(num_experts,
+                         'eng_expert_b')
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3,
-                     linear_w4, linear_b4]
+                     feature_bn_w, feature_bn_b,
+                     expert_w, expert_b]
 
     def energy_function(feature_data, is_train=True):
-        e = softplus(T.dot(feature_data, linear_w4)+linear_b4)
+        e = softplus(T.dot(feature_data, expert_w)+expert_b)
         e = T.sum(-e, axis=1, keepdims=True)
-        e+= 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+        e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
-    return [feature_function, energy_function, energy_params]
+    return [feature_function, normalize_function, energy_function, energy_params]
 
 def set_model_update_function(energy_feature_function,
                               energy_function,
@@ -307,6 +384,88 @@ def set_model_update_function(energy_feature_function,
                                       on_unused_input='ignore')
     return update_function
 
+def set_sep_model_update_function(energy_feature_function,
+                                  energy_norm_function,
+                                  energy_function,
+                                  generator_function,
+                                  energy_params,
+                                  generator_params,
+                                  energy_optimizer,
+                                  generator_optimizer):
+
+    # set input data, hidden data, noise data,  annealing rate
+    input_data  = T.tensor4(name='input_data',
+                            dtype=theano.config.floatX)
+    hidden_data = T.matrix(name='hidden_data',
+                           dtype=theano.config.floatX)
+    noise_data  = T.tensor4(name='noise_data',
+                            dtype=theano.config.floatX)
+
+    # get sample data
+    sample_data = generator_function(hidden_data, is_train=True)
+    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
+
+    # get feature data
+    input_feature  = energy_feature_function(input_data, is_train=True)
+    sample_feature = energy_feature_function(sample_data, is_train=True)
+
+    # normalize feature data
+    full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
+    full_feature   = energy_norm_function(full_feature, is_train=True)
+    input_feature  = full_feature[:input_feature.shape[0]]
+    sample_feature = full_feature[input_feature.shape[0]:]
+
+    # get energy value
+    input_energy  = energy_function(input_feature, is_train=True)
+    sample_energy = energy_function(sample_feature, is_train=True)
+
+    # get energy function cost (positive, negative)
+    positive_phase      = T.mean(input_energy)
+    negative_phase      = T.mean(sample_energy)
+    energy_updates_cost = positive_phase - negative_phase
+
+    # get energy updates
+    energy_updates = energy_optimizer(energy_params,
+                                      energy_updates_cost)
+
+    # entropy cost
+    entropy_cost = get_entropy_cost(generator_params[1])
+
+    # entropy weight
+    entropy_weights = []
+    for param_tensor in generator_params[1]:
+        entropy_weights.append(param_tensor.reshape((1,-1)))
+    entropy_weights = T.concatenate(entropy_weights, axis=1)
+    entropy_weights = T.abs_(entropy_weights)
+    entropy_weights = T.mean(entropy_weights)
+
+    # get generator updates
+    generator_updates_cost = negative_phase + entropy_cost
+    generator_updates = generator_optimizer(generator_params[0]+generator_params[1],
+                                            generator_updates_cost)
+
+    # update function input
+    update_function_inputs  = [input_data,
+                               hidden_data,
+                               noise_data]
+
+    # update function output
+    update_function_outputs = [input_energy,
+                               sample_energy,
+                               entropy_weights,
+                               entropy_cost]
+
+    # update function
+    generator_updater = theano.function(inputs=update_function_inputs,
+                                        outputs=update_function_outputs,
+                                        updates=generator_updates,
+                                        on_unused_input='ignore')
+    energy_updater = theano.function(inputs=update_function_inputs,
+                                     outputs=update_function_outputs,
+                                     updates=energy_updates,
+                                     on_unused_input='ignore')
+    return [generator_updater, energy_updater]
+
 
 ########################
 # ENERGY MODEL UPDATER #
@@ -371,9 +530,9 @@ def set_generator_update_function(feature_function,
     # set hidden data
     hidden_data = T.matrix(name='hidden_data',
                            dtype=theano.config.floatX)
+    # set noise data
     noise_data  = T.tensor4(name='noise_data',
                             dtype=theano.config.floatX)
-
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
     sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
@@ -489,19 +648,23 @@ def train_model(data_stream,
     energy_models = set_energy_model(num_experts=model_config_dict['expert_size'],
                                      min_num_eng_filters=model_config_dict['min_num_eng_filters'])
     feature_function = energy_models[0]
-    energy_function  = energy_models[1]
-    energy_params    = energy_models[2]
+    norm_function    = energy_models[1]
+    energy_function  = energy_models[2]
+    energy_params    = energy_models[3]
 
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
-    model_updater = set_model_update_function(energy_feature_function=feature_function,
-                                              energy_function=energy_function,
-                                              generator_function=generator_function,
-                                              energy_params=energy_params,
-                                              generator_params=generator_params,
-                                              energy_optimizer=energy_optimizer,
-                                              generator_optimizer=generator_optimizer)
+    model_updater = set_sep_model_update_function(energy_feature_function=feature_function,
+                                                  energy_norm_function=norm_function,
+                                                  energy_function=energy_function,
+                                                  generator_function=generator_function,
+                                                  energy_params=energy_params,
+                                                  generator_params=generator_params,
+                                                  energy_optimizer=energy_optimizer,
+                                                  generator_optimizer=generator_optimizer)
+    generator_updater = model_updater[0]
+    energy_updater    = model_updater[1]
     print '%.2f SEC '%(time()-t)
     # print 'COMPILING ENERGY UPDATER'
     # t=time()
@@ -551,17 +714,13 @@ def train_model(data_stream,
             noise_data   = floatX(np_rng.normal(scale=0.01,
                                                 size=input_data.shape))
 
-            update_input  = [input_data, hidden_data, noise_data]
-            update_output = model_updater(*update_input)
-            # generator update
-            # generator_updates = generator_updater(hidden_data, noise_data)
-            # entropy_cost      = generator_updates[-2]
-            # entropy_weights   = generator_updates[-1]
-            # energy_updates    = energy_updater(input_data, hidden_data)
 
-            # get output values
-            # input_energy  = energy_updates[0].mean()
-            # sample_energy = energy_updates[1].mean()
+            update_input  = [input_data, hidden_data, noise_data]
+            if batch_count%2==0:
+                update_output = generator_updater(*update_input)
+            else:
+                update_output = energy_updater(*update_input)
+
 
             input_energy    = update_output[0].mean()
             sample_energy   = update_output[1].mean()
@@ -589,22 +748,49 @@ def train_model(data_stream,
                 print '     entropy cost     : ', entropy_cost
                 print '================================================================'
 
-            if batch_count%1000==0:
+            if batch_count%100==0:
                 # sample data
-                [sample_data_t, ] = sampling_function(fixed_hidden_data)
-                sample_data_t = np.asarray(sample_data_t)
+                sample_data = sampling_function(fixed_hidden_data)[0]
+                sample_data = np.asarray(sample_data)
                 save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
-                color_grid_vis(inverse_transform(sample_data_t).transpose([0,2,3,1]), (16, 16), save_as)
+                color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
                 np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
                         arr=np.asarray(input_energy_list))
                 np.save(file=samples_dir + '/' + model_test_name +'_sample_energy',
                         arr=np.asarray(sample_energy_list))
 
-            if batch_count%1000==0:
                 save_as = samples_dir + '/' + model_test_name + '_MODEL.pkl'
-                save_model(tensor_params_list=generator_params[0]+generator_params[1]+ energy_params,
+                save_model(tensor_params_list=generator_params[0] + generator_params[1] + energy_params,
                            save_to=save_as)
+##########
+# TESTER #
+##########
+def test_model(model_config_dict, model_test_name):
+    import glob
+    model_list = glob.glob(samples_dir +'/*.pkl')
+    # load parameters
+    model_param_dicts = unpickle(model_list[0])
 
+    # load generator
+    generator_models = load_generator_model(min_num_gen_filters=model_config_dict['min_num_gen_filters'],
+                                            model_params_dict=model_param_dicts)
+    generator_function = generator_models[0]
+
+    print 'COMPILING SAMPLING FUNCTION'
+    t=time()
+    sampling_function = set_sampling_function(generator_function=generator_function)
+    print '%.2f SEC '%(time()-t)
+
+    print 'START SAMPLING'
+    for s in xrange(model_config_dict['num_sampling']):
+        print '{} sampling'.format(s)
+        hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
+                                             high=model_config_dict['hidden_distribution'],
+                                             size=(model_config_dict['num_display'], model_config_dict['hidden_size'])))
+        sample_data = sampling_function(hidden_data)[0]
+        sample_data = inverse_transform(np.asarray(sample_data)).transpose([0,2,3,1])
+        save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(s+1)
+        color_grid_vis(sample_data, (16, 16), save_as)
 
 if __name__=="__main__":
 
@@ -614,41 +800,52 @@ if __name__=="__main__":
     model_config_dict['hidden_distribution'] = 1.
     model_config_dict['epochs']              = 200
 
-    #################
-    # LOAD DATA SET #
-    #################
-    _ , data_stream = bedroom(batch_size=model_config_dict['batch_size'])
+    is_training = True
+    if is_training is True:
+        #################
+        # LOAD DATA SET #
+        #################
+        _ , data_stream = bedroom(batch_size=model_config_dict['batch_size'])
 
-    expert_size_list = [1024]
-    hidden_size_list = [100]
-    num_filters_list = [128]
-    lr_list          = [1e-4]
-    lambda_eng_list  = [1e-5]
+        expert_size_list = [1024]
+        hidden_size_list = [100]
+        num_filters_list = [128]
+        lr_list          = [1e-4]
+        lambda_eng_list  = [1e-5]
 
-    for lr in lr_list:
-        for num_filters in num_filters_list:
-            for hidden_size in hidden_size_list:
-                for expert_size in expert_size_list:
-                    for lambda_eng in lambda_eng_list:
-                        model_config_dict['hidden_size']         = hidden_size
-                        model_config_dict['expert_size']         = expert_size
-                        model_config_dict['min_num_gen_filters'] = num_filters
-                        model_config_dict['min_num_eng_filters'] = num_filters
+        for lr in lr_list:
+            for num_filters in num_filters_list:
+                for hidden_size in hidden_size_list:
+                    for expert_size in expert_size_list:
+                        for lambda_eng in lambda_eng_list:
+                            model_config_dict['hidden_size']         = hidden_size
+                            model_config_dict['expert_size']         = expert_size
+                            model_config_dict['min_num_gen_filters'] = num_filters
+                            model_config_dict['min_num_eng_filters'] = num_filters
 
-                        # set updates
-                        energy_optimizer    = Adagrad(lr=sharedX(lr),
-                                                      regularizer=Regularizer(l2=lambda_eng))
-                        generator_optimizer = Adagrad(lr=sharedX(lr*10.0),
-                                                      regularizer=Regularizer(l2=0.0))
-                        model_test_name = model_name \
-                                          + '_f{}'.format(int(num_filters)) \
-                                          + '_h{}'.format(int(hidden_size)) \
-                                          + '_e{}'.format(int(expert_size)) \
-                                          + '_re{}'.format(int(-np.log10(lambda_eng))) \
-                                          + '_lr{}'.format(int(-np.log10(lr))) \
+                            # set updates
+                            energy_optimizer    = Adagrad(lr=sharedX(lr),
+                                                          regularizer=Regularizer(l2=lambda_eng))
+                            generator_optimizer = Adagrad(lr=sharedX(lr*2.0),
+                                                          regularizer=Regularizer(l2=0.0))
+                            model_test_name = model_name \
+                                              + '_f{}'.format(int(num_filters)) \
+                                              + '_h{}'.format(int(hidden_size)) \
+                                              + '_e{}'.format(int(expert_size)) \
+                                              + '_re{}'.format(int(-np.log10(lambda_eng))) \
+                                              + '_lr{}'.format(int(-np.log10(lr))) \
 
-                        train_model(data_stream=data_stream,
-                                    energy_optimizer=energy_optimizer,
-                                    generator_optimizer=generator_optimizer,
-                                    model_config_dict=model_config_dict,
-                                    model_test_name=model_test_name)
+                            train_model(data_stream=data_stream,
+                                        energy_optimizer=energy_optimizer,
+                                        generator_optimizer=generator_optimizer,
+                                        model_config_dict=model_config_dict,
+                                        model_test_name=model_test_name)
+    else:
+        model_test_name = model_name +'_TEST'
+        model_config_dict['hidden_size']         = 100
+        model_config_dict['expert_size']         = 1024
+        model_config_dict['min_num_gen_filters'] = 128
+        model_config_dict['min_num_eng_filters'] = 128
+        model_config_dict['num_sampling']        = 100
+        test_model(model_config_dict=model_config_dict,
+                   model_test_name=model_test_name)
