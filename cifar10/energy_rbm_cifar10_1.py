@@ -37,7 +37,7 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
-model_name  = 'ENERGY_RBM_CIFAR10_ADAGRAD_NORMED'
+model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_NORMED'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -203,7 +203,7 @@ def set_energy_model(num_experts,
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, expert_w)+expert_b)
         e = T.sum(-e, axis=1, keepdims=True)
-        # e += T.sum(T.sqr(feature_data), axis=1, keepdims=True)*0.5
+        e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -228,7 +228,7 @@ def set_update_function(feature_function,
                            dtype=theano.config.floatX)
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
+    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
     input_feature  = feature_function(input_data, is_train=True)
@@ -426,7 +426,7 @@ if __name__=="__main__":
     expert_size_list = [2048]
     hidden_size_list = [100]
     num_filters_list = [256]
-    lr_list          = [1e-5]
+    lr_list          = [1e-3]
     lambda_eng_list  = [1e-5]
     lambda_gen_list  = [1e-5]
 
@@ -452,7 +452,7 @@ if __name__=="__main__":
                             #                                    regularizer=Regularizer(l2=0.0))
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(10*lr),
+                            generator_optimizer = Adagrad(lr=sharedX(1*lr),
                                                           regularizer=Regularizer(l2=0.0))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
