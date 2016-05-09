@@ -267,7 +267,7 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         # output feature
         feature = T.flatten(h3, 2)
         return feature
@@ -280,7 +280,7 @@ def set_energy_model(num_experts,
                         'gen_norm_b')
 
     def normalize_function(input_data, is_train=True):
-        return batchnorm(input_data, g=norm_w, b=norm_b)
+        return batchnorm(input_data)#, g=norm_w, b=norm_b)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
@@ -301,7 +301,7 @@ def set_energy_model(num_experts,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     norm_w, norm_b,
+                     #norm_w, norm_b,
                      expert_w, expert_b]
 
     return [feature_function, normalize_function, energy_function, energy_params]
@@ -827,7 +827,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(10*lr))
+                            generator_optimizer = Adagrad(lr=sharedX(lr))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
                                               + '_h{}'.format(int(hidden_size)) \
