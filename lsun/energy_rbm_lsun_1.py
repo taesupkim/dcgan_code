@@ -282,7 +282,7 @@ def set_energy_model(num_experts,
 
     def normalize_function(input_data, is_train=True):
         # return input_data
-        return batchnorm(input_data, g=norm_w, b=norm_b)
+        return batchnorm(input_data)#, g=norm_w, b=norm_b)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
@@ -296,14 +296,14 @@ def set_energy_model(num_experts,
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, expert_w)+expert_b)
         e = T.sum(-e, axis=1, keepdims=True)
-        e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+        # e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     norm_w, norm_b,
+                     # norm_w, norm_b,
                      expert_w, expert_b]
 
     return [feature_function, normalize_function, energy_function, energy_params]
