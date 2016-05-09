@@ -223,7 +223,7 @@ def set_energy_model(num_experts,
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, linear_w4)+linear_b4)
         e = T.sum(-e, axis=1, keepdims=True)
-        # e+= T.sum(T.sqr(feature_data), axis=1, keepdims=True)
+        e+= 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
     return [feature_function, energy_function, energy_params]
@@ -246,7 +246,7 @@ def set_model_update_function(energy_feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    # sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
+    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
 
     # get feature data
     input_feature  = energy_feature_function(input_data, is_train=True)
@@ -620,7 +620,7 @@ if __name__=="__main__":
     expert_size_list = [1024]
     hidden_size_list = [100]
     num_filters_list = [128]
-    lr_list          = [1e-5]
+    lr_list          = [1e-3]
     lambda_eng_list  = [1e-10]
     lambda_gen_list  = [1e-10]
 
@@ -638,7 +638,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(lr*10.0),
+                            generator_optimizer = Adagrad(lr=sharedX(lr*1.0),
                                                           regularizer=Regularizer(l2=0.0))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
