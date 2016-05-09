@@ -26,7 +26,7 @@ def inverse_transform(X):
 # SET INITIALIZER #
 ###################
 def get_entropy_cost(entropy_params_list):
-    entropy_const = 0.5*(1.0+np.log(2*np.pi))
+    entropy_const = 0.5*(1.0+np.log(2.0*np.pi))
     entropy_const = entropy_const.astype(theano.config.floatX)
 
     entropy_tensor_params= []
@@ -67,6 +67,7 @@ softplus = Softplus()
 # SET INITIALIZER #
 ###################
 weight_init = Normal(scale=0.01)
+scale_ones  = Constant(c=1.0)
 scale_init  = Constant(c=1.0)
 bias_one    = Constant(c=1.0)
 bias_zero   = Constant(c=0.0)
@@ -90,7 +91,7 @@ def set_generator_model(num_hiddens,
     linear_w0    = weight_init((num_hiddens,
                                 (num_gen_filters0*init_image_size*init_image_size)),
                                'gen_linear_w0')
-    linear_bn_w0 = scale_init((num_gen_filters0*init_image_size*init_image_size),
+    linear_bn_w0 = scale_ones((num_gen_filters0*init_image_size*init_image_size),
                               'gen_linear_bn_w0')
     linear_bn_b0 = bias_const((num_gen_filters0*init_image_size*init_image_size),
                               'gen_linear_bn_b0')
@@ -99,7 +100,7 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR CONV LAYER 1'
     conv_w1    = weight_init((num_gen_filters0, num_gen_filters1) + filter_shape,
                              'gen_conv_w1')
-    conv_bn_w1 = scale_init(num_gen_filters1,
+    conv_bn_w1 = scale_ones(num_gen_filters1,
                             'gen_conv_bn_w1')
     conv_bn_b1 = bias_const(num_gen_filters1,
                             'gen_conv_bn_b1')
@@ -108,7 +109,7 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR CONV LAYER 2'
     conv_w2    = weight_init((num_gen_filters1, num_gen_filters2) + filter_shape,
                              'gen_conv_w2')
-    conv_bn_w2 = scale_init(num_gen_filters2,
+    conv_bn_w2 = scale_ones(num_gen_filters2,
                             'gen_conv_bn_w2')
     conv_bn_b2 = bias_const(num_gen_filters2,
                             'gen_conv_bn_b2')
@@ -173,8 +174,6 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FEATURE CONV LAYER 2'
     conv_w2   = weight_init((num_eng_filters2, num_eng_filters1) + filter_shape,
                             'feat_conv_w2')
-    # conv_b2   = bias_zero(num_eng_filters2,
-    #                       'feat_conv_b2')
 
     print 'SET ENERGY FEATURE EXTRACTOR'
     def feature_function(input_data, is_train=True):
@@ -427,43 +426,40 @@ if __name__=="__main__":
     hidden_size_list = [100]
     num_filters_list = [256]
     lr_list          = [1e-4]
-    lambda_eng_list  = [1e-10]
-    lambda_gen_list  = [1e-10]
+    lambda_eng_list  = [1e-5]
 
     for lr in lr_list:
         for num_filters in num_filters_list:
             for hidden_size in hidden_size_list:
                 for expert_size in expert_size_list:
                     for lambda_eng in lambda_eng_list:
-                        for lambda_gen in lambda_gen_list:
-                            model_config_dict['hidden_size']         = hidden_size
-                            model_config_dict['expert_size']         = expert_size
-                            model_config_dict['min_num_gen_filters'] = num_filters
-                            model_config_dict['min_num_eng_filters'] = num_filters
+                        model_config_dict['hidden_size']         = hidden_size
+                        model_config_dict['expert_size']         = expert_size
+                        model_config_dict['min_num_gen_filters'] = num_filters
+                        model_config_dict['min_num_eng_filters'] = num_filters
 
-                            # set updates
-                            # energy_optimizer_reg_on  = Adam(lr=sharedX(lr),
-                            #                                 regularizer=Regularizer(l2=lambda_eng))
-                            # generator_optimizer_reg_on  = Adam(lr=sharedX(lr),
-                            #                                    b1=0.1, b2=0.1,
-                            #                                    regularizer=Regularizer(l2=lambda_eng))
-                            # generator_optimizer_reg_off = Adam(lr=sharedX(lr),
-                            #                                    b1=0.1, b2=0.1,
-                            #                                    regularizer=Regularizer(l2=0.0))
-                            energy_optimizer    = Adagrad(lr=sharedX(lr),
-                                                          regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(1*lr),
-                                                          regularizer=Regularizer(l2=0.0))
-                            model_test_name = model_name \
-                                              + '_f{}'.format(int(num_filters)) \
-                                              + '_h{}'.format(int(hidden_size)) \
-                                              + '_e{}'.format(int(expert_size)) \
-                                              + '_re{}'.format(int(-np.log10(lambda_eng))) \
-                                              + '_rg{}'.format(int(-np.log10(lambda_gen))) \
-                                              + '_lr{}'.format(int(-np.log10(lr))) \
+                        # set updates
+                        # energy_optimizer_reg_on  = Adam(lr=sharedX(lr),
+                        #                                 regularizer=Regularizer(l2=lambda_eng))
+                        # generator_optimizer_reg_on  = Adam(lr=sharedX(lr),
+                        #                                    b1=0.1, b2=0.1,
+                        #                                    regularizer=Regularizer(l2=lambda_eng))
+                        # generator_optimizer_reg_off = Adam(lr=sharedX(lr),
+                        #                                    b1=0.1, b2=0.1,
+                        #                                    regularizer=Regularizer(l2=0.0))
+                        energy_optimizer    = Adagrad(lr=sharedX(lr),
+                                                      regularizer=Regularizer(l2=lambda_eng))
+                        generator_optimizer = Adagrad(lr=sharedX(1*lr),
+                                                      regularizer=Regularizer(l2=0.0))
+                        model_test_name = model_name \
+                                          + '_f{}'.format(int(num_filters)) \
+                                          + '_h{}'.format(int(hidden_size)) \
+                                          + '_e{}'.format(int(expert_size)) \
+                                          + '_re{}'.format(int(-np.log10(lambda_eng))) \
+                                          + '_lr{}'.format(int(-np.log10(lr))) \
 
-                            train_model(data_stream=data_stream,
-                                        energy_optimizer=energy_optimizer,
-                                        generator_optimizer=generator_optimizer,
-                                        model_config_dict=model_config_dict,
-                                        model_test_name=model_test_name)
+                        train_model(data_stream=data_stream,
+                                    energy_optimizer=energy_optimizer,
+                                    generator_optimizer=generator_optimizer,
+                                    model_config_dict=model_config_dict,
+                                    model_test_name=model_test_name)

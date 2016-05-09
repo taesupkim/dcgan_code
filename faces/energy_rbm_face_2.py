@@ -26,7 +26,7 @@ def inverse_transform(X):
 # SET INITIALIZER #
 ###################
 def get_entropy_cost(entropy_params_list):
-    entropy_const = 0.5*(1.0+np.log(np.pi))
+    entropy_const = 0.5*(1.0+np.log(2.0*np.pi))
     entropy_const = entropy_const.astype(theano.config.floatX)
 
     entropy_tensor_params= []
@@ -290,7 +290,7 @@ def set_energy_model(num_experts,
 
     def energy_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, linear_w4)+linear_b4)
-        e = T.sum(-e, axis=1)
+        e = T.sum(-e, axis=1, keepdims=True)
         e += 0.5*T.sum(T.sqr(feature_data), axis=1, keepdims=True)
         return e
 
