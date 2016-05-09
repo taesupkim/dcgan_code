@@ -15,6 +15,11 @@ from lib.theano_utils import floatX, sharedX
 from load import faces
 from lib.save_utils import save_model, unpickle
 
+model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_SEP'
+samples_dir = 'samples/%s'%model_name
+if not os.path.exists(samples_dir):
+    os.makedirs(samples_dir)
+
 def transform(X):
     return floatX(X)/127.5 - 1.
 
@@ -22,9 +27,6 @@ def inverse_transform(X):
     X = (X+1.)/2.
     return X
 
-###################
-# SET INITIALIZER #
-###################
 def get_entropy_cost(entropy_params_list):
     entropy_const = 0.5*(1.0+np.log(2.0*np.pi))
     entropy_const = entropy_const.astype(theano.config.floatX)
@@ -36,11 +38,6 @@ def get_entropy_cost(entropy_params_list):
     entropy_tensor_params = 0.5*T.log(T.sqr(entropy_tensor_params))
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
-
-model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_SEP'
-samples_dir = 'samples/%s'%model_name
-if not os.path.exists(samples_dir):
-    os.makedirs(samples_dir)
 
 ###############
 # DATA PARAMS #
@@ -68,8 +65,7 @@ softplus = Softplus()
 ###################
 weight_init = Normal(scale=0.01)
 scale_ones  = Constant(c=1.0)
-scale_init  = Constant(c=1.0)
-bias_zero   = Constant(c=0.0)
+bias_zeros  = Constant(c=0.0)
 bias_const  = Constant(c=0.1)
 
 ###################
@@ -127,8 +123,8 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR CONV LAYER 4'
     conv_w4 = weight_init((num_gen_filters3, num_channels) + filter_shape,
                           'gen_conv_w4')
-    conv_b4 = bias_zero(num_channels,
-                        'gen_conv_b4')
+    conv_b4 = bias_zeros(num_channels,
+                         'gen_conv_b4')
 
     generator_params = [[linear_w0, linear_bn_b0,
                          conv_w1, conv_bn_b1,
@@ -143,14 +139,14 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = leak_relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = leak_relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = leak_relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = leak_relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(2, 2), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
