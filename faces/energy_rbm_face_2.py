@@ -15,7 +15,7 @@ from lib.theano_utils import floatX, sharedX
 from load import faces
 from lib.save_utils import save_model, unpickle
 
-model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_ONE_BY_ONE'
+model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_STEP_BY_STEP_LINEAR'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -267,7 +267,7 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 =     (dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         # output feature
         feature = T.flatten(h3, 2)
         return feature
@@ -345,12 +345,12 @@ def set_model_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    full_data      = T.concatenate([input_data, sample_data], axis=0)
-    full_data      = energy_norm_function(full_data)
+    norm_data = T.concatenate([input_data, sample_data], axis=0)
+    norm_data = energy_norm_function(norm_data)
 
     # get prior value
-    input_prior  = energy_prior_function(full_data[:input_data.shape[0]], is_train=True)
-    sample_prior = energy_prior_function(full_data[input_data.shape[0]:], is_train=True)
+    input_prior  = energy_prior_function(norm_data[:input_data.shape[0]], is_train=True)
+    sample_prior = energy_prior_function(norm_data[input_data.shape[0]:], is_train=True)
 
     input_energy  = input_expert  + input_prior
     sample_energy = sample_expert + sample_prior
@@ -429,12 +429,12 @@ def set_sep_model_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    full_data      = T.concatenate([input_data, sample_data], axis=0)
-    full_data      = energy_norm_function(full_data)
+    norm_data = T.concatenate([input_data, sample_data], axis=0)
+    norm_data = energy_norm_function(norm_data)
 
     # get prior value
-    input_prior  = energy_prior_function(full_data[:input_data.shape[0]], is_train=True)
-    sample_prior = energy_prior_function(full_data[input_data.shape[0]:], is_train=True)
+    input_prior  = energy_prior_function(norm_data[:input_data.shape[0]], is_train=True)
+    sample_prior = energy_prior_function(norm_data[input_data.shape[0]:], is_train=True)
 
     input_energy  = input_expert  + input_prior
     sample_energy = sample_expert + sample_prior
@@ -485,154 +485,6 @@ def set_sep_model_update_function(energy_feature_function,
                                      updates=energy_updates,
                                      on_unused_input='ignore')
     return [generator_updater, energy_updater]
-
-
-########################
-# ENERGY MODEL UPDATER #
-########################
-def set_energy_update_function(feature_function,
-                               energy_function,
-                               generator_function,
-                               energy_params,
-                               energy_optimizer):
-
-    # set input data, hidden data, noise data,  annealing rate
-    input_data  = T.tensor4(name='input_data',
-                            dtype=theano.config.floatX)
-    hidden_data = T.matrix(name='hidden_data',
-                           dtype=theano.config.floatX)
-    # get sample data
-    sample_data = generator_function(hidden_data, is_train=True)
-
-    # get feature data
-    input_feature  = feature_function(input_data, is_train=True)
-    sample_feature = feature_function(sample_data, is_train=True)
-
-    # get energy value
-    input_energy  = energy_function(input_feature, is_train=True)
-    sample_energy = energy_function(sample_feature, is_train=True)
-
-    # get energy function cost (positive, negative)
-    positive_phase      = T.mean(input_energy)
-    negative_phase      = T.mean(sample_energy)
-    energy_updates_cost = positive_phase - negative_phase
-
-    # get energy updates
-    energy_updates = energy_optimizer(energy_params,
-                                      energy_updates_cost)
-
-    # update function input
-    update_function_inputs  = [input_data,
-                               hidden_data]
-
-    # update function output
-    update_function_outputs = [input_energy,
-                               sample_energy]
-
-    # update function
-    update_function = theano.function(inputs=update_function_inputs,
-                                      outputs=update_function_outputs,
-                                      updates=energy_updates,
-                                      on_unused_input='ignore')
-    return update_function
-
-#####################
-# GENERATOR UPDATER #
-#####################
-def set_generator_update_function(feature_function,
-                                  energy_function,
-                                  generator_function,
-                                  generator_params,
-                                  generator_entropy_params,
-                                  generator_optimizer,
-                                  generator_entropy_optimizer):
-
-    # set hidden data
-    hidden_data = T.matrix(name='hidden_data',
-                           dtype=theano.config.floatX)
-    # set noise data
-    noise_data  = T.tensor4(name='noise_data',
-                            dtype=theano.config.floatX)
-    # get sample data
-    sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1.+1e-5, 1.-1e-5)
-
-    # get feature data
-    sample_feature = feature_function(sample_data, is_train=True)
-
-    # get energy value
-    sample_energy = energy_function(sample_feature, is_train=True)
-
-    # entropy cost
-    entropy_cost = get_entropy_cost(generator_entropy_params)
-
-    # entropy weight
-    entropy_weights = []
-    for param_tensor in generator_entropy_params:
-        entropy_weights.append(param_tensor.reshape((1,-1)))
-    entropy_weights = T.concatenate(entropy_weights, axis=1)
-    entropy_weights = T.abs_(entropy_weights)
-    entropy_weights = T.mean(entropy_weights)
-
-    # get generator update cost
-    negative_phase         = T.mean(sample_energy)
-    generator_updates_cost = negative_phase + entropy_cost
-
-    # get generator updates
-    generator_updates = generator_optimizer(generator_params,
-                                            generator_updates_cost)
-
-    generator_entropy_updates = generator_entropy_optimizer(generator_entropy_params,
-                                                            generator_updates_cost)
-
-    # update function input
-    update_function_inputs  = [hidden_data,
-                               noise_data]
-
-    # update function output
-    update_function_outputs = [sample_energy,
-                               entropy_cost,
-                               entropy_weights]
-
-    # update function
-    update_function = theano.function(inputs=update_function_inputs,
-                                      outputs=update_function_outputs,
-                                      updates=generator_updates+generator_entropy_updates,
-                                      on_unused_input='ignore')
-    return update_function
-
-#######################
-# VALIDATION FUNCTION #
-#######################
-def set_validation_function(feature_function,
-                            energy_function,
-                            generator_function):
-    # set input data, hidden data, annealing rate
-    input_data  = T.tensor4(name='input_data',
-                            dtype=theano.config.floatX)
-    hidden_data = T.matrix(name='hidden_data',
-                           dtype=theano.config.floatX)
-
-    # get sample data
-    sample_data = generator_function(hidden_data, is_train=False)
-
-    # get feature data
-    input_feature  = feature_function(input_data, is_train=False)
-    sample_feature = feature_function(sample_data, is_train=False)
-
-    # get energy value
-    input_energy  = energy_function(input_feature, is_train=False)
-    sample_energy = energy_function(sample_feature, is_train=False)
-
-    function_inputs = [input_data,
-                       hidden_data]
-    function_outputs = [input_energy,
-                        sample_energy]
-
-    function = theano.function(inputs=function_inputs,
-                               outputs=function_outputs,
-                               on_unused_input='ignore')
-    return function
 
 ###########
 # SAMPLER #
@@ -689,25 +541,6 @@ def train_model(data_stream,
     generator_updater = model_updater[0]
     energy_updater    = model_updater[1]
     print '%.2f SEC '%(time()-t)
-    # print 'COMPILING ENERGY UPDATER'
-    # t=time()
-    # energy_updater = set_energy_update_function(feature_function=feature_function,
-    #                                             energy_function=energy_function,
-    #                                             generator_function=generator_function,
-    #                                             energy_params=energy_params,
-    #                                             energy_optimizer=energy_optimizer)
-    # print '%.2f SEC '%(time()-t)
-    # print 'COMPILING GENERATOR UPDATER'
-    # t=time()
-    # generator_updater = set_generator_update_function(feature_function=feature_function,
-    #                                                   energy_function=energy_function,
-    #                                                   generator_function=generator_function,
-    #                                                   generator_params=generator_params,
-    #                                                   generator_entropy_params=generator_entropy_params,
-    #                                                   generator_optimizer=generator_optimizer,
-    #                                                   generator_entropy_optimizer=generator_entropy_optimizer)
-    # print '%.2f SEC '%(time()-t)
-
     print 'COMPILING SAMPLING FUNCTION'
     t=time()
     sampling_function = set_sampling_function(generator_function=generator_function)
@@ -734,15 +567,15 @@ def train_model(data_stream,
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
-            noise_data   = floatX(np_rng.normal(scale=0.01,
-                                                size=input_data.shape))
 
-
+            noise_data   = floatX(np_rng.normal(scale=0.01, size=input_data.shape))
             update_input  = [input_data, hidden_data, noise_data]
-            if batch_count%2==0:
-                update_output = generator_updater(*update_input)
-            else:
-                update_output = energy_updater(*update_input)
+            update_output = generator_updater(*update_input)
+
+            noise_data   = floatX(np_rng.normal(scale=0.01, size=input_data.shape))
+            update_input  = [input_data, hidden_data, noise_data]
+            update_output = energy_updater(*update_input)
+
 
             input_energy    = update_output[0].mean()
             sample_energy   = update_output[1].mean()
