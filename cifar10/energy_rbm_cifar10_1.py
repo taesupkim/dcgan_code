@@ -15,7 +15,7 @@ from lib.theano_utils import floatX, sharedX
 from load import cifar10
 from lib.save_utils import save_model
 
-model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_NORMED_STEP_BY_STEP_TANH'
+model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_STEP_BY_STEP_TANH'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -188,11 +188,11 @@ def set_energy_model(num_experts,
 
     norm_w = scale_ones(input_size,
                         'gen_norm_w')
-    # norm_b = bias_zeros(input_size,
-    #                     'gen_norm_b')
+    norm_b = bias_zeros(input_size,
+                        'gen_norm_b')
     def energy_normalize_function(input_data, is_train=True):
         input_data = T.flatten(input_data, 2)
-        return batchnorm(input_data, g=norm_w)#, b=norm_b)
+        return batchnorm(input_data, g=norm_w, b=norm_b, a=0.0)
 
     expert_w = weight_init((num_eng_filters2*(min_image_size*min_image_size),
                             num_experts),
@@ -212,7 +212,7 @@ def set_energy_model(num_experts,
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
-                     norm_w, #norm_b,
+                     norm_w, norm_b,
                      expert_w, expert_b]
 
     return [energy_feature_function,
