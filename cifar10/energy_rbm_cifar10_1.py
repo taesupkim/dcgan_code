@@ -15,7 +15,7 @@ from lib.theano_utils import floatX, sharedX
 from load import cifar10
 from lib.save_utils import save_model
 
-model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_NORMED_ONE_SHOT'
+model_name  = 'ENERGY_RBM_CIFAR10_BIAS_ADAGRAD_NORMED_STEP_BY_STEP_TANH'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -179,7 +179,7 @@ def set_energy_model(num_experts,
         # layer 1 (conv)
         h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
         # layer 2 (conv)
-        h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        h2 = tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         feature = T.flatten(h2, 2)
         return feature
 
@@ -433,18 +433,18 @@ def train_model(data_stream,
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
-    model_updater = set_update_function(energy_feature_function=feature_function,
-                                        energy_norm_function=norm_function,
-                                        energy_expert_function=expert_function,
-                                        energy_prior_function=prior_function,
-                                        generator_function=generator_function,
-                                        energy_params=energy_params,
-                                        generator_params=generator_params,
-                                        energy_optimizer=energy_optimizer,
-                                        generator_optimizer=generator_optimizer)
+    model_updater = set_two_update_function(energy_feature_function=feature_function,
+                                            energy_norm_function=norm_function,
+                                            energy_expert_function=expert_function,
+                                            energy_prior_function=prior_function,
+                                            generator_function=generator_function,
+                                            energy_params=energy_params,
+                                            generator_params=generator_params,
+                                            energy_optimizer=energy_optimizer,
+                                            generator_optimizer=generator_optimizer)
 
-    # generator_updater = model_updater[0]
-    # energy_updater    = model_updater[1]
+    generator_updater = model_updater[0]
+    energy_updater    = model_updater[1]
     print '%.2f SEC '%(time()-t)
 
     print 'COMPILING SAMPLING FUNCTION'
@@ -474,12 +474,13 @@ def train_model(data_stream,
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
-            noise_data   = floatX(np_rng.normal(scale=0.01,
-                                                size=shape_data))
 
-            # generator update
+            noise_data   = floatX(np_rng.normal(scale=0.01,size=shape_data))
             update_input  = [input_data, hidden_data, noise_data]
-            update_output = model_updater(*update_input)
+            update_output = generator_updater(*update_input)
+            noise_data   = floatX(np_rng.normal(scale=0.01,size=shape_data))
+            update_input  = [input_data, hidden_data, noise_data]
+            update_output = energy_updater(*update_input)
 
             # get output values
             input_energy    = update_output[0].mean()
