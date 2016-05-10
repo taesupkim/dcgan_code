@@ -188,11 +188,11 @@ def set_energy_model(num_experts,
 
     norm_w = scale_ones(input_size,
                         'gen_norm_w')
-    norm_b = bias_zeros(input_size,
-                        'gen_norm_b')
+    # norm_b = bias_zeros(input_size,
+    #                     'gen_norm_b')
     def energy_normalize_function(input_data, is_train=True):
         input_data = T.flatten(input_data, 2)
-        return batchnorm(input_data, g=norm_w, b=norm_b)
+        return batchnorm(input_data, g=norm_w)#, b=norm_b)
 
     expert_w = weight_init((num_eng_filters2*(min_image_size*min_image_size),
                             num_experts),
@@ -212,7 +212,7 @@ def set_energy_model(num_experts,
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
-                     norm_w, norm_b,
+                     norm_w, #norm_b,
                      expert_w, expert_b]
 
     return [energy_feature_function,
@@ -540,7 +540,7 @@ if __name__=="__main__":
     expert_size_list = [8192]
     hidden_size_list = [1024]
     num_filters_list = [256]
-    lr_list          = [1e-4]
+    lr_list          = [1e-2]
     lambda_eng_list  = [1e-5]
 
     for lr in lr_list:
@@ -553,15 +553,6 @@ if __name__=="__main__":
                         model_config_dict['min_num_gen_filters'] = num_filters
                         model_config_dict['min_num_eng_filters'] = num_filters
 
-                        # set updates
-                        # energy_optimizer_reg_on  = Adam(lr=sharedX(lr),
-                        #                                 regularizer=Regularizer(l2=lambda_eng))
-                        # generator_optimizer_reg_on  = Adam(lr=sharedX(lr),
-                        #                                    b1=0.1, b2=0.1,
-                        #                                    regularizer=Regularizer(l2=lambda_eng))
-                        # generator_optimizer_reg_off = Adam(lr=sharedX(lr),
-                        #                                    b1=0.1, b2=0.1,
-                        #                                    regularizer=Regularizer(l2=0.0))
                         energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                       regularizer=Regularizer(l2=lambda_eng))
                         generator_optimizer = Adagrad(lr=sharedX(lr))
