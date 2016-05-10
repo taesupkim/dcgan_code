@@ -15,7 +15,7 @@ from lib.theano_utils import floatX, sharedX
 from load import faces
 from lib.save_utils import save_model, unpickle
 
-model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_ONE_SHOT'
+model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_ONE_BY_ONE'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -267,7 +267,7 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 =     (dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         # output feature
         feature = T.flatten(h3, 2)
         return feature
@@ -429,14 +429,12 @@ def set_sep_model_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = energy_norm_function(full_feature)
-    input_feature  = full_feature[:input_feature.shape[0]]
-    sample_feature = full_feature[input_feature.shape[0]:]
+    full_data      = T.concatenate([input_data, sample_data], axis=0)
+    full_data      = energy_norm_function(full_data)
 
     # get prior value
-    input_prior  = energy_prior_function(input_feature, is_train=True)
-    sample_prior = energy_prior_function(sample_feature, is_train=True)
+    input_prior  = energy_prior_function(full_data[:input_data.shape[0]], is_train=True)
+    sample_prior = energy_prior_function(full_data[input_data.shape[0]:], is_train=True)
 
     input_energy  = input_expert  + input_prior
     sample_energy = sample_expert + sample_prior
@@ -679,17 +677,17 @@ def train_model(data_stream,
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
-    model_updater = set_model_update_function(energy_feature_function=feature_function,
-                                              energy_norm_function=norm_function,
-                                              energy_expert_function=expert_function,
-                                              energy_prior_function=prior_function,
-                                              generator_function=generator_function,
-                                              energy_params=energy_params,
-                                              generator_params=generator_params,
-                                              energy_optimizer=energy_optimizer,
-                                              generator_optimizer=generator_optimizer)
-    # generator_updater = model_updater[0]
-    # energy_updater    = model_updater[1]
+    model_updater = set_sep_model_update_function(energy_feature_function=feature_function,
+                                                  energy_norm_function=norm_function,
+                                                  energy_expert_function=expert_function,
+                                                  energy_prior_function=prior_function,
+                                                  generator_function=generator_function,
+                                                  energy_params=energy_params,
+                                                  generator_params=generator_params,
+                                                  energy_optimizer=energy_optimizer,
+                                                  generator_optimizer=generator_optimizer)
+    generator_updater = model_updater[0]
+    energy_updater    = model_updater[1]
     print '%.2f SEC '%(time()-t)
     # print 'COMPILING ENERGY UPDATER'
     # t=time()
@@ -741,7 +739,10 @@ def train_model(data_stream,
 
 
             update_input  = [input_data, hidden_data, noise_data]
-            update_output = model_updater(*update_input)
+            if batch_count%2==0:
+                update_output = generator_updater(*update_input)
+            else:
+                update_output = energy_updater(*update_input)
 
             input_energy    = update_output[0].mean()
             sample_energy   = update_output[1].mean()
