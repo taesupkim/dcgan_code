@@ -267,7 +267,7 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 =     (dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         # output feature
         feature = T.flatten(h3, 2)
         return feature
@@ -836,7 +836,7 @@ if __name__=="__main__":
         expert_size_list = [1024]
         hidden_size_list = [100]
         num_filters_list = [128]
-        lr_list          = [1e-3]
+        lr_list          = [1e-2]
         lambda_eng_list  = [1e-5]
 
         for lr in lr_list:
