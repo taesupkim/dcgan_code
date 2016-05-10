@@ -15,7 +15,7 @@ from lib.theano_utils import floatX, sharedX
 from load import imagenet
 from lib.save_utils import save_model, unpickle
 
-model_name  = 'ENERGY_RBM_IMAGENET_BIAS_ADAGRAD_NORMED_ONE_SHOT'
+model_name  = 'ENERGY_RBM_IMAGENET_BIAS_ADAGRAD_NORMED_STEP_BY_STEP'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
