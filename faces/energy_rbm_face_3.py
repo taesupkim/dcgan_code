@@ -15,7 +15,7 @@ from lib.theano_utils import floatX, sharedX
 from load import faces
 from lib.save_utils import save_model, unpickle
 
-model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_NORMED_STEP_BY_STEP'
+model_name  = 'ENERGY_RBM_FACE128_BIAS_ADAGRAD_STEP_BY_STEP'
 samples_dir = 'samples/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
@@ -276,12 +276,12 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FUNCTION FEATURE NORM LAYER'
     norm_w = scale_ones(input_size,
                         'gen_norm_w')
-    # norm_b = bias_zeros(input_size,
-    #                     'gen_norm_b')
+    norm_b = bias_zeros(input_size,
+                        'gen_norm_b')
 
     def energy_normalize_function(input_data, is_train=True):
         input_data = T.flatten(input_data, 2)
-        return batchnorm(input_data, g=norm_w)#, b=norm_b)
+        return batchnorm(input_data, g=norm_w, b=norm_b, a=0.0)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
@@ -305,7 +305,7 @@ def set_energy_model(num_experts,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     norm_w, #norm_b,
+                     norm_w, norm_b,
                      expert_w, expert_b]
 
     return [energy_feature_function,
@@ -665,7 +665,7 @@ if __name__=="__main__":
         expert_size_list = [1024]
         hidden_size_list = [100]
         num_filters_list = [128]
-        lr_list          = [1e-2]
+        lr_list          = [1e-3]
         lambda_eng_list  = [1e-5]
 
         for lr in lr_list:
