@@ -267,7 +267,7 @@ def set_energy_model(num_experts,
         # layer 2 (conv)
         h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = tanh(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         # output feature
         feature = T.flatten(h3, 2)
         return feature
@@ -429,14 +429,12 @@ def set_sep_model_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    full_feature   = T.concatenate([input_feature, sample_feature], axis=0)
-    full_feature   = energy_norm_function(full_feature)
-    input_feature  = full_feature[:input_feature.shape[0]]
-    sample_feature = full_feature[input_feature.shape[0]:]
+    full_data      = T.concatenate([input_data, sample_data], axis=0)
+    full_data      = energy_norm_function(full_data)
 
     # get prior value
-    input_prior  = energy_prior_function(input_feature, is_train=True)
-    sample_prior = energy_prior_function(sample_feature, is_train=True)
+    input_prior  = energy_prior_function(full_data[:input_data.shape[0]], is_train=True)
+    sample_prior = energy_prior_function(full_data[input_data.shape[0]:], is_train=True)
 
     input_energy  = input_expert  + input_prior
     sample_energy = sample_expert + sample_prior
@@ -679,36 +677,18 @@ def train_model(data_stream,
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
-    model_updater = set_model_update_function(energy_feature_function=feature_function,
-                                              energy_norm_function=norm_function,
-                                              energy_expert_function=expert_function,
-                                              energy_prior_function=prior_function,
-                                              generator_function=generator_function,
-                                              energy_params=energy_params,
-                                              generator_params=generator_params,
-                                              energy_optimizer=energy_optimizer,
-                                              generator_optimizer=generator_optimizer)
-    # generator_updater = model_updater[0]
-    # energy_updater    = model_updater[1]
+    model_updater = set_sep_model_update_function(energy_feature_function=feature_function,
+                                                  energy_norm_function=norm_function,
+                                                  energy_expert_function=expert_function,
+                                                  energy_prior_function=prior_function,
+                                                  generator_function=generator_function,
+                                                  energy_params=energy_params,
+                                                  generator_params=generator_params,
+                                                  energy_optimizer=energy_optimizer,
+                                                  generator_optimizer=generator_optimizer)
+    generator_updater = model_updater[0]
+    energy_updater    = model_updater[1]
     print '%.2f SEC '%(time()-t)
-    # print 'COMPILING ENERGY UPDATER'
-    # t=time()
-    # energy_updater = set_energy_update_function(feature_function=feature_function,
-    #                                             energy_function=energy_function,
-    #                                             generator_function=generator_function,
-    #                                             energy_params=energy_params,
-    #                                             energy_optimizer=energy_optimizer)
-    # print '%.2f SEC '%(time()-t)
-    # print 'COMPILING GENERATOR UPDATER'
-    # t=time()
-    # generator_updater = set_generator_update_function(feature_function=feature_function,
-    #                                                   energy_function=energy_function,
-    #                                                   generator_function=generator_function,
-    #                                                   generator_params=generator_params,
-    #                                                   generator_entropy_params=generator_entropy_params,
-    #                                                   generator_optimizer=generator_optimizer,
-    #                                                   generator_entropy_optimizer=generator_entropy_optimizer)
-    # print '%.2f SEC '%(time()-t)
 
     print 'COMPILING SAMPLING FUNCTION'
     t=time()
@@ -736,16 +716,14 @@ def train_model(data_stream,
             hidden_data  = floatX(np_rng.uniform(low=-model_config_dict['hidden_distribution'],
                                                  high=model_config_dict['hidden_distribution'],
                                                  size=(num_data, model_config_dict['hidden_size'])))
-            noise_data   = floatX(np_rng.normal(scale=0.01,
-                                                size=input_data.shape))
 
 
+            noise_data   = floatX(np_rng.normal(scale=0.01, size=input_data.shape))
             update_input  = [input_data, hidden_data, noise_data]
-            update_output = model_updater(*update_input)
-            # if batch_count%2==0:
-            #     update_output = generator_updater(*update_input)
-            # else:
-            #     update_output = energy_updater(*update_input)
+            update_output = generator_updater(*update_input)
+            noise_data   = floatX(np_rng.normal(scale=0.01, size=input_data.shape))
+            update_input  = [input_data, hidden_data, noise_data]
+            update_output = energy_updater(*update_input)
 
 
             input_energy    = update_output[0].mean()
