@@ -174,21 +174,30 @@ class Adagrad(Update):
         Update.__init__(self, *args, **kwargs)
         self.__dict__.update(locals())
 
-    def __call__(self, params, cost):
+    def __call__(self, params, cost, init_param_dict=None):
+        params_list = []
         updates = []
         grads = T.grad(cost, params)
         grads = clip_norms(grads, self.clipnorm)
         for p,g in zip(params,grads):
             g = self.regularizer.gradient_regularize(p, g)
-            acc = theano.shared(p.get_value() * 0.)
+
+            acc_name = p.name+'_adagrad_acc'
+            if init_param_dict is not None and acc_name in init_param_dict:
+                acc = theano.shared(value=init_param_dict[acc_name],
+                                    name=acc_name)
+                print 'loaded : ', acc_name
+            else:
+                acc = theano.shared(value=p.get_value() * 0.,
+                                    name=acc_name)
+            params_list.append(acc)
             acc_t = acc + g ** 2
             updates.append((acc, acc_t))
 
             p_t = p - (self.lr / T.sqrt(acc_t + self.epsilon)) * g
             p_t = self.regularizer.weight_regularize(p_t)
             updates.append((p, p_t))
-        return updates  
-
+        return updates, params_list
 
 class Adadelta(Update):
 

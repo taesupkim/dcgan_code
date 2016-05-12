@@ -139,6 +139,59 @@ def set_generator_model(num_hiddens,
 
     return [generator_function, generator_params]
 
+def load_generator_model(min_num_gen_filters,
+                         model_params_dict):
+    # initial square image size
+    init_image_size  = 4
+
+    # set num of filters for each layer
+    num_gen_filters0 = min_num_gen_filters*4
+
+    # LAYER 0 (LINEAR W/ BN)
+    print 'SET GENERATOR LINEAR LAYER 0'
+    linear_w0    = sharedX(model_params_dict[   'gen_linear_w0'], name='gen_linear_w0')
+    linear_bn_w0 = sharedX(model_params_dict['gen_linear_bn_w0'], name='gen_linear_bn_w0')
+    linear_bn_b0 = sharedX(model_params_dict['gen_linear_bn_b0'], name='gen_linear_bn_b0')
+
+    # LAYER 1 (DECONV)
+    print 'SET GENERATOR CONV LAYER 1'
+    conv_w1    = sharedX(model_params_dict[   'gen_conv_w1'], name='gen_conv_w1')
+    conv_bn_w1 = sharedX(model_params_dict['gen_conv_bn_w1'], name='gen_conv_bn_w1')
+    conv_bn_b1 = sharedX(model_params_dict['gen_conv_bn_b1'], name='gen_conv_bn_b1')
+
+    # LAYER 2 (DECONV)
+    print 'SET GENERATOR CONV LAYER 2'
+    conv_w2    = sharedX(model_params_dict[   'gen_conv_w2'], name='gen_conv_w2')
+    conv_bn_w2 = sharedX(model_params_dict['gen_conv_bn_w2'], name='gen_conv_bn_w2')
+    conv_bn_b2 = sharedX(model_params_dict['gen_conv_bn_b2'], name='gen_conv_bn_b2')
+
+    # LAYER 2 (DECONV)
+    print 'SET GENERATOR CONV LAYER 3'
+    conv_w3    = sharedX(model_params_dict[   'gen_conv_w3'], name='gen_conv_w3')
+    conv_b3    = sharedX(model_params_dict[   'gen_conv_b3'], name='gen_conv_b3')
+
+    generator_params = [[linear_w0, linear_bn_b0,
+                         conv_w1, conv_bn_b1,
+                         conv_w2, conv_bn_b2,
+                         conv_w3, conv_b3],
+                        [linear_bn_w0,
+                         conv_bn_w1,
+                         conv_bn_w2]]
+
+    print 'SET GENERATOR FUNCTION'
+    def generator_function(hidden_data, is_train=True):
+        # layer 0 (linear)
+        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
+        # layer 1 (deconv)
+        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        # layer 2 (deconv)
+        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        # layer 3 (deconv)
+        output = tanh(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        return output
+
+    return [generator_function, generator_params]
 ######################################
 # BUILD ENERGY MODEL (FEATURE_MODEL) #
 ######################################
@@ -199,6 +252,67 @@ def set_energy_model(num_experts,
                            'eng_expert_w')
     expert_b = bias_zeros(num_experts,
                          'eng_expert_b')
+
+    def energy_expert_function(feature_data, is_train=True):
+        e = softplus(T.dot(feature_data, expert_w)+expert_b)
+        e = T.sum(-e, axis=1, keepdims=True)
+        return e
+
+    def energy_prior_function(input_data, is_train=True):
+        e = T.sum(T.sqr(input_data), axis=1, keepdims=True)
+        return e
+
+    energy_params = [conv_w0, conv_b0,
+                     conv_w1, conv_b1,
+                     conv_w2, conv_b2,
+                     norm_w, norm_b,
+                     expert_w, expert_b]
+
+    return [energy_feature_function,
+            energy_normalize_function,
+            energy_expert_function,
+            energy_prior_function,
+            energy_params]
+
+def load_energy_model(model_params_dict):
+
+    # FEATURE LAYER 0 (DECONV)
+    print 'SET ENERGY FEATURE CONV LAYER 0'
+    conv_w0   = sharedX(model_params_dict[   'feat_conv_w0'], name='feat_conv_w0')
+    conv_b0   = sharedX(model_params_dict[   'feat_conv_b0'], name='feat_conv_b0')
+
+    # FEATURE LAYER 1 (DECONV)
+    print 'SET ENERGY FEATURE CONV LAYER 1'
+    conv_w1   = sharedX(model_params_dict[   'feat_conv_w1'], name='feat_conv_w1')
+    conv_b1   = sharedX(model_params_dict[   'feat_conv_b1'], name='feat_conv_b1')
+
+    # FEATURE LAYER 2 (DECONV)
+    print 'SET ENERGY FEATURE CONV LAYER 2'
+    conv_w2   = sharedX(model_params_dict[   'feat_conv_w2'], name='feat_conv_w2')
+    conv_b2   = sharedX(model_params_dict[   'feat_conv_b2'], name='feat_conv_b2')
+
+    print 'SET ENERGY FEATURE EXTRACTOR'
+    def energy_feature_function(input_data, is_train=True):
+        # layer 0 (conv)
+        h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
+        # layer 1 (conv)
+        h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
+        # layer 2 (conv)
+        h2 = tanh(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        feature = T.flatten(h2, 2)
+        return feature
+
+    # ENERGY LAYER (LINEAR)
+    print 'SET ENERGY FUNCTION LINEAR LAYER 3'
+
+    norm_w = sharedX(model_params_dict[   'gen_norm_w'], name='gen_norm_w')
+    norm_b = sharedX(model_params_dict[   'gen_norm_b'], name='gen_norm_b')
+    def energy_normalize_function(input_data, is_train=True):
+        input_data = T.flatten(input_data, 2)
+        return batchnorm(input_data, g=norm_w, b=norm_b, a=0.0)
+
+    expert_w = sharedX(model_params_dict[   'eng_expert_w'], name='eng_expert_w')
+    expert_b = sharedX(model_params_dict[   'eng_expert_b'], name='eng_expert_b')
 
     def energy_expert_function(feature_data, is_train=True):
         e = softplus(T.dot(feature_data, expert_w)+expert_b)
