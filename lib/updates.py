@@ -185,7 +185,7 @@ class Adagrad(Update):
             acc_name = p.name+'_adagrad_acc'
             if init_param_dict is not None and acc_name in init_param_dict:
                 acc = theano.shared(value=init_param_dict[acc_name],
-                                    name=acc_name)
+                                    name=acc_name,)
                 print 'loaded : ', acc_name
             else:
                 acc = theano.shared(value=p.get_value() * 0.,

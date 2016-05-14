@@ -298,7 +298,7 @@ def set_energy_model(num_experts,
 
     def energy_normalize_function(input_data, is_train=True):
         input_data = T.flatten(input_data, 2)
-        return batchnorm(input_data, g=norm_w, b=norm_b, a=0.0)
+        return norm_layer(input_data, g=norm_w, b=norm_b)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
@@ -370,7 +370,7 @@ def load_energy_model(model_params_dict):
 
     def energy_normalize_function(input_data, is_train=True):
         input_data = T.flatten(input_data, 2)
-        return batchnorm(input_data, g=norm_w, b=norm_b, a=0.0)
+        return norm_layer(input_data, g=norm_w, b=norm_b)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'

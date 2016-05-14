@@ -17,8 +17,8 @@ from load import cifar10
 from lib.save_utils import save_model, unpickle
 
 model_name  = 'ENERGY_RBM_CIFAR10_MORE_LAYER_BIAS_ADAGRAD_STEP_BY_STEP_TANH'
-samples_dir = 'samples/%s'%model_name
-# samples_dir = '/home/kimts/results/%s'%model_name
+# samples_dir = 'samples/%s'%model_name
+samples_dir = '/home/kimts/results/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
 
@@ -283,7 +283,7 @@ def set_energy_model(num_experts,
         input_data = T.flatten(input_data, 2)
         return batchnorm(input_data, g=norm_w, b=norm_b, a=0.0)
 
-    expert_w = weight_init((num_eng_filters2*(min_image_size*min_image_size),
+    expert_w = weight_init((num_eng_filters3*(min_image_size*min_image_size),
                             num_experts),
                            'eng_expert_w')
     expert_b = bias_zeros(num_experts,
