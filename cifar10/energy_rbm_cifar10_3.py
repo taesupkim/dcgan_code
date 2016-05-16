@@ -691,10 +691,10 @@ def continue_train_model(last_batch_idx,
     energy_models = load_energy_model(num_experts=model_config_dict['expert_size'],
                                       model_params_dict=model_param_dicts)
     feature_function = energy_models[0]
-    norm_function    = energy_models[1]
-    expert_function  = energy_models[2]
-    prior_function   = energy_models[3]
-    energy_params    = energy_models[4]
+    # norm_function    = energy_models[1]
+    expert_function  = energy_models[1]
+    # prior_function   = energy_models[3]
+    energy_params    = energy_models[2]
 
     # compile functions
     print 'COMPILING MODEL UPDATER'
@@ -782,7 +782,7 @@ def continue_train_model(last_batch_idx,
                 # sample data
                 sample_data = sampling_function(fixed_hidden_data)[0]
                 sample_data = np.asarray(sample_data)
-                save_as = samples_dir + '/' + model_test_name + '_SAMPLES(TRAIN){}.png'.format(batch_count)
+                save_as = samples_dir + '/' + model_test_name + '_SAMPLES{}.png'.format(batch_count)
                 color_grid_vis(inverse_transform(sample_data).transpose([0,2,3,1]), (16, 16), save_as)
                 np.save(file=samples_dir + '/' + model_test_name +'_input_energy',
                         arr=np.asarray(input_energy_list))
