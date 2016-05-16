@@ -840,7 +840,7 @@ if __name__=="__main__":
 
     expert_size_list = [8192]
     hidden_size_list = [1024]
-    num_filters_list = [128]
+    num_filters_list = [256]
     lr_list          = [1e-3]
     lambda_eng_list  = [1e-5]
 
