@@ -17,7 +17,7 @@ from load import cifar10
 from lib.save_utils import save_model, unpickle
 t_floatX = theano.config.floatX
 
-model_name  = 'ENERGY_RBM_CIFAR10_RAW_BIAS_TANH_NOISE_LAYER'
+model_name  = 'ENERGY_RBM_CIFAR10_NO_BIAS_TANH_NOISE_LAYER'
 samples_dir = 'samples/%s'%model_name
 # samples_dir = '/home/kimts/results/%s'%model_name
 if not os.path.exists(samples_dir):
@@ -840,7 +840,7 @@ if __name__=="__main__":
 
     expert_size_list = [8192]
     hidden_size_list = [1024]
-    num_filters_list = [256]
+    num_filters_list = [128]
     lr_list          = [1e-3]
     lambda_eng_list  = [1e-5]
 
