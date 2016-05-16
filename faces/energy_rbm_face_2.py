@@ -425,6 +425,7 @@ def set_generator_update_function(energy_feature_function,
 
     # get generator updates
     generator_updates_cost = negative_phase + entropy_cost
+    print generator_params[0]+generator_params[1]
     generator_updates = generator_optimizer(generator_params[0]+generator_params[1],
                                             generator_updates_cost)
 
