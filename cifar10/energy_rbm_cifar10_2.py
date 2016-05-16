@@ -17,7 +17,7 @@ from load import cifar10
 from lib.save_utils import save_model, unpickle
 t_floatX = theano.config.floatX
 
-model_name  = 'ENERGY_RBM_CIFAR10_NO_BIAS_TANH_NOISE_LAYER'
+model_name  = 'ENERGY_RBM_CIFAR10_TANH_NIPS'
 samples_dir = 'samples/%s'%model_name
 # samples_dir = '/home/kimts/results/%s'%model_name
 if not os.path.exists(samples_dir):
@@ -158,20 +158,20 @@ def set_generator_model(num_hiddens,
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
         h0     = T.dot(hidden_data, linear_w0)
-        h0     = h0 + t_rng.normal(size=h0.shape, std=0.01, dtype=t_floatX)
+        # h0     = h0 + t_rng.normal(size=h0.shape, std=0.01, dtype=t_floatX)
         h0     = relu(batchnorm(X=h0, g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
         h1     = deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))
-        h1     = h1 + t_rng.normal(size=h1.shape, std=0.01, dtype=t_floatX)
+        # h1     = h1 + t_rng.normal(size=h1.shape, std=0.01, dtype=t_floatX)
         h1     = relu(batchnorm(h1, g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
         h2     = deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))
-        h2     = h2 + t_rng.normal(size=h2.shape, std=0.01, dtype=t_floatX)
+        # h2     = h2 + t_rng.normal(size=h2.shape, std=0.01, dtype=t_floatX)
         h2     = relu(batchnorm(h2, g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
         h3     = deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
-        h3     = h3 + t_rng.normal(size=h3.shape, std=0.01, dtype=t_floatX)
+        # h3     = h3 + t_rng.normal(size=h3.shape, std=0.01, dtype=t_floatX)
         h3     = relu(batchnorm(h3, g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(1, 1), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
@@ -230,20 +230,20 @@ def load_generator_model(min_num_gen_filters,
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
         h0     = T.dot(hidden_data, linear_w0)
-        h0     = h0 + t_rng.normal(size=h0.shape, std=0.01, dtype=t_floatX)
+        # h0     = h0 + t_rng.normal(size=h0.shape, std=0.01, dtype=t_floatX)
         h0     = relu(batchnorm(X=h0, g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
         h1     = deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))
-        h1     = h1 + t_rng.normal(size=h1.shape, std=0.01, dtype=t_floatX)
+        # h1     = h1 + t_rng.normal(size=h1.shape, std=0.01, dtype=t_floatX)
         h1     = relu(batchnorm(h1, g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
         h2     = deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))
-        h2     = h2 + t_rng.normal(size=h2.shape, std=0.01, dtype=t_floatX)
+        # h2     = h2 + t_rng.normal(size=h2.shape, std=0.01, dtype=t_floatX)
         h2     = relu(batchnorm(h2, g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
         h3     = deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
-        h3     = h3 + t_rng.normal(size=h3.shape, std=0.01, dtype=t_floatX)
+        # h3     = h3 + t_rng.normal(size=h3.shape, std=0.01, dtype=t_floatX)
         h3     = relu(batchnorm(h3, g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(1, 1), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
