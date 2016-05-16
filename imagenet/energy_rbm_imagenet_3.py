@@ -18,9 +18,9 @@ from lib.save_utils import save_model, unpickle
 
 t_floatX = theano.config.floatX
 
-model_name  = 'ENERGY_RBM_IMAGENET_FEAT_BIAS_SCALE_LINEAR(NOISE_LAYER)'
-samples_dir = 'samples/%s'%model_name
-# samples_dir = '/home/kimts/results/%s'%model_name
+model_name  = 'ENERGY_RBM_IMAGENET_TANH_NIPS'
+# samples_dir = 'samples/%s'%model_name
+samples_dir = '/home/kimts/results/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
 
@@ -310,13 +310,13 @@ def set_energy_model(num_experts,
 
     # ENERGY FEATURE NORM LAYER (BN)
     print 'SET ENERGY FUNCTION FEATURE NORM LAYER'
-    norm_w = scale_ones(num_eng_filters3*(min_image_size*min_image_size),
-                        'gen_norm_w')
-    norm_b = bias_zeros(num_eng_filters3*(min_image_size*min_image_size),
-                        'gen_norm_b')
-
-    def energy_normalize_function(feature_data, is_train=True):
-        return norm_layer(feature_data, g=norm_w, b=norm_b)
+    # norm_w = scale_ones(num_eng_filters3*(min_image_size*min_image_size),
+    #                     'gen_norm_w')
+    # norm_b = bias_zeros(num_eng_filters3*(min_image_size*min_image_size),
+    #                     'gen_norm_b')
+    #
+    # def energy_normalize_function(feature_data, is_train=True):
+    #     return norm_layer(feature_data, g=norm_w, b=norm_b)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
@@ -332,21 +332,21 @@ def set_energy_model(num_experts,
         e = T.sum(-e, axis=1, keepdims=True)
         return e
 
-    def energy_prior_function(input_data, is_train=True):
-        e = num_experts*T.mean(T.sqr(input_data), axis=1, keepdims=True)
-        return e
+    # def energy_prior_function(input_data, is_train=True):
+    #     e = num_experts*T.mean(T.sqr(input_data), axis=1, keepdims=True)
+    #     return e
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     norm_w, norm_b,
+                     # norm_w, norm_b,
                      expert_w, expert_b]
 
     return [energy_feature_function,
-            energy_normalize_function,
+            # energy_normalize_function,
             energy_expert_function,
-            energy_prior_function,
+            # energy_prior_function,
             energy_params]
 
 def load_energy_model(num_experts,
@@ -383,12 +383,12 @@ def load_energy_model(num_experts,
         return feature
 
     # ENERGY FEATURE NORM LAYER (BN)
-    print 'SET ENERGY FUNCTION FEATURE NORM LAYER'
-    norm_w = sharedX(model_params_dict[   'gen_norm_w'], name='gen_norm_w')
-    norm_b = sharedX(model_params_dict[   'gen_norm_b'], name='gen_norm_b')
-
-    def energy_normalize_function(feature_data, is_train=True):
-        return norm_layer(feature_data, g=norm_w, b=norm_b)
+    # print 'SET ENERGY FUNCTION FEATURE NORM LAYER'
+    # norm_w = sharedX(model_params_dict[   'gen_norm_w'], name='gen_norm_w')
+    # norm_b = sharedX(model_params_dict[   'gen_norm_b'], name='gen_norm_b')
+    #
+    # def energy_normalize_function(feature_data, is_train=True):
+    #     return norm_layer(feature_data, g=norm_w, b=norm_b)
 
     # ENERGY EXPERT LAYER (LINEAR)
     print 'SET ENERGY FUNCTION EXPERT LAYER'
@@ -401,27 +401,27 @@ def load_energy_model(num_experts,
         e = T.sum(-e, axis=1, keepdims=True)
         return e
 
-    def energy_prior_function(input_data, is_train=True):
-        e = num_experts*T.mean(T.sqr(input_data), axis=1, keepdims=True)
-        return e
+    # def energy_prior_function(input_data, is_train=True):
+    #     e = num_experts*T.mean(T.sqr(input_data), axis=1, keepdims=True)
+    #     return e
 
     energy_params = [conv_w0, conv_b0,
                      conv_w1, conv_b1,
                      conv_w2, conv_b2,
                      conv_w3, conv_b3,
-                     norm_w, norm_b,
+                     # norm_w, norm_b,
                      expert_w, expert_b]
 
     return [energy_feature_function,
-            energy_normalize_function,
+            # energy_normalize_function,
             energy_expert_function,
-            energy_prior_function,
+            # energy_prior_function,
             energy_params]
 
 def set_energy_update_function(energy_feature_function,
-                               energy_norm_function,
+                               # energy_norm_function,
                                energy_expert_function,
-                               energy_prior_function,
+                               # energy_prior_function,
                                generator_function,
                                energy_params,
                                energy_optimizer,
@@ -448,15 +448,15 @@ def set_energy_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    input_norm  = energy_norm_function(input_feature)
-    sample_norm = energy_norm_function(sample_feature)
+    # input_norm  = energy_norm_function(input_feature)
+    # sample_norm = energy_norm_function(sample_feature)
 
     # get prior value
-    input_prior  = energy_prior_function(input_norm, is_train=True)
-    sample_prior = energy_prior_function(sample_norm, is_train=True)
+    # input_prior  = energy_prior_function(input_norm, is_train=True)
+    # sample_prior = energy_prior_function(sample_norm, is_train=True)
 
-    input_energy  = input_expert  + input_prior
-    sample_energy = sample_expert + sample_prior
+    input_energy  = input_expert  #+ input_prior
+    sample_energy = sample_expert #+ sample_prior
 
     # get energy function cost (positive, negative)
     positive_phase      = T.mean(input_energy)
@@ -475,9 +475,7 @@ def set_energy_update_function(energy_feature_function,
 
     # update function output
     update_function_outputs = [input_energy,
-                               sample_energy,
-                               input_prior,
-                               sample_prior]
+                               sample_energy]
 
     # update function
     energy_updater = theano.function(inputs=update_function_inputs,
@@ -487,9 +485,9 @@ def set_energy_update_function(energy_feature_function,
     return energy_updater, energy_optimizer_params
 
 def set_generator_update_function(energy_feature_function,
-                                  energy_norm_function,
+                                  # energy_norm_function,
                                   energy_expert_function,
-                                  energy_prior_function,
+                                  # energy_prior_function,
                                   generator_function,
                                   generator_params,
                                   generator_optimizer,
@@ -512,12 +510,12 @@ def set_generator_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    sample_norm = energy_norm_function(sample_feature)
+    # sample_norm = energy_norm_function(sample_feature)
 
     # get prior value
-    sample_prior = energy_prior_function(sample_norm, is_train=True)
+    # sample_prior = energy_prior_function(sample_norm, is_train=True)
 
-    sample_energy = sample_expert + sample_prior
+    sample_energy = sample_expert #+ sample_prior
 
     # get energy function cost (negative)
     negative_phase = T.mean(sample_energy)
@@ -590,25 +588,25 @@ def train_model(data_stream,
     energy_models = set_energy_model(num_experts=model_config_dict['expert_size'],
                                      min_num_eng_filters=model_config_dict['min_num_eng_filters'])
     feature_function = energy_models[0]
-    norm_function    = energy_models[1]
-    expert_function  = energy_models[2]
-    prior_function   = energy_models[3]
-    energy_params    = energy_models[4]
+    # norm_function    = energy_models[1]
+    expert_function  = energy_models[1]
+    # prior_function   = energy_models[3]
+    energy_params    = energy_models[2]
 
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
     generator_updater, generator_optimizer_params = set_generator_update_function(energy_feature_function=feature_function,
-                                                                                 energy_norm_function=norm_function,
+                                                                                 # energy_norm_function=norm_function,
                                                                                  energy_expert_function=expert_function,
-                                                                                 energy_prior_function=prior_function,
+                                                                                 # energy_prior_function=prior_function,
                                                                                  generator_function=generator_function,
                                                                                  generator_params=generator_params,
                                                                                  generator_optimizer=generator_optimizer)
     energy_updater, energy_optimizer_params = set_energy_update_function(energy_feature_function=feature_function,
-                                                                         energy_norm_function=norm_function,
+                                                                         # energy_norm_function=norm_function,
                                                                          energy_expert_function=expert_function,
-                                                                         energy_prior_function=prior_function,
+                                                                         # energy_prior_function=prior_function,
                                                                          generator_function=generator_function,
                                                                          energy_params=energy_params,
                                                                          energy_optimizer=energy_optimizer)
@@ -627,8 +625,8 @@ def train_model(data_stream,
     # for each epoch
     input_energy_list = []
     sample_energy_list = []
-    input_bias_list = []
-    sample_bias_list = []
+    # input_bias_list = []
+    # sample_bias_list = []
     batch_count = 0
     for e in xrange(model_config_dict['epochs']):
         # train phase
@@ -653,12 +651,12 @@ def train_model(data_stream,
             update_output   = energy_updater(*update_input)
             input_energy    = update_output[0].mean()
             sample_energy   = update_output[1].mean()
-            input_bias      = update_output[2].mean()
-            sample_bias     = update_output[3].mean()
+            # input_bias      = update_output[2].mean()
+            # sample_bias     = update_output[3].mean()
             input_energy_list.append(input_energy)
             sample_energy_list.append(sample_energy)
-            input_bias_list.append(input_bias)
-            sample_bias_list.append(sample_bias)
+            # input_bias_list.append(input_bias)
+            # sample_bias_list.append(sample_bias)
 
             # batch count up
             batch_count += 1
@@ -669,9 +667,9 @@ def train_model(data_stream,
                 print '================================================================'
                 print '   TRAIN RESULTS'
                 print '================================================================'
-                print '     input energy     : ', input_energy_list[-1], input_bias_list[-1]
+                print '     input energy     : ', input_energy_list[-1]
                 print '----------------------------------------------------------------'
-                print '     sample energy    : ', sample_energy_list[-1], sample_bias_list[-1]
+                print '     sample energy    : ', sample_energy_list[-1]
                 print '----------------------------------------------------------------'
                 print '     entropy weight   : ', entropy_weights
                 print '----------------------------------------------------------------'
@@ -710,26 +708,26 @@ def continue_train_model(last_batch_idx,
     energy_models = load_energy_model(num_experts=model_config_dict['expert_size'],
                                       model_params_dict=model_param_dicts)
     feature_function = energy_models[0]
-    norm_function    = energy_models[1]
-    expert_function  = energy_models[2]
-    prior_function   = energy_models[3]
-    energy_params    = energy_models[4]
+    # norm_function    = energy_models[1]
+    expert_function  = energy_models[1]
+    # prior_function   = energy_models[3]
+    energy_params    = energy_models[2]
 
     # compile functions
     print 'COMPILING MODEL UPDATER'
     t=time()
     generator_updater, generator_optimizer_params = set_generator_update_function(energy_feature_function=feature_function,
-                                                                                  energy_norm_function=norm_function,
+                                                                                  # energy_norm_function=norm_function,
                                                                                   energy_expert_function=expert_function,
-                                                                                  energy_prior_function=prior_function,
+                                                                                  # energy_prior_function=prior_function,
                                                                                   generator_function=generator_function,
                                                                                   generator_params=generator_params,
                                                                                   generator_optimizer=generator_optimizer,
                                                                                   init_param_dict=model_param_dicts)
     energy_updater, energy_optimizer_params = set_energy_update_function(energy_feature_function=feature_function,
-                                                                         energy_norm_function=norm_function,
+                                                                         # energy_norm_function=norm_function,
                                                                          energy_expert_function=expert_function,
-                                                                         energy_prior_function=prior_function,
+                                                                         # energy_prior_function=prior_function,
                                                                          generator_function=generator_function,
                                                                          energy_params=energy_params,
                                                                          energy_optimizer=energy_optimizer,
@@ -844,7 +842,7 @@ def test_model(model_config_dict, model_test_name):
 if __name__=="__main__":
 
     model_config_dict = OrderedDict()
-    model_config_dict['batch_size']          = 128
+    model_config_dict['batch_size']          = 64
     model_config_dict['num_display']         = 16*16
     model_config_dict['hidden_distribution'] = 1.
     model_config_dict['epochs']              = 200
@@ -877,7 +875,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(lr))
+                            generator_optimizer = Adagrad(lr=sharedX(2.*lr))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
                                               + '_h{}'.format(int(hidden_size)) \
