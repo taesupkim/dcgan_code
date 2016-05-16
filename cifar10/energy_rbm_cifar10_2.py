@@ -10,13 +10,14 @@ from lib.activations import Rectify, Tanh, Softplus, LeakyRectify
 from lib.updates import Adagrad, Regularizer, RMSprop, Adam
 from lib.inits import Normal, Constant
 from lib.vis import color_grid_vis
-from lib.rng import py_rng, np_rng
+from lib.rng import py_rng, np_rng, t_rng
 from lib.ops import batchnorm, entropykeep, deconv, dropout, l2normalize
 from lib.theano_utils import floatX, sharedX
 from load import cifar10
 from lib.save_utils import save_model, unpickle
+t_floatX = theano.config.floatX
 
-model_name  = 'ENERGY_RBM_CIFAR10_MORE_LAYER_BIAS_ADAGRAD_STEP_BY_STEP_TANH'
+model_name  = 'ENERGY_RBM_CIFAR10_LARGE_FEAT_BIAS_SCALE_LINEAR(NOISE_LAYER)'
 # samples_dir = 'samples/%s'%model_name
 samples_dir = '/home/kimts/results/%s'%model_name
 if not os.path.exists(samples_dir):
@@ -41,6 +42,21 @@ def get_entropy_cost(entropy_params_list):
     entropy_cost = T.sum(-entropy_const-entropy_tensor_params)
     return entropy_cost
 
+def norm_layer(X, g=None, b=None):
+
+    if X.ndim == 4:
+        if b is not None:
+            X = X + b.dimshuffle('x', 0, 'x', 'x')
+        if g is not None :
+            X = X*g.dimshuffle('x', 0, 'x', 'x')
+    elif X.ndim == 2:
+        if b is not None:
+            X = X + b
+        if g is not None:
+            X = X*g
+    else:
+        raise NotImplementedError
+    return X
 ###############
 # DATA PARAMS #
 ###############
@@ -141,14 +157,22 @@ def set_generator_model(num_hiddens,
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = T.dot(hidden_data, linear_w0)
+        h0     = h0 + t_rng.normal(size=h0.shape, std=0.01, dtype=t_floatX)
+        h0     = relu(batchnorm(X=h0, g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))
+        h1     = h1 + t_rng.normal(size=h1.shape, std=0.01, dtype=t_floatX)
+        h1     = relu(batchnorm(h1, g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))
+        h2     = h2 + t_rng.normal(size=h2.shape, std=0.01, dtype=t_floatX)
+        h2     = relu(batchnorm(h2, g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
+        h3     = h3 + t_rng.normal(size=h3.shape, std=0.01, dtype=t_floatX)
+        h3     = relu(batchnorm(h3, g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(1, 1), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -205,14 +229,22 @@ def load_generator_model(min_num_gen_filters,
     print 'SET GENERATOR FUNCTION'
     def generator_function(hidden_data, is_train=True):
         # layer 0 (linear)
-        h0     = relu(batchnorm(X=T.dot(hidden_data, linear_w0), g=linear_bn_w0, b=linear_bn_b0))
+        h0     = T.dot(hidden_data, linear_w0)
+        h0     = h0 + t_rng.normal(size=h0.shape, std=0.01, dtype=t_floatX)
+        h0     = relu(batchnorm(X=h0, g=linear_bn_w0, b=linear_bn_b0))
         h0     = h0.reshape((h0.shape[0], num_gen_filters0, init_image_size, init_image_size))
         # layer 1 (deconv)
-        h1     = relu(batchnorm(deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w1, b=conv_bn_b1))
+        h1     = deconv(h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))
+        h1     = h1 + t_rng.normal(size=h1.shape, std=0.01, dtype=t_floatX)
+        h1     = relu(batchnorm(h1, g=conv_bn_w1, b=conv_bn_b1))
         # layer 2 (deconv)
-        h2     = relu(batchnorm(deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w2, b=conv_bn_b2))
+        h2     = deconv(h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))
+        h2     = h2 + t_rng.normal(size=h2.shape, std=0.01, dtype=t_floatX)
+        h2     = relu(batchnorm(h2, g=conv_bn_w2, b=conv_bn_b2))
         # layer 3 (deconv)
-        h3     = relu(batchnorm(deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2)), g=conv_bn_w3, b=conv_bn_b3))
+        h3     = deconv(h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))
+        h3     = h3 + t_rng.normal(size=h3.shape, std=0.01, dtype=t_floatX)
+        h3     = relu(batchnorm(h3, g=conv_bn_w3, b=conv_bn_b3))
         # layer 4 (deconv)
         output = tanh(deconv(h3, conv_w4, subsample=(1, 1), border_mode=(2, 2))+conv_b4.dimshuffle('x', 0, 'x', 'x'))
         return output
@@ -274,14 +306,12 @@ def set_energy_model(num_experts,
 
     # ENERGY LAYER (LINEAR)
     print 'SET ENERGY FUNCTION LINEAR LAYER 3'
-
-    norm_w = scale_ones(input_size,
+    norm_w = scale_ones(num_eng_filters3*(min_image_size*min_image_size),
                         'gen_norm_w')
-    norm_b = bias_zeros(input_size,
+    norm_b = bias_zeros(num_eng_filters3*(min_image_size*min_image_size),
                         'gen_norm_b')
-    def energy_normalize_function(input_data, is_train=True):
-        input_data = T.flatten(input_data, 2)
-        return batchnorm(input_data, g=norm_w, b=norm_b, a=0.0)
+    def energy_normalize_function(feature_data, is_train=True):
+        return norm_layer(feature_data, g=norm_w, b=norm_b)
 
     expert_w = weight_init((num_eng_filters3*(min_image_size*min_image_size),
                             num_experts),
@@ -295,7 +325,7 @@ def set_energy_model(num_experts,
         return e
 
     def energy_prior_function(input_data, is_train=True):
-        e = T.sum(T.sqr(input_data), axis=1, keepdims=True)
+        e = num_experts*T.mean(T.sqr(input_data), axis=1, keepdims=True)
         return e
 
     energy_params = [conv_w0, conv_b0,
@@ -311,7 +341,8 @@ def set_energy_model(num_experts,
             energy_prior_function,
             energy_params]
 
-def load_energy_model(model_params_dict):
+def load_energy_model(num_experts,
+                      model_params_dict):
 
     # FEATURE LAYER 0 (DECONV)
     print 'SET ENERGY FEATURE CONV LAYER 0'
@@ -349,8 +380,7 @@ def load_energy_model(model_params_dict):
     norm_b = sharedX(model_params_dict[   'gen_norm_b'], name='gen_norm_b')
 
     def energy_normalize_function(input_data, is_train=True):
-        input_data = T.flatten(input_data, 2)
-        return batchnorm(input_data, g=norm_w, b=norm_b, a=0.0)
+        return norm_layer(input_data, g=norm_w, b=norm_b)
 
     expert_w = sharedX(model_params_dict[   'eng_expert_w'], name='eng_expert_w')
     expert_b = sharedX(model_params_dict[   'eng_expert_b'], name='eng_expert_b')
@@ -361,7 +391,7 @@ def load_energy_model(model_params_dict):
         return e
 
     def energy_prior_function(input_data, is_train=True):
-        e = T.sum(T.sqr(input_data), axis=1, keepdims=True)
+        e = num_experts*T.mean(T.sqr(input_data), axis=1, keepdims=True)
         return e
 
     energy_params = [conv_w0, conv_b0,
@@ -396,7 +426,7 @@ def set_energy_update_function(energy_feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1., 1.)
+    # sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
     input_feature  = energy_feature_function(input_data, is_train=True)
@@ -407,8 +437,8 @@ def set_energy_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    input_norm  = energy_norm_function(input_data)
-    sample_norm = energy_norm_function(sample_data)
+    input_norm  = energy_norm_function(input_feature)
+    sample_norm = energy_norm_function(sample_feature)
 
     # get prior value
     input_prior  = energy_prior_function(input_norm, is_train=True)
@@ -460,7 +490,7 @@ def set_generator_update_function(energy_feature_function,
 
     # get sample data
     sample_data = generator_function(hidden_data, is_train=True)
-    sample_data = T.clip(sample_data+noise_data, -1., 1.)
+    # sample_data = T.clip(sample_data+noise_data, -1., 1.)
 
     # get feature data
     sample_feature = energy_feature_function(sample_data, is_train=True)
@@ -469,7 +499,7 @@ def set_generator_update_function(energy_feature_function,
     sample_expert = energy_expert_function(sample_feature, is_train=True)
 
     # normalize feature data
-    sample_norm = energy_norm_function(sample_data)
+    sample_norm = energy_norm_function(sample_feature)
 
     # get prior value
     sample_prior = energy_prior_function(sample_norm, is_train=True)
@@ -659,7 +689,8 @@ def continue_train_model(last_batch_idx,
     generator_function = generator_models[0]
     generator_params   = generator_models[1]
 
-    energy_models = load_energy_model(model_params_dict=model_param_dicts)
+    energy_models = load_energy_model(num_experts=model_config_dict['expert_size'],
+                                      model_params_dict=model_param_dicts)
     feature_function = energy_models[0]
     norm_function    = energy_models[1]
     expert_function  = energy_models[2]
@@ -798,7 +829,7 @@ def test_model(model_config_dict, model_test_name):
 if __name__=="__main__":
 
     model_config_dict = OrderedDict()
-    model_config_dict['batch_size']          = 128
+    model_config_dict['batch_size']          = 64
     model_config_dict['num_display']         = 16*16
     model_config_dict['hidden_distribution'] = 1.
     model_config_dict['epochs']              = 200
@@ -808,9 +839,9 @@ if __name__=="__main__":
     #################
     tr_data, te_data, data_stream, te_stream = cifar10(batch_size=model_config_dict['batch_size'])
 
-    expert_size_list = [100,8192]
-    hidden_size_list = [100,1024]
-    num_filters_list = [16,256]
+    expert_size_list = [8192]
+    hidden_size_list = [1024]
+    num_filters_list = [256]
     lr_list          = [1e-3]
     lambda_eng_list  = [1e-5]
 
