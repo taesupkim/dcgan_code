@@ -358,8 +358,8 @@ def set_energy_update_function(energy_feature_function,
     energy_updates_cost = positive_phase - negative_phase
 
     # get energy updates
-    energy_updates = energy_optimizer(energy_params,
-                                      energy_updates_cost)
+    energy_updates, _ = energy_optimizer(energy_params,
+                                         energy_updates_cost)
 
     # update function input
     update_function_inputs  = [input_data,
@@ -425,8 +425,8 @@ def set_generator_update_function(energy_feature_function,
 
     # get generator updates
     generator_updates_cost = negative_phase + entropy_cost
-    generator_updates = generator_optimizer(generator_params[0]+generator_params[1],
-                                            generator_updates_cost)
+    generator_updates, _ = generator_optimizer(generator_params[0]+generator_params[1],
+                                               generator_updates_cost)
 
     # update function input
     update_function_inputs  = [hidden_data,
