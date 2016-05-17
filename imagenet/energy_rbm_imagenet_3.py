@@ -19,8 +19,8 @@ from lib.save_utils import save_model, unpickle
 t_floatX = theano.config.floatX
 
 model_name  = 'ENERGY_RBM_IMAGENET_TANH_NO_NOISE_NIPS'
-# samples_dir = 'samples/%s'%model_name
-samples_dir = '/home/kimts/results/%s'%model_name
+samples_dir = 'samples/%s'%model_name
+# samples_dir = '/home/kimts/results/%s'%model_name
 if not os.path.exists(samples_dir):
     os.makedirs(samples_dir)
 
