@@ -58,6 +58,7 @@ filter_shape = (filter_size, filter_size)
 ##############################
 leak_relu = LeakyRectify()
 relu  = Rectify()
+lrelu = LeakyRectify()
 tanh  = Tanh()
 softplus = Softplus()
 
@@ -278,13 +279,13 @@ def set_energy_model(num_experts,
     print 'SET ENERGY FEATURE EXTRACTOR'
     def energy_feature_function(input_data, is_train=True):
         # layer 0 (conv)
-        h0 = relu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
+        h0 = lrelu(dnn_conv(input_data, conv_w0, subsample=(2, 2), border_mode=(2, 2))+conv_b0.dimshuffle('x', 0, 'x', 'x'))
         # layer 1 (conv)
-        h1 = relu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
+        h1 = lrelu(dnn_conv(        h0, conv_w1, subsample=(2, 2), border_mode=(2, 2))+conv_b1.dimshuffle('x', 0, 'x', 'x'))
         # layer 2 (conv)
-        h2 = relu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
+        h2 = lrelu(dnn_conv(        h1, conv_w2, subsample=(2, 2), border_mode=(2, 2))+conv_b2.dimshuffle('x', 0, 'x', 'x'))
         # layer 3 (conv)
-        h3 = relu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
+        h3 = lrelu(dnn_conv(        h2, conv_w3, subsample=(2, 2), border_mode=(2, 2))+conv_b3.dimshuffle('x', 0, 'x', 'x'))
         # output feature
         feature = T.flatten(h3, 2)
         return feature
@@ -657,7 +658,7 @@ if __name__=="__main__":
                             # set updates
                             energy_optimizer    = Adagrad(lr=sharedX(lr),
                                                           regularizer=Regularizer(l2=lambda_eng))
-                            generator_optimizer = Adagrad(lr=sharedX(5.*lr))
+                            generator_optimizer = Adagrad(lr=sharedX(2.*lr))
                             model_test_name = model_name \
                                               + '_f{}'.format(int(num_filters)) \
                                               + '_h{}'.format(int(hidden_size)) \
